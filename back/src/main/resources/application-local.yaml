@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/devtoolbox?serverTimezone=UTC&characterEncoding=UTF-8
+    username: devtoolbox
+    password: "1234"
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  security:
+    user:
+      name: admin
+      password: 1234
+
+logging:
+  level:
+    org.hibernate.SQL: debug

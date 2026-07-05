@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: devtoolbox-mysql
+    environment:
+      MYSQL_DATABASE: devtoolbox
+      MYSQL_USER: devtoolbox
+      MYSQL_PASSWORD: "1234"
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
