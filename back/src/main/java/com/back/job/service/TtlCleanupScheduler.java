@@ -1,6 +1,7 @@
-package com.back.domain.job;
+package com.back.job.service;
 
 import com.back.global.storage.FileStorage;
+import com.back.job.repository.JobRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,5 +48,10 @@ public class LocalFileStorage implements FileStorage {
         } catch (IOException e) {
             throw new UncheckedIOException(e);
         }
+    }
+
+    @Override
+    public InputStream openStream(String key) throws IOException {
+        return Files.newInputStream(uploadDir.resolve(key));
     }
 }

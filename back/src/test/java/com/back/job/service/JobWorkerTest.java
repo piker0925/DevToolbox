@@ -1,10 +1,13 @@
-package com.back.domain.job;
+package com.back.job.service;
 
-import com.back.domain.tool.ToolInput;
-import com.back.domain.tool.ToolModule;
-import com.back.domain.tool.ToolProcessingException;
-import com.back.domain.tool.ToolResult;
 import com.back.global.storage.FileStorage;
+import com.back.job.entity.Job;
+import com.back.job.entity.JobStatus;
+import com.back.job.repository.JobRepository;
+import com.back.tool.model.ToolInput;
+import com.back.tool.model.ToolModule;
+import com.back.tool.model.ToolProcessingException;
+import com.back.tool.model.ToolResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

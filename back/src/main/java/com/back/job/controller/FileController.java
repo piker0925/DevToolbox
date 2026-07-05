@@ -1,4 +1,4 @@
-package com.back.domain.job;
+package com.back.job.controller;
 
 import com.back.global.exception.AppException;
 import com.back.global.exception.ErrorCode;

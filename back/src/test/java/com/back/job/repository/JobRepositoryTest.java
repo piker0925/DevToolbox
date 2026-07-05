@@ -1,5 +1,7 @@
-package com.back.domain.job;
+package com.back.job.repository;
 
+import com.back.job.entity.Job;
+import com.back.job.entity.JobStatus;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,14 +70,18 @@ class JobRepositoryTest {
         Thread thread1 = new Thread(() -> new TransactionTemplate(txManager).execute(status -> {
             jobRepository.findFirstPendingWithLock();
             acquired.countDown();
-            try { release.await(); } catch (InterruptedException e) { Thread.currentThread().interrupt(); }
+            try {
+                release.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
             return null;
         }));
         thread1.start();
         acquired.await();
 
         thread2Result.set(new TransactionTemplate(txManager).execute(
-            status -> jobRepository.findFirstPendingWithLock()
+                status -> jobRepository.findFirstPendingWithLock()
         ));
         release.countDown();
         thread1.join();

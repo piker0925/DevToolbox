@@ -1,4 +1,4 @@
-package com.back.domain.job;
+package com.back.job.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;

@@ -1,4 +1,4 @@
-package com.back.domain.tool;
+package com.back.tool.model;
 
 public class ToolProcessingException extends RuntimeException {
     public ToolProcessingException(String message) {
