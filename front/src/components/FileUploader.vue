@@ -21,7 +21,7 @@ import {ref} from 'vue'
 import {apiClient} from '../api/client'
 import type {UploadResult} from '../types'
 
-const props = defineProps<{ moduleId: string }>()
+const props = defineProps<{ moduleId: string; params?: Record<string, string> }>()
 const emit = defineEmits<{
   uploaded: [result: UploadResult]
 }>()
@@ -31,9 +31,13 @@ const fileInput = ref<HTMLInputElement | null>(null)
 
 async function upload(files: File[]) {
   const form = new FormData()
-  form.append('moduleId', props.moduleId)
   files.forEach(f => form.append('files', f))
-  const {data} = await apiClient.post<UploadResult>('/api/v1/upload', form)
+  if (props.params) {
+    Object.entries(props.params).forEach(([k, v]) => {
+      if (v !== '' && v !== undefined) form.append(k, v)
+    })
+  }
+  const {data} = await apiClient.post<UploadResult>(`/api/v1/tools/${props.moduleId}/upload`, form)
   emit('uploaded', data)
 }
 
