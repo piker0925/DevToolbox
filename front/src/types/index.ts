@@ -4,7 +4,6 @@ export interface Module {
     category: string
     isHeavy: boolean
     isFrontendOnly?: boolean
-    implemented?: boolean
     description?: string
 }
 

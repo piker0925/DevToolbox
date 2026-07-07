@@ -1,16 +1,9 @@
 <template>
   <div
       :title="mod.description ?? mod.name"
-      :class="!mod.implemented ? 'opacity-50' : ''"
       class="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:shadow"
       @click="router.push(`/tools/${mod.id}`)"
   >
-    <!-- WIP badge (개발 중 표시) -->
-    <span
-        v-if="!mod.implemented"
-        class="absolute right-2 top-2 rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide bg-slate-100 text-slate-400"
-    >WIP</span>
-
     <!-- Category icon -->
     <div
         :class="config.thumbBg"

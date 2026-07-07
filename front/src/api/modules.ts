@@ -19,7 +19,6 @@ export function normalizeApiModules(data: Module[]): Module[] {
     const backendModules = data.map(m => ({
         ...m,
         category: CATEGORY_MAP[m.category] ?? m.category,
-        implemented: true as const,
     }))
     const frontendOnly = MOCK_MODULES.filter(m => m.isFrontendOnly)
     return [...backendModules, ...frontendOnly]
