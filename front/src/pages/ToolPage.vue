@@ -97,7 +97,6 @@
           <div v-else-if="!result" class="flex flex-col items-center gap-4">
             <Loader2 class="size-8 animate-spin text-indigo-400"/>
             <p class="text-[13px] text-slate-500">처리 중입니다...</p>
-            <JobPoller :jobId="jobId!" @done="onDone" @failed="onFailed"/>
           </div>
           <div v-else class="flex w-full flex-col gap-4">
             <ResultViewer :text="result.text" :url="result.url"/>
@@ -221,19 +220,20 @@
 </template>
 
 <script lang="ts" setup>
-import {computed, ref, watch} from 'vue'
+import {computed, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
 import {AlertCircle, ArrowRight, Check, ChevronRight, Copy, Loader2, X} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
-import type {Job, Module, UploadResult} from '../types'
+import type {Module, UploadResult} from '../types'
 import {Button} from '@/components/ui/button'
 import FrontendToolPage from '../components/FrontendToolPage.vue'
 import FileUploader from '../components/FileUploader.vue'
-import JobPoller from '../components/JobPoller.vue'
 import ResultViewer from '../components/ResultViewer.vue'
 import CommentSection from '../components/CommentSection.vue'
+
+const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 // ── 파라미터 타입 ─────────────────────────────────────────────────────────
 
@@ -465,6 +465,36 @@ async function loadModule(moduleId: string) {
 
 watch(() => route.params.moduleId as string, loadModule, {immediate: true})
 
+// ── SSE ───────────────────────────────────────────────────────────────────
+
+let eventSource: EventSource | null = null
+
+watch(jobId, (id) => {
+  if (id) startSse(id)
+})
+
+onUnmounted(stopSse)
+
+function startSse(id: string) {
+  stopSse()
+  const es = new EventSource(`${API_BASE}/api/v1/jobs/${id}/stream`)
+  eventSource = es
+  es.addEventListener('job-status-changed', (e: MessageEvent) => {
+    const d = JSON.parse(e.data)
+    if (d.status === 'DONE' || d.status === 'FAILED') {
+      stopSse()
+      if (d.status === 'DONE') onDone(id)
+      else onFailed()
+    }
+  })
+  es.onerror = stopSse
+}
+
+function stopSse() {
+  eventSource?.close()
+  eventSource = null
+}
+
 function initForm() {
   const lc = mod.value ? MODULE_CONFIGS[mod.value.id] : undefined
   if (lc) {
@@ -497,16 +527,16 @@ async function uploadTextAsFile() {
   jobId.value = data.jobId
 }
 
-async function onDone(job: Job) {
+async function onDone(id: string) {
   try {
-    const {data} = await apiClient.get(`/api/v1/jobs/${job.id}/result`)
+    const {data} = await apiClient.get(`/api/v1/jobs/${id}/result`)
     result.value = {url: data.url ?? null, text: data.text ?? null}
   } catch {
     result.value = {url: null, text: '결과를 불러오지 못했습니다.'}
   }
 }
 
-function onFailed(_job: Job) {
+function onFailed() {
   result.value = {url: null, text: '처리에 실패했습니다.'}
 }
 
@@ -569,6 +599,7 @@ function downloadImage() {
 // ── 리셋 ──────────────────────────────────────────────────────────────────
 
 function resetAll() {
+  stopSse()
   jobId.value = null
   result.value = null
   runInput.value = ''
