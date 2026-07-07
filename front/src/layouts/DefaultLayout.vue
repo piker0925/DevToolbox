@@ -3,12 +3,15 @@
     <aside class="flex w-[320px] shrink-0 flex-col bg-[#1A1B1E]">
 
       <!-- Logo -->
-      <div class="flex items-center gap-2.5 px-4 py-4">
+      <button
+          class="flex items-center gap-2.5 px-4 py-4 transition-opacity hover:opacity-80"
+          @click="handleCategoryClick(null)"
+      >
         <div class="flex size-7 items-center justify-center rounded-lg bg-indigo-500">
           <Zap class="size-4 text-white"/>
         </div>
         <span class="text-[15px] font-semibold text-white">DevToolbox</span>
-      </div>
+      </button>
 
       <!-- Search -->
       <div class="px-3 pb-3">

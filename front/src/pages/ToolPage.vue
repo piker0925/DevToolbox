@@ -28,8 +28,11 @@
       <p v-if="mod.description" class="ml-auto text-[12px] text-slate-400 hidden lg:block">{{ mod.description }}</p>
     </div>
 
+    <!-- Frontend-only: 브라우저 처리 -->
+    <FrontendToolPage v-if="mod.isFrontendOnly" :moduleId="mod.id"/>
+
     <!-- Heavy: 2-panel layout -->
-    <div v-if="mod.isHeavy" class="grid h-[calc(100vh-3rem)] grid-cols-2 divide-x divide-slate-200">
+    <div v-else-if="mod.isHeavy" class="grid h-[calc(100vh-3rem)] grid-cols-2 divide-x divide-slate-200">
       <!-- Left: Upload -->
       <div class="flex flex-col">
         <div class="flex h-10 shrink-0 items-center border-b border-slate-100 px-4">
@@ -154,7 +157,6 @@
 
     <!-- Comments -->
     <div class="border-t border-slate-100 px-6 py-8">
-      <h3 class="mb-6 text-[13px] font-semibold text-slate-700">커뮤니티</h3>
       <CommentSection :module-id="(route.params.moduleId as string)"/>
     </div>
   </template>
@@ -168,6 +170,7 @@ import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import type {Job, Module, UploadResult} from '../types'
 import {Button} from '@/components/ui/button'
+import FrontendToolPage from '../components/FrontendToolPage.vue'
 import FileUploader from '../components/FileUploader.vue'
 import JobPoller from '../components/JobPoller.vue'
 import ResultViewer from '../components/ResultViewer.vue'

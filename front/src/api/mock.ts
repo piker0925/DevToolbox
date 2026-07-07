@@ -31,4 +31,95 @@ export const MOCK_MODULES: Module[] = [
     {id: 'subnet-calc', name: '서브넷 계산기', category: '네트워크', isHeavy: false, description: 'IP 서브넷 마스크 계산'},
     {id: 'cron', name: 'Cron 표현식', category: 'DevOps', isHeavy: false, description: 'Cron 표현식 파싱 및 설명'},
     {id: 'sha256', name: 'SHA-256 해시', category: '유틸', isHeavy: false, description: '텍스트 SHA-256 해시 생성'},
+    // 프론트엔드 전용 도구 (구현 완료)
+    {
+        id: 'json-formatter',
+        name: 'JSON 포맷터',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: 'JSON 정렬 및 미니파이'
+    },
+    {
+        id: 'base64',
+        name: 'Base64',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: '텍스트 ↔ Base64 인코딩/디코딩'
+    },
+    {
+        id: 'url-encode',
+        name: 'URL 인코딩',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: '텍스트 ↔ URL 인코딩'
+    },
+    {
+        id: 'jwt-decoder',
+        name: 'JWT 디코더',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: 'JWT 토큰 Header·Payload 파싱'
+    },
+    {
+        id: 'timestamp',
+        name: '타임스탬프',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: 'Unix timestamp ↔ 날짜/시간 변환'
+    },
+    {
+        id: 'color-code',
+        name: '색상 코드',
+        category: '포맷터',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: 'HEX ↔ RGB ↔ HSL 변환'
+    },
+    {
+        id: 'uuid',
+        name: 'UUID 생성기',
+        category: '생성기',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: 'UUID v4 무작위 생성'
+    },
+    {
+        id: 'char-count',
+        name: '글자 수 카운터',
+        category: '텍스트',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: '문자 수·단어 수·바이트 수 계산'
+    },
+    {
+        id: 'keyboard-convert',
+        name: '한영 변환',
+        category: '텍스트',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: '한→영, 영→한 키보드 레이아웃 변환'
+    },
+    {
+        id: 'whitespace',
+        name: '공백 정규화',
+        category: '텍스트',
+        isHeavy: false,
+        isFrontendOnly: true,
+        implemented: true,
+        description: '연속 공백·탭·줄바꿈 정규화'
+    },
 ]

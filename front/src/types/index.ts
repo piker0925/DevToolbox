@@ -3,6 +3,8 @@ export interface Module {
     name: string
     category: string
     isHeavy: boolean
+    isFrontendOnly?: boolean
+    implemented?: boolean
     description?: string
 }
 
