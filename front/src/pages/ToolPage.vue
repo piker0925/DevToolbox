@@ -513,11 +513,11 @@ async function loadModule(moduleId: string) {
   }
 }
 
-watch(() => route.params.moduleId as string, loadModule, {immediate: true})
-
 // ── SSE ───────────────────────────────────────────────────────────────────
 
 let eventSource: EventSource | null = null
+
+watch(() => route.params.moduleId as string, loadModule, {immediate: true})
 
 watch(jobId, (id) => {
   if (id) startSse(id)
