@@ -213,8 +213,24 @@
       </div>
     </div>
 
-    <!-- Comments -->
-    <div class="border-t border-slate-100 px-6 py-8">
+    <!-- Stats + Comments -->
+    <div class="border-t border-slate-100 px-6 py-8 space-y-6">
+      <!-- Stats bar -->
+      <div class="flex items-center gap-4 text-[13px] text-slate-500">
+        <span class="flex items-center gap-1.5">
+          <BarChart2 class="size-3.5 text-slate-400"/>
+          사용 {{ stats?.useCount ?? 0 }}회
+        </span>
+        <button
+            class="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-0.5 text-[12px] transition-colors hover:border-rose-300 hover:text-rose-500"
+            :class="liked ? 'border-rose-300 text-rose-500' : ''"
+            @click="toggleLike"
+        >
+          <Heart class="size-3.5" :class="liked ? 'fill-rose-500 text-rose-500' : ''"/>
+          {{ stats?.likeCount ?? 0 }}
+        </button>
+      </div>
+
       <CommentSection :module-id="(route.params.moduleId as string)"/>
     </div>
   </template>
@@ -223,7 +239,7 @@
 <script lang="ts" setup>
 import {computed, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {AlertCircle, ArrowRight, Check, ChevronRight, Copy, Loader2, X} from 'lucide-vue-next'
+import {AlertCircle, ArrowRight, BarChart2, Check, ChevronRight, Copy, Heart, Loader2, X} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
@@ -445,11 +461,44 @@ const hasInput = computed(() => {
   return !!runInput.value
 })
 
+// ── 통계 ──────────────────────────────────────────────────────────────────
+
+interface ToolStats {
+  moduleId: string
+  useCount: number
+  likeCount: number
+}
+
+const stats = ref<ToolStats | null>(null)
+const liked = ref(false)
+
+async function loadStats(moduleId: string) {
+  try {
+    const {data} = await apiClient.get<ToolStats>(`/api/v1/tools/${moduleId}/stats`)
+    stats.value = data
+  } catch {
+    stats.value = null
+  }
+}
+
+async function toggleLike() {
+  const moduleId = route.params.moduleId as string
+  try {
+    const {data} = await apiClient.post<ToolStats>(`/api/v1/tools/${moduleId}/like`)
+    stats.value = data
+    liked.value = true
+  } catch {
+    // 무시
+  }
+}
+
 // ── 로드 & 초기화 ─────────────────────────────────────────────────────────
 
 async function loadModule(moduleId: string) {
   loading.value = true
   mod.value = null
+  stats.value = null
+  liked.value = false
   resetAll()
   try {
     const {data} = await apiClient.get<Module[]>('/api/v1/modules')
@@ -460,6 +509,7 @@ async function loadModule(moduleId: string) {
   } finally {
     loading.value = false
     initForm()
+    loadStats(moduleId)
   }
 }
 

@@ -11,6 +11,7 @@ import com.back.tool.dto.RunResponse;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
 import com.back.tool.model.ToolResult;
+import com.back.stats.service.ToolStatsService;
 import com.back.tool.service.ToolService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -32,12 +33,15 @@ public class ToolController {
 
     private final ToolService toolService;
     private final JobService jobService;
+    private final ToolStatsService toolStatsService;
     private final Path uploadDir;
 
     public ToolController(ToolService toolService, JobService jobService,
+                          ToolStatsService toolStatsService,
                           @Value("${storage.upload-dir:uploads}") String uploadDir) {
         this.toolService = toolService;
         this.jobService = jobService;
+        this.toolStatsService = toolStatsService;
         this.uploadDir = Path.of(uploadDir);
     }
 
@@ -56,6 +60,7 @@ public class ToolController {
             throw new AppException(ErrorCode.INVALID_MODULE_TYPE);
         }
         ToolResult result = module.process(new ToolInput(List.of(), params));
+        toolStatsService.incrementUseCount(moduleId);
         return new RunResponse(result.textResult());
     }
 
