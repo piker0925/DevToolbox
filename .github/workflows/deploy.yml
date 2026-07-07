@@ -10,13 +10,14 @@ on:
       - '.github/workflows/deploy.yml'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  packages: write
+
 jobs:
   build-and-push:
     name: Build & Push Docker Image
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
 
     steps:
       - uses: actions/checkout@v4
@@ -32,7 +33,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ./back
           platforms: linux/arm64
@@ -60,29 +61,6 @@ jobs:
 
       - name: Deploy
         uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.OCI_HOST }}
-          username: opc
-          key: ${{ secrets.OCI_SSH_KEY }}
-          envs: GHCR_TOKEN,DB_USERNAME,DB_PASSWORD,DB_ROOT_PASSWORD,ADMIN_USERNAME,ADMIN_PASSWORD,CORS_ORIGIN,STORAGE_BASE_URL,GH_ACTOR
-          script: |
-            mkdir -p ~/DevToolbox
-
-            cat > ~/DevToolbox/.env << EOF
-            DB_USERNAME=${DB_USERNAME}
-            DB_PASSWORD=${DB_PASSWORD}
-            DB_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
-            ADMIN_USERNAME=${ADMIN_USERNAME}
-            ADMIN_PASSWORD=${ADMIN_PASSWORD}
-            CORS_ORIGIN=${CORS_ORIGIN}
-            STORAGE_BASE_URL=${STORAGE_BASE_URL}
-            EOF
-
-            echo "${GHCR_TOKEN}" | docker login ghcr.io -u ${GH_ACTOR} --password-stdin
-            cd ~/DevToolbox
-            docker compose -f docker-compose.prod.yml pull backend
-            docker compose -f docker-compose.prod.yml up -d
-            docker image prune -f
         env:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           DB_USERNAME: ${{ secrets.DB_USERNAME }}
@@ -93,3 +71,27 @@ jobs:
           CORS_ORIGIN: ${{ secrets.CORS_ORIGIN }}
           STORAGE_BASE_URL: ${{ secrets.STORAGE_BASE_URL }}
           GH_ACTOR: ${{ github.actor }}
+        with:
+          host: ${{ secrets.OCI_HOST }}
+          username: opc
+          key: ${{ secrets.OCI_SSH_KEY }}
+          envs: GHCR_TOKEN,DB_USERNAME,DB_PASSWORD,DB_ROOT_PASSWORD,ADMIN_USERNAME,ADMIN_PASSWORD,CORS_ORIGIN,STORAGE_BASE_URL,GH_ACTOR
+          script: |
+            set -e
+            mkdir -p ~/DevToolbox
+            cd ~/DevToolbox
+
+            {
+              printf "DB_USERNAME=%s\n"       "${DB_USERNAME}"
+              printf "DB_PASSWORD=%s\n"       "${DB_PASSWORD}"
+              printf "DB_ROOT_PASSWORD=%s\n"  "${DB_ROOT_PASSWORD}"
+              printf "ADMIN_USERNAME=%s\n"    "${ADMIN_USERNAME}"
+              printf "ADMIN_PASSWORD=%s\n"    "${ADMIN_PASSWORD}"
+              printf "CORS_ORIGIN=%s\n"       "${CORS_ORIGIN}"
+              printf "STORAGE_BASE_URL=%s\n"  "${STORAGE_BASE_URL}"
+            } > .env
+
+            echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
+            docker compose -f docker-compose.prod.yml pull backend
+            docker compose -f docker-compose.prod.yml up -d
+            docker image prune -f
