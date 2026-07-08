@@ -13,7 +13,9 @@ RUN ./gradlew bootJar --no-daemon -x test
 FROM eclipse-temurin:25-jre-noble
 WORKDIR /app
 
-RUN addgroup --system spring && adduser --system --ingroup spring spring
+RUN addgroup --system spring && adduser --system --ingroup spring spring \
+    && mkdir -p /app/uploads && chown -R spring:spring /app/uploads
+
 USER spring
 
 COPY --from=build /workspace/build/libs/*.jar app.jar
