@@ -7,10 +7,8 @@ import com.back.tool.model.ToolResult;
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 import org.springframework.stereotype.Component;
 
-import javax.crypto.KeyGenerator;
 import javax.crypto.spec.SecretKeySpec;
 import java.time.Instant;
-import java.util.Base64;
 
 @Component
 public class TotpModule implements ToolModule {
@@ -32,11 +30,19 @@ public class TotpModule implements ToolModule {
     @Override
     public ToolResult process(ToolInput input) {
         String secret = input.params().getOrDefault("secret", "");
+        return ToolResult.ofText(generateAt(secret, Instant.now()));
+    }
+
+    /**
+     * 지정한 시각의 TOTP 코드를 생성한다. 테스트에서 고정 Instant로 RFC 6238 벡터를 검증하기 위한 시임(seam).
+     * process()는 이 메서드에 Instant.now()를 넘겨 위임한다 — 동작은 동일하다.
+     */
+    String generateAt(String secret, Instant when) {
         try {
             byte[] keyBytes = base32Decode(secret.toUpperCase().replaceAll("[^A-Z2-7]", ""));
             SecretKeySpec keySpec = new SecretKeySpec(keyBytes, "HmacSHA1");
-            int code = TOTP.generateOneTimePassword(keySpec, Instant.now());
-            return ToolResult.ofText(String.format("%06d", code));
+            int code = TOTP.generateOneTimePassword(keySpec, when);
+            return String.format("%06d", code);
         } catch (Exception e) {
             throw new ToolProcessingException("TOTP 생성 실패: " + e.getMessage(), e);
         }

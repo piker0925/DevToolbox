@@ -22,8 +22,15 @@ class DiffModuleTest {
         ));
 
         assertThat(result.isFile()).isFalse();
-        assertThat(result.textResult()).contains("-world");
-        assertThat(result.textResult()).contains("+Java");
+        // 전체 unified diff를 검증 — 헝크 헤더/컨텍스트 라인을 망가뜨리거나 순서를 바꾸는
+        // 뮤턴트는 -world/+Java 부분 문자열만으로는 안 잡혀서 exact-match로 확인한다.
+        assertThat(result.textResult()).isEqualTo(String.join("\n",
+                "--- original",
+                "+++ revised",
+                "@@ -1,2 +1,2 @@",
+                " hello",
+                "-world",
+                "+Java"));
     }
 
     @Test

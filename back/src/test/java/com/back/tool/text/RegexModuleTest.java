@@ -19,8 +19,9 @@ class RegexModuleTest {
         ));
 
         assertThat(result.isFile()).isFalse();
-        assertThat(result.textResult()).contains("123");
-        assertThat(result.textResult()).contains("456");
+        // 매치 개수와 각 매치의 [start-end] 오프셋까지 정확히 검증.
+        // 모듈이 직접 계산하는 값이라 off-by-one(start/end)이나 개수 오류를 잡아야 한다.
+        assertThat(result.textResult()).isEqualTo("2개 매치:\n[3-6] 123\n[9-12] 456");
     }
 
     @Test
