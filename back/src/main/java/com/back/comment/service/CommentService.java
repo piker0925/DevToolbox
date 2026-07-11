@@ -19,6 +19,11 @@ public class CommentService {
         return commentRepository.findAllByModuleIdOrderByCreatedAtDesc(moduleId);
     }
 
+    @Transactional(readOnly = true)
+    public List<Comment> findAll() {
+        return commentRepository.findAllByOrderByCreatedAtDesc();
+    }
+
     @Transactional
     public Comment addComment(String moduleId, String content) {
         Comment comment = new Comment();

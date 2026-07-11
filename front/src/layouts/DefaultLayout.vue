@@ -80,6 +80,17 @@
           <span class="shrink-0 text-[12px] opacity-40">{{ categoryCounts[cat.name] }}</span>
         </button>
       </nav>
+
+      <!-- 건의하기 -->
+      <div class="border-t border-white/8 p-2">
+        <router-link
+            class="flex items-center gap-2.5 rounded-lg px-3 py-2 text-[13px] text-[#808080] transition-colors hover:bg-white/8 hover:text-[#C8C8C8]"
+            to="/suggestions"
+        >
+          <MessageSquarePlus class="size-[15px] shrink-0"/>
+          <span>건의하기</span>
+        </router-link>
+      </div>
     </aside>
 
     <!-- Main -->
@@ -94,7 +105,7 @@
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref} from 'vue'
 import {useRoute, useRouter} from 'vue-router'
-import {LayoutGrid, Search, Zap} from 'lucide-vue-next'
+import {LayoutGrid, MessageSquarePlus, Search, Zap} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'

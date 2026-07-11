@@ -148,12 +148,14 @@ async function login() {
 
 async function loadAll() {
   const headers = {Authorization: authHeader}
-  const [statsRes, suggestionsRes] = await Promise.allSettled([
+  const [statsRes, suggestionsRes, commentsRes] = await Promise.allSettled([
     apiClient.get<StatItem[]>('/admin/stats', {headers}),
     apiClient.get<SuggestionItem[]>('/admin/suggestions', {headers}),
+    apiClient.get<CommentItem[]>('/admin/comments', {headers}),
   ])
   if (statsRes.status === 'fulfilled') stats.value = statsRes.value.data
   if (suggestionsRes.status === 'fulfilled') suggestions.value = suggestionsRes.value.data
+  if (commentsRes.status === 'fulfilled') comments.value = commentsRes.value.data
 }
 
 async function deleteComment(id: number) {

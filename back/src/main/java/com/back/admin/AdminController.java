@@ -1,6 +1,5 @@
 package com.back.admin;
 
-import com.back.comment.entity.Comment;
 import com.back.comment.service.CommentService;
 import com.back.stats.dto.ToolStatsResponse;
 import com.back.stats.service.ToolStatsService;
@@ -32,6 +31,14 @@ public class AdminController {
     @GetMapping("/suggestions")
     public ResponseEntity<List<Suggestion>> getSuggestions() {
         return ResponseEntity.ok(suggestionService.findAll());
+    }
+
+    @GetMapping("/comments")
+    public ResponseEntity<List<AdminCommentResponse>> getComments() {
+        List<AdminCommentResponse> comments = commentService.findAll().stream()
+                .map(AdminCommentResponse::from)
+                .toList();
+        return ResponseEntity.ok(comments);
     }
 
     @DeleteMapping("/comments/{id}")

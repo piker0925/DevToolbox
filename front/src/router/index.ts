@@ -6,6 +6,7 @@ export const router = createRouter({
     routes: [
         {path: '/', component: HomePage},
         {path: '/tools/:moduleId', component: () => import('../pages/ToolPage.vue')},
+        {path: '/suggestions', component: () => import('../pages/SuggestionPage.vue')},
         {path: '/admin', component: () => import('../pages/AdminPage.vue')},
     ],
 })
