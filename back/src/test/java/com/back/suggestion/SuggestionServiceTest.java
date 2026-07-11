@@ -1,5 +1,6 @@
 package com.back.suggestion;
 
+import com.back.AbstractMySQLIntegrationTest;
 import com.back.suggestion.entity.Suggestion;
 import com.back.suggestion.repository.SuggestionRepository;
 import com.back.suggestion.service.SuggestionService;
@@ -7,31 +8,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("local")
 @TestPropertySource(properties = {
         "storage.upload-dir=build/test-uploads",
         "scheduling.worker.delay=60000",
         "scheduling.ttl.delay=60000"
 })
-class SuggestionServiceTest {
-
-    @Container
-    @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("devtoolbox")
-            .withUsername("devtoolbox")
-            .withPassword("1234");
+class SuggestionServiceTest extends AbstractMySQLIntegrationTest {
 
     @Autowired
     SuggestionService suggestionService;

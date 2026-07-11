@@ -1,5 +1,6 @@
 package com.back.job.controller;
 
+import com.back.AbstractMySQLIntegrationTest;
 import com.back.job.entity.Job;
 import com.back.job.repository.JobRepository;
 import com.back.job.service.JobService;
@@ -12,14 +13,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -32,7 +29,6 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 @ActiveProfiles("local")
 @TestPropertySource(properties = {
         "storage.upload-dir=build/test-uploads",
@@ -40,14 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "scheduling.ttl.delay=60000"
 })
 @Import(JobSseTest.TestModules.class)
-class JobSseTest {
-
-    @Container
-    @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("devtoolbox")
-            .withUsername("devtoolbox")
-            .withPassword("1234");
+class JobSseTest extends AbstractMySQLIntegrationTest {
 
     @LocalServerPort
     private int port;

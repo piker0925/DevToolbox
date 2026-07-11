@@ -1,5 +1,6 @@
 package com.back.job.service;
 
+import com.back.AbstractMySQLIntegrationTest;
 import com.back.global.storage.FileStorage;
 import com.back.job.entity.Job;
 import com.back.job.entity.JobStatus;
@@ -13,14 +14,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.Map;
@@ -30,7 +27,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("local")
 @TestPropertySource(properties = {
         "storage.upload-dir=build/test-uploads",
@@ -38,14 +34,7 @@ import static org.awaitility.Awaitility.await;
         "scheduling.ttl.delay=200"
 })
 @Import(JobWorkerTest.TestModules.class)
-class JobWorkerTest {
-
-    @Container
-    @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("devtoolbox")
-            .withUsername("devtoolbox")
-            .withPassword("1234");
+class JobWorkerTest extends AbstractMySQLIntegrationTest {
 
     @Autowired
     JobRepository jobRepository;

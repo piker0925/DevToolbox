@@ -1,5 +1,6 @@
 package com.back.comment;
 
+import com.back.AbstractMySQLIntegrationTest;
 import com.back.comment.entity.Comment;
 import com.back.comment.repository.CommentRepository;
 import com.back.comment.service.CommentService;
@@ -7,33 +8,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
-@Testcontainers
 @ActiveProfiles("local")
 @TestPropertySource(properties = {
         "storage.upload-dir=build/test-uploads",
         "scheduling.worker.delay=60000",
         "scheduling.ttl.delay=60000"
 })
-class CommentServiceTest {
-
-    @Container
-    @ServiceConnection
-    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("devtoolbox")
-            .withUsername("devtoolbox")
-            .withPassword("1234");
+class CommentServiceTest extends AbstractMySQLIntegrationTest {
 
     @Autowired
     CommentService commentService;
