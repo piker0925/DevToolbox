@@ -456,16 +456,21 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'width', label: '너비 (px)', type: 'text', placeholder: '800', default: '800'},
       {key: 'height', label: '높이 (px)', type: 'text', placeholder: '600', default: '600'},
     ],
+    // 백엔드가 이 모듈을 배치(파일당 별도 job)로 처리하는데 프론트에는 배치 진행률 UI가 없다.
+    // 여러 파일을 고르면 결과를 볼 방법이 없어지므로 한 번에 한 파일만 받는다.
+    fileMultiple: false,
   },
   'image-format': {
     params: [
       {key: 'targetFormat', label: '출력 포맷', type: 'select', options: ['png', 'jpg'], default: 'png'},
     ],
+    fileMultiple: false,
   },
   'json-schema-to-dto': {
     params: [
       {key: 'packageName', label: '패키지명', type: 'text', placeholder: 'com.example', default: 'com.generated'},
     ],
+    fileMultiple: false,
     textInput: {
       label: 'JSON Schema 직접 입력',
       placeholder: '{\n  "type": "object",\n  "properties": {\n    "id": { "type": "integer" },\n    "name": { "type": "string" }\n  }\n}',
@@ -476,11 +481,17 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
     params: [
       {key: 'language', label: '출력 언어', type: 'select', options: ['java', 'kotlin', 'typescript'], default: 'java'},
     ],
+    fileMultiple: false,
     textInput: {
       label: 'OpenAPI 스펙 직접 입력',
       placeholder: 'openapi: "3.0.0"\ninfo:\n  title: My API\n  version: "1.0"',
       filename: 'spec.yaml',
     },
+  },
+  'vuln-scan': {
+    params: [],
+    fileAccept: '.gradle,.kts,.xml',
+    fileMultiple: false,
   },
 }
 

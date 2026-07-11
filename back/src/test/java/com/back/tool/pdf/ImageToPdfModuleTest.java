@@ -7,8 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
 import java.util.List;
@@ -57,6 +56,14 @@ class ImageToPdfModuleTest {
         try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
             assertThat(doc.getNumberOfPages()).isEqualTo(2);
         }
+    }
+
+    @Test
+    void acceptsMultipleFilesAsOneJob() {
+        // 컨트롤러가 여러 파일을 하나의 job으로 넘겨야 여러 이미지가 한 PDF로 합쳐진다.
+        // 이 값이 false면 파일마다 별도 배치 job으로 쪼개져 1페이지짜리 PDF가 여러 개 생성된다.
+        ImageToPdfModule module = new ImageToPdfModule();
+        assertThat(module.acceptsMultipleFiles()).isTrue();
     }
 
     @Test

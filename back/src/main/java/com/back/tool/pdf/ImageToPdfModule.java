@@ -31,6 +31,11 @@ public class ImageToPdfModule implements ToolModule {
     public boolean isHeavy() { return true; }
 
     @Override
+    public boolean acceptsMultipleFiles() {
+        return true;
+    }
+
+    @Override
     public ToolResult process(ToolInput input) {
         try {
             Path output = Files.createTempFile("img2pdf-", ".pdf");
