@@ -10,7 +10,7 @@ export const MOCK_MODULES: Module[] = [
     // 이미지 (Heavy)
     {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, description: '이미지 크기 및 해상도 조정'},
     {id: 'image-format', name: '이미지 포맷 변환', category: '이미지', isHeavy: true, description: 'PNG, JPG, WebP 등 포맷 변환'},
-    {id: 'gif', name: 'GIF 생성', category: '이미지', isHeavy: true, description: '이미지 시퀀스를 GIF로 변환'},
+    {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true, description: '이미지 시퀀스를 GIF로 변환'},
 
     // 생성기
     {id: 'qr-code', name: 'QR 코드 생성', category: '생성기', isHeavy: false, description: '텍스트/URL을 QR 코드로 생성'},

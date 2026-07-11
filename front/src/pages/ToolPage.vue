@@ -27,7 +27,9 @@
     <FrontendToolPage v-if="mod.isFrontendOnly" :moduleId="mod.id"/>
 
     <!-- Heavy -->
-    <div v-else-if="mod.isHeavy" class="grid h-[calc(100vh-3rem)] grid-cols-2 divide-x divide-slate-200">
+    <div v-else-if="mod.isHeavy" class="flex justify-center px-6 py-8">
+      <div
+          class="grid w-full max-w-4xl min-h-[280px] grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white overflow-hidden">
       <!-- Left: Params + Upload -->
       <div class="flex flex-col overflow-hidden">
         <div class="flex h-10 shrink-0 items-center border-b border-slate-100 px-4">
@@ -105,11 +107,14 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Light -->
-    <div v-else class="grid grid-cols-2 h-[calc(100vh-3rem)]">
+    <div v-else class="flex justify-center px-6 py-8">
+      <div
+          class="grid w-full max-w-4xl min-h-[280px] grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white overflow-hidden">
       <!-- Input -->
-      <div class="flex flex-col border-r border-slate-200">
+        <div class="flex flex-col">
         <div class="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-4">
           <span class="text-[11px] font-medium text-slate-400">입력</span>
           <button v-if="hasInput" class="rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500" @click="resetLight">
@@ -150,7 +155,7 @@
         <textarea
             v-else
             v-model="runInput"
-            class="flex-1 resize-none bg-slate-50 p-4 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+            class="min-h-[160px] flex-1 resize-y bg-slate-50 p-4 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
             placeholder="입력값을 입력하세요"
             @keydown="handleTextareaKeydown"
         />
@@ -211,6 +216,7 @@
         </div>
       </div>
     </div>
+    </div>
 
     <!-- Stats + Comments -->
     <div class="border-t border-slate-100 px-6 py-8 space-y-6">
@@ -242,6 +248,7 @@ import {AlertCircle, ArrowRight, BarChart2, Check, ChevronRight, Copy, Heart, Lo
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
+import {buildFallbackParams} from '../utils/lightParams'
 import type {Module, UploadResult} from '../types'
 import {Button} from '@/components/ui/button'
 import FrontendToolPage from '../components/FrontendToolPage.vue'
@@ -607,11 +614,7 @@ async function runLight() {
         params = {keyType, keySize}
       }
     } else {
-      try {
-        params = JSON.parse(runInput.value)
-      } catch {
-        params = {input: runInput.value, text: runInput.value}
-      }
+      params = buildFallbackParams(runInput.value)
     }
     const {data} = await apiClient.post(`/api/v1/tools/${mod.value?.id}/run`, params)
     result.value = {url: null, text: data.result ?? null}
