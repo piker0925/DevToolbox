@@ -3,6 +3,7 @@ package com.back.tool.pdf;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolResult;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,6 +32,8 @@ class MarkdownToPdfModuleTest {
         assertThat(result.outputFile().toString()).endsWith(".pdf");
         try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
             assertThat(doc.getNumberOfPages()).isGreaterThanOrEqualTo(1);
+            String text = new PDFTextStripper().getText(doc);
+            assertThat(text).contains("Hello", "This is", "markdown", "item 1", "item 2");
         }
     }
 

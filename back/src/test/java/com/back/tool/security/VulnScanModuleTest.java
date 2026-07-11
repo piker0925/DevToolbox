@@ -57,7 +57,11 @@ class VulnScanModuleTest {
         ToolResult result = module.process(new ToolInput(List.of(gradle), Map.of()));
 
         assertThat(result.isFile()).isFalse();
-        assertThat(result.textResult()).contains("CVE 발견");
+        assertThat(result.textResult())
+                .contains("스캔 대상: 1개")
+                .contains("log4j:log4j:1.2.17")
+                .contains("CVE 발견")
+                .contains("총 1개 의존성에서 취약점 발견");
     }
 
     @Test
@@ -80,7 +84,10 @@ class VulnScanModuleTest {
         VulnScanModule module = new VulnScanModule(baseUrl);
         ToolResult result = module.process(new ToolInput(List.of(gradle), Map.of()));
 
-        assertThat(result.textResult()).contains("취약점이 없습니다");
+        assertThat(result.textResult())
+                .contains("스캔 대상: 1개")
+                .contains("취약점이 없습니다")
+                .doesNotContain("CVE 발견");
     }
 
     @Test
@@ -114,6 +121,11 @@ class VulnScanModuleTest {
                     <artifactId>commons-lang3</artifactId>
                     <version>3.12.0</version>
                   </dependency>
+                  <dependency>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                    <version>32.1.0</version>
+                  </dependency>
                 </dependencies>
                 """);
 
@@ -121,7 +133,7 @@ class VulnScanModuleTest {
         ToolResult result = module.process(new ToolInput(List.of(pom), Map.of()));
 
         assertThat(result.isFile()).isFalse();
-        assertThat(result.textResult()).contains("스캔 대상: 1개");
+        assertThat(result.textResult()).contains("스캔 대상: 2개");
     }
 
     @Test

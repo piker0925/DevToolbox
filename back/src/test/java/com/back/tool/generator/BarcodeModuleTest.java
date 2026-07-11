@@ -2,6 +2,11 @@ package com.back.tool.generator;
 
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolResult;
+import com.google.zxing.BinaryBitmap;
+import com.google.zxing.MultiFormatReader;
+import com.google.zxing.Result;
+import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
+import com.google.zxing.common.HybridBinarizer;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
@@ -29,6 +34,10 @@ class BarcodeModuleTest {
         BufferedImage img = ImageIO.read(new ByteArrayInputStream(bytes));
         assertThat(img).isNotNull();
         assertThat(img.getWidth()).isGreaterThan(0);
+
+        BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(new BufferedImageLuminanceSource(img)));
+        Result decoded = new MultiFormatReader().decode(bitmap);
+        assertThat(decoded.getText()).isEqualTo("1234567890");
     }
 
     @Test

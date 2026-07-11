@@ -4,10 +4,12 @@ import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolResult;
 import org.junit.jupiter.api.Test;
 
+import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,6 +29,18 @@ class OpenApiToCodeModuleTest {
         assertThat(result.outputFile().toString()).endsWith(".zip");
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
             assertThat(zip.size()).isGreaterThan(0);
+            boolean hasJava = zip.stream().anyMatch(e -> e.getName().endsWith(".java"));
+            assertThat(hasJava).isTrue();
+
+            ZipEntry petModel = zip.stream()
+                    .filter(e -> e.getName().endsWith(".java") && e.getName().contains("Pet"))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no generated Pet model in zip"));
+            String source;
+            try (InputStream in = zip.getInputStream(petModel)) {
+                source = new String(in.readAllBytes());
+            }
+            assertThat(source).contains("id").contains("name");
         }
     }
 

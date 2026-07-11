@@ -6,10 +6,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import javax.imageio.ImageIO;
-import java.awt.Color;
-import java.awt.Graphics2D;
+import javax.imageio.ImageReader;
+import javax.imageio.stream.ImageInputStream;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +49,23 @@ class GifModuleTest {
         assertThat(result.outputFile()).exists();
         assertThat(result.outputFile().toString()).endsWith(".gif");
         assertThat(result.outputFile().toFile().length()).isGreaterThan(0);
+
+        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("gif");
+        ImageReader reader = readers.next();
+        try (ImageInputStream iis = ImageIO.createImageInputStream(result.outputFile().toFile())) {
+            reader.setInput(iis);
+            assertThat(reader.getNumImages(true)).isEqualTo(3);
+
+            assertThat(dominantColor(reader.read(0))).isEqualTo(Color.RED);
+            assertThat(dominantColor(reader.read(1))).isEqualTo(Color.BLUE);
+            assertThat(dominantColor(reader.read(2))).isEqualTo(Color.GREEN);
+        } finally {
+            reader.dispose();
+        }
+    }
+
+    private Color dominantColor(BufferedImage frame) {
+        return new Color(frame.getRGB(frame.getWidth() / 2, frame.getHeight() / 2));
     }
 
     @Test

@@ -3,6 +3,10 @@ package com.back.admin;
 import com.back.AbstractMySQLIntegrationTest;
 import com.back.comment.entity.Comment;
 import com.back.comment.repository.CommentRepository;
+import com.back.stats.entity.ToolStats;
+import com.back.stats.repository.ToolStatsRepository;
+import com.back.suggestion.entity.Suggestion;
+import com.back.suggestion.repository.SuggestionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +21,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -32,6 +37,10 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
     WebApplicationContext wac;
     @Autowired
     CommentRepository commentRepository;
+    @Autowired
+    ToolStatsRepository toolStatsRepository;
+    @Autowired
+    SuggestionRepository suggestionRepository;
 
     MockMvc mockMvc;
 
@@ -50,16 +59,28 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
 
     @Test
     void getStats_withAuth_returns200() throws Exception {
+        ToolStats stats = new ToolStats("sha256");
+        stats.setUseCount(3);
+        stats.setLikeCount(1);
+        toolStatsRepository.save(stats);
+
         mockMvc.perform(get("/admin/stats")
                         .with(httpBasic("admin", "1234")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.moduleId == 'sha256')].useCount").value(3))
+                .andExpect(jsonPath("$[?(@.moduleId == 'sha256')].likeCount").value(1));
     }
 
     @Test
     void getSuggestions_withAuth_returns200() throws Exception {
+        Suggestion suggestion = new Suggestion();
+        suggestion.setContent("more modules please");
+        suggestionRepository.save(suggestion);
+
         mockMvc.perform(get("/admin/suggestions")
                         .with(httpBasic("admin", "1234")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.content == 'more modules please')]").exists());
     }
 
     @Test

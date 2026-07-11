@@ -46,6 +46,9 @@ class SuggestionServiceTest extends AbstractMySQLIntegrationTest {
     void addSuggestion_persistsToDatabase() {
         suggestionService.addSuggestion("건의사항 내용");
 
-        assertThat(suggestionRepository.findAll()).hasSize(1);
+        assertThat(suggestionRepository.findAll())
+                .hasSize(1)
+                .extracting(Suggestion::getContent)
+                .containsExactly("건의사항 내용");
     }
 }

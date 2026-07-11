@@ -80,19 +80,25 @@ class JobWorkerTest extends AbstractMySQLIntegrationTest {
 
     @Test
     void expiredJob_deletedByTtlScheduler() {
-        Job job = pending("echo");
+        Job expiring = pending("echo");
+        Job surviving = pending("echo");
 
         await().atMost(10, SECONDS).until(() ->
-                jobRepository.findById(job.getId())
+                jobRepository.findById(expiring.getId())
+                        .map(j -> j.getStatus() == JobStatus.DONE)
+                        .orElse(false)
+                        && jobRepository.findById(surviving.getId())
                         .map(j -> j.getStatus() == JobStatus.DONE)
                         .orElse(false));
 
-        Job done = jobRepository.findById(job.getId()).orElseThrow();
+        Job done = jobRepository.findById(expiring.getId()).orElseThrow();
         done.expireNow();
         jobRepository.save(done);
 
         await().atMost(5, SECONDS).until(() ->
-                jobRepository.findById(job.getId()).isEmpty());
+                jobRepository.findById(expiring.getId()).isEmpty());
+
+        assertThat(jobRepository.findById(surviving.getId())).isPresent();
     }
 
     @TestConfiguration

@@ -148,10 +148,17 @@ class ToolAndJobApiTest extends AbstractMySQLIntegrationTest {
             return "DONE".equals(JsonPath.read(s, "$.status"));
         });
 
-        mockMvc.perform(get("/api/v1/jobs/" + jobId + "/result"))
+        String resultResp = mockMvc.perform(get("/api/v1/jobs/" + jobId + "/result"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.url").value(org.hamcrest.Matchers.containsString("/api/v1/files/")))
-                .andExpect(jsonPath("$.text").doesNotExist());
+                .andExpect(jsonPath("$.text").doesNotExist())
+                .andReturn().getResponse().getContentAsString();
+
+        String url = JsonPath.read(resultResp, "$.url");
+        String filePath = url.substring(url.indexOf("/api/v1/files/"));
+        mockMvc.perform(get(filePath))
+                .andExpect(status().isOk())
+                .andExpect(content().string("file-content"));
     }
 
     // ── BatchController ────────────────────────────────────────────────────
@@ -189,11 +196,16 @@ class ToolAndJobApiTest extends AbstractMySQLIntegrationTest {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsByteArray();
 
-        int entryCount = 0;
+        var entryContents = new java.util.HashMap<String, String>();
         try (ZipInputStream zis = new ZipInputStream(new ByteArrayInputStream(zipBytes))) {
-            while (zis.getNextEntry() != null) entryCount++;
+            java.util.zip.ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                entryContents.put(entry.getName(), new String(zis.readAllBytes()));
+            }
         }
-        assertThat(entryCount).isEqualTo(2);
+        assertThat(entryContents).hasSize(2);
+        assertThat(entryContents.keySet()).allMatch(name -> name.contains("/"));
+        assertThat(entryContents.values()).allMatch("file-content"::equals);
     }
 
     // ── FileController ─────────────────────────────────────────────────────
@@ -231,7 +243,8 @@ class ToolAndJobApiTest extends AbstractMySQLIntegrationTest {
         String filePath = url.substring(url.indexOf("/api/v1/files/"));
 
         mockMvc.perform(get(filePath))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(content().string("file-content"));
     }
 
     @TestConfiguration

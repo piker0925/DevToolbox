@@ -45,9 +45,12 @@ class ToolStatsServiceTest extends AbstractMySQLIntegrationTest {
     @Test
     void getOrCreate_existingModule_returnsSame() {
         toolStatsService.getOrCreate("sql-formatter");
-        toolStatsService.getOrCreate("sql-formatter");
+        toolStatsService.incrementUseCount("sql-formatter");
+
+        ToolStats stats = toolStatsService.getOrCreate("sql-formatter");
 
         assertThat(toolStatsRepository.findAll()).hasSize(1);
+        assertThat(stats.getUseCount()).isEqualTo(1);
     }
 
     @Test
@@ -62,8 +65,10 @@ class ToolStatsServiceTest extends AbstractMySQLIntegrationTest {
     @Test
     void incrementLikeCount_increasesCount() {
         toolStatsService.incrementLikeCount("sql-formatter");
+        toolStatsService.incrementLikeCount("sql-formatter");
 
         ToolStats stats = toolStatsService.getOrCreate("sql-formatter");
-        assertThat(stats.getLikeCount()).isEqualTo(1);
+        assertThat(stats.getLikeCount()).isEqualTo(2);
+        assertThat(stats.getUseCount()).isZero();
     }
 }
