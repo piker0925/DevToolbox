@@ -184,12 +184,22 @@ spring:
       password: devpassword
 ```
 
-**운영 (`application-prod.yml`):**  
-비밀번호를 코드에 하드코딩하지 않고 환경변수로 주입한다.
+**운영 (`application-prod.yaml`):**  
+비밀번호를 코드에 하드코딩하지 않고 환경변수로 주입한다. 배포는 `.github/workflows/deploy.yml`이
+아래 **GitHub Secrets**를 읽어 OCI VM에 `.env`를 생성하고 `docker-compose.prod.yml`을 띄운다.
+(로컬·리포지토리에 `.env` 파일을 두지 않으므로 별도 `.env.example`은 관리하지 않는다.)
 
-| 변수 | 설명 |
-|------|------|
+리포지토리 Settings → Secrets and variables → Actions 에 등록:
+
+| Secret | 설명 |
+|--------|------|
+| `OCI_HOST` | 배포 대상 VM 호스트/IP |
+| `OCI_SSH_KEY` | VM 접속용 SSH 개인키 |
+| `GHCR_TOKEN` | GHCR 이미지 pull용 토큰 |
+| `DB_USERNAME` | MySQL 사용자명 |
+| `DB_PASSWORD` | MySQL 사용자 비밀번호 |
+| `DB_ROOT_PASSWORD` | MySQL root 비밀번호 |
+| `ADMIN_USERNAME` | 관리자 HTTP Basic Auth 사용자명 |
 | `ADMIN_PASSWORD` | 관리자 HTTP Basic Auth 비밀번호 |
-| `CLOUDINARY_CLOUD_NAME` | Cloudinary 클라우드 이름 |
-| `CLOUDINARY_API_KEY` | Cloudinary API 키 |
-| `CLOUDINARY_API_SECRET` | Cloudinary API 시크릿 |
+| `CORS_ORIGIN` | 허용할 프론트엔드 도메인 (Vercel URL) |
+| `STORAGE_BASE_URL` | 파일 다운로드 링크 생성용 백엔드 공개 URL |
