@@ -2,11 +2,11 @@ package com.back.tool.image;
 
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
+import com.back.tool.model.ToolParams;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
+import net.coobird.thumbnailator.Thumbnails;
 import org.springframework.stereotype.Component;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOImage;
@@ -41,10 +41,15 @@ public class GifModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
-        try {
-            int delayMs = Integer.parseInt(input.params().getOrDefault("delay", "100"));
-            int delayCs = delayMs / 10; // centiseconds
+        ToolParams params = ToolParams.of(input);
+        int delayMs = params.getInt("delay", 100, 10, 60000);
+        int delayCs = delayMs / 10; // centiseconds
+        int loopCount = params.getInt("loopCount", 0, 0, 65535); // 0 = 무한 반복
+        String disposalMethod = resolveDisposal(params.getString("disposal", "background"));
+        int frameWidth = params.getInt("frameWidth", 0, 0, 10000);   // 0 = 원본 크기
+        int frameHeight = params.getInt("frameHeight", 0, 0, 10000); // 0 = 원본 크기
 
+        try {
             Path output = Files.createTempFile("gif-", ".gif");
             ImageWriter writer = ImageIO.getImageWritersByFormatName("gif").next();
 
@@ -54,7 +59,11 @@ public class GifModule implements ToolModule {
 
                 for (Path framePath : input.files()) {
                     BufferedImage frame = ImageIO.read(framePath.toFile());
-                    IIOMetadata meta = buildFrameMetadata(writer, frame, delayCs);
+                    if (frame == null) {
+                        throw new ToolProcessingException("이미지 파일을 읽을 수 없습니다: " + framePath.getFileName());
+                    }
+                    frame = scaleFrame(frame, frameWidth, frameHeight);
+                    IIOMetadata meta = buildFrameMetadata(writer, frame, delayCs, loopCount, disposalMethod);
                     writer.writeToSequence(new IIOImage(frame, null, meta), null);
                 }
                 writer.endWriteSequence();
@@ -65,7 +74,26 @@ public class GifModule implements ToolModule {
         }
     }
 
-    private IIOMetadata buildFrameMetadata(ImageWriter writer, BufferedImage frame, int delayCs) throws IOException {
+    private String resolveDisposal(String disposal) {
+        return switch (disposal) {
+            case "background" -> "restoreToBackgroundColor"; // 프레임마다 배경으로 지움 (일반 애니메이션)
+            case "keep" -> "doNotDispose";                   // 이전 프레임 위에 겹침 (오버레이)
+            case "previous" -> "restoreToPrevious";          // 이전 상태 복원 (스프라이트)
+            default -> throw new ToolProcessingException(
+                    "파라미터 'disposal'은 background/keep/previous 중 하나여야 합니다. (입력값: " + disposal + ")");
+        };
+    }
+
+    /** frameWidth/frameHeight가 지정되면 프레임을 축소·확대한다 (종횡비 유지, 지정 크기 안에 맞춤). */
+    private BufferedImage scaleFrame(BufferedImage frame, int width, int height) throws IOException {
+        if (width <= 0 && height <= 0) return frame;
+        if (width > 0 && height > 0) return Thumbnails.of(frame).size(width, height).asBufferedImage();
+        if (width > 0) return Thumbnails.of(frame).width(width).asBufferedImage();
+        return Thumbnails.of(frame).height(height).asBufferedImage();
+    }
+
+    private IIOMetadata buildFrameMetadata(ImageWriter writer, BufferedImage frame,
+                                           int delayCs, int loopCount, String disposalMethod) throws IOException {
         IIOMetadata meta = writer.getDefaultImageMetadata(
                 ImageTypeSpecifier.createFromRenderedImage(frame), null);
         String format = meta.getNativeMetadataFormatName();
@@ -73,18 +101,22 @@ public class GifModule implements ToolModule {
 
         // Graphic Control Extension — frame delay + disposal
         IIOMetadataNode gce = getOrCreate(root, "GraphicControlExtension");
-        gce.setAttribute("disposalMethod", "restoreToBackgroundColor");
+        gce.setAttribute("disposalMethod", disposalMethod);
         gce.setAttribute("userInputFlag", "FALSE");
         gce.setAttribute("transparentColorFlag", "FALSE");
         gce.setAttribute("delayTime", String.valueOf(delayCs));
         gce.setAttribute("transparentColorIndex", "0");
 
-        // Application Extension — loop forever
+        // Application Extension — Netscape loop (0 = 무한, N = N회 반복)
         IIOMetadataNode appExts = getOrCreate(root, "ApplicationExtensions");
         IIOMetadataNode appExt = new IIOMetadataNode("ApplicationExtension");
         appExt.setAttribute("applicationID", "NETSCAPE");
         appExt.setAttribute("authenticationCode", "2.0");
-        appExt.setUserObject(new byte[]{0x1, 0x0, 0x0}); // loop count = 0 (infinite)
+        appExt.setUserObject(new byte[]{
+                0x1,
+                (byte) (loopCount & 0xFF),        // little-endian short
+                (byte) ((loopCount >> 8) & 0xFF),
+        });
         appExts.appendChild(appExt);
 
         meta.setFromTree(format, root);
