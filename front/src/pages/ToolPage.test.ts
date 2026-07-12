@@ -2,6 +2,8 @@ import {beforeEach, describe, expect, it, vi} from 'vitest'
 import {flushPromises, mount} from '@vue/test-utils'
 import {createMemoryHistory, createRouter} from 'vue-router'
 import ToolPage from './ToolPage.vue'
+import FileUploader from '../components/FileUploader.vue'
+import BatchPoller from '../components/BatchPoller.vue'
 import {apiClient} from '../api/client'
 import type {Module} from '../types'
 
@@ -81,5 +83,53 @@ describe('ToolPage 파라미터 필드 (024)', () => {
         const delay = inputForLabel(wrapper, '프레임 간격 (ms)')
 
         expect(delay?.value).toBe('100')
+    })
+})
+
+describe('ToolPage 배치 (027)', () => {
+    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true}
+
+    it('업로드 응답이 배치면 배치 진행률 뷰(BatchPoller)로 진입한다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2']})
+        await flushPromises()
+
+        const poller = wrapper.findComponent(BatchPoller)
+        expect(poller.exists()).toBe(true)
+        expect(poller.props('batchId')).toBe('b-9')
+    })
+
+    it('단건 응답에서는 배치 뷰가 나타나지 않는다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {jobId: 'job-1'})
+        await flushPromises()
+
+        expect(wrapper.findComponent(BatchPoller).exists()).toBe(false)
+    })
+
+    it('배치 완료 시 해당 배치의 ZIP 다운로드 링크가 나타난다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2']})
+        await flushPromises()
+        wrapper.findComponent(BatchPoller).vm.$emit('done', {batchId: 'b-9', totalCount: 2, doneCount: 2, failCount: 0})
+        await flushPromises()
+
+        const link = wrapper.find('a[data-testid="batch-download"]')
+        expect(link.exists()).toBe(true)
+        expect(link.attributes('href')).toContain('/api/v1/batches/b-9/result')
+    })
+
+    it('배치 진행률 텍스트에 완료/전체 개수를 표시한다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2', 'j3']})
+        await flushPromises()
+        wrapper.findComponent(BatchPoller).vm.$emit('progress', {batchId: 'b-9', totalCount: 3, doneCount: 1, failCount: 0})
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('1 / 3')
     })
 })

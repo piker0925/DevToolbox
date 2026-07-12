@@ -34,7 +34,7 @@
       <div class="flex flex-col overflow-hidden">
         <div class="flex h-10 shrink-0 items-center border-b border-slate-100 px-4">
           <span class="text-[11px] font-medium text-slate-400">파일 업로드</span>
-          <button v-if="jobId || result" class="ml-auto rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500" @click="resetAll">
+          <button v-if="jobId || batchId || result" class="ml-auto rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500" @click="resetAll">
             <X class="size-3.5"/>
           </button>
         </div>
@@ -97,7 +97,37 @@
           <span class="text-[11px] font-medium text-slate-400">결과</span>
         </div>
         <div class="flex flex-1 items-center justify-center p-6">
-          <div v-if="!jobId && !result" class="flex flex-col items-center gap-3 text-center">
+          <!-- 배치: 여러 파일을 각각 처리 후 ZIP -->
+          <div v-if="batchId" class="flex w-full flex-col items-center gap-4 text-center">
+            <BatchPoller
+                v-if="!batchComplete"
+                :batchId="batchId"
+                @done="onBatchDone"
+                @progress="onBatchProgress"
+            />
+            <template v-if="!batchComplete">
+              <Loader2 class="size-8 animate-spin text-indigo-400"/>
+              <p class="text-[13px] text-slate-500">
+                일괄 처리 중… {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
+                <span v-if="batchProgress?.failCount" class="text-red-400">(실패 {{ batchProgress.failCount }})</span>
+              </p>
+            </template>
+            <template v-else>
+              <p class="text-[13px] text-slate-600">
+                완료 {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
+                <span v-if="batchProgress?.failCount" class="text-red-400">(실패 {{ batchProgress.failCount }})</span>
+              </p>
+              <a
+                  :href="batchResultUrl"
+                  class="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-[13px] font-medium text-white transition-colors hover:bg-indigo-700"
+                  data-testid="batch-download"
+                  download
+              >ZIP 다운로드</a>
+              <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
+            </template>
+          </div>
+
+          <div v-else-if="!jobId && !result" class="flex flex-col items-center gap-3 text-center">
             <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-slate-200">
               <ArrowRight class="size-5 text-slate-300"/>
             </div>
@@ -256,10 +286,12 @@ import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
 import {buildFallbackParams} from '../utils/lightParams'
-import type {Module, UploadResult} from '../types'
+import type {BatchProgress, Module, UploadResult} from '../types'
+import {isBatchResult} from '../types'
 import {Button} from '@/components/ui/button'
 import FrontendToolPage from '../components/FrontendToolPage.vue'
 import FileUploader from '../components/FileUploader.vue'
+import BatchPoller from '../components/BatchPoller.vue'
 import ResultViewer from '../components/ResultViewer.vue'
 import CommentSection from '../components/CommentSection.vue'
 
@@ -439,12 +471,10 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
   'pdf-split': {
     params: [],
     fileAccept: '.pdf',
-    fileMultiple: false,
   },
   'markdown-to-pdf': {
     params: [],
     fileAccept: '.md',
-    fileMultiple: false,
   },
   'gif-create': {
     params: [
@@ -456,21 +486,17 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'width', label: '너비 (px)', type: 'text', placeholder: '800', default: '800'},
       {key: 'height', label: '높이 (px)', type: 'text', placeholder: '600', default: '600'},
     ],
-    // 백엔드가 이 모듈을 배치(파일당 별도 job)로 처리하는데 프론트에는 배치 진행률 UI가 없다.
-    // 여러 파일을 고르면 결과를 볼 방법이 없어지므로 한 번에 한 파일만 받는다.
-    fileMultiple: false,
+    // 다중 파일 → 파일당 별도 Job(배치) → ZIP. 배치 진행률 UI로 소비한다.
   },
   'image-format': {
     params: [
       {key: 'targetFormat', label: '출력 포맷', type: 'select', options: ['png', 'jpg'], default: 'png'},
     ],
-    fileMultiple: false,
   },
   'json-schema-to-dto': {
     params: [
       {key: 'packageName', label: '패키지명', type: 'text', placeholder: 'com.example', default: 'com.generated'},
     ],
-    fileMultiple: false,
     textInput: {
       label: 'JSON Schema 직접 입력',
       placeholder: '{\n  "type": "object",\n  "properties": {\n    "id": { "type": "integer" },\n    "name": { "type": "string" }\n  }\n}',
@@ -481,7 +507,6 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
     params: [
       {key: 'language', label: '출력 언어', type: 'select', options: ['java', 'kotlin', 'typescript'], default: 'java'},
     ],
-    fileMultiple: false,
     textInput: {
       label: 'OpenAPI 스펙 직접 입력',
       placeholder: 'openapi: "3.0.0"\ninfo:\n  title: My API\n  version: "1.0"',
@@ -491,7 +516,6 @@ const HEAVY_CONFIGS: Record<string, ModuleConfig> = {
   'vuln-scan': {
     params: [],
     fileAccept: '.gradle,.kts,.xml',
-    fileMultiple: false,
   },
 }
 
@@ -506,6 +530,9 @@ const route = useRoute()
 const mod = ref<Module | null>(null)
 const loading = ref(true)
 const jobId = ref<string | null>(null)
+const batchId = ref<string | null>(null)
+const batchProgress = ref<BatchProgress | null>(null)
+const batchComplete = ref(false)
 const result = ref<RunResult | null>(null)
 const runInput = ref('')
 const formValues = ref<Record<string, string>>({})
@@ -517,6 +544,7 @@ const copied = ref(false)
 
 const moduleConfig = computed(() => mod.value ? MODULE_CONFIGS[mod.value.id] ?? null : null)
 const heavyConfig = computed(() => mod.value ? HEAVY_CONFIGS[mod.value.id] ?? null : null)
+const batchResultUrl = computed(() => batchId.value ? `${API_BASE}/api/v1/batches/${batchId.value}/result` : '')
 
 const hasInput = computed(() => {
   if (moduleConfig.value) return Object.values(formValues.value).some(v => v !== '' && v !== undefined)
@@ -625,7 +653,21 @@ function initForm() {
 // ── Heavy ─────────────────────────────────────────────────────────────────
 
 function onUploaded(r: UploadResult) {
+  if (isBatchResult(r)) {
+    // 배치: 단건 SSE를 시작하지 않도록 jobId는 null로 두고 배치 진행률로 진입한다.
+    batchId.value = r.batchId
+    return
+  }
   jobId.value = r.jobId
+}
+
+function onBatchProgress(p: BatchProgress) {
+  batchProgress.value = p
+}
+
+function onBatchDone(p: BatchProgress) {
+  batchProgress.value = p
+  batchComplete.value = true
 }
 
 async function uploadTextAsFile() {
@@ -636,7 +678,7 @@ async function uploadTextAsFile() {
   form.append('files', new File([blob], filename))
   Object.entries(heavyFormValues.value).forEach(([k, v]) => { if (v) form.append(k, v) })
   const {data} = await apiClient.post<UploadResult>(`/api/v1/tools/${mod.value.id}/upload`, form)
-  jobId.value = data.jobId
+  onUploaded(data)
 }
 
 async function onDone(id: string) {
@@ -709,6 +751,9 @@ function downloadImage() {
 function resetAll() {
   stopSse()
   jobId.value = null
+  batchId.value = null
+  batchProgress.value = null
+  batchComplete.value = false
   result.value = null
   runInput.value = ''
   runError.value = ''
