@@ -2,21 +2,18 @@ package com.back.tool.generator;
 
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
+import com.back.tool.model.ToolParams;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
 import com.google.zxing.BarcodeFormat;
 import com.google.zxing.EncodeHintType;
 import com.google.zxing.WriterException;
-import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.QRCodeWriter;
+import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import org.springframework.stereotype.Component;
 
-import javax.imageio.ImageIO;
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Base64;
 import java.util.Map;
 
 @Component
@@ -36,19 +33,26 @@ public class QrCodeModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
-        try {
-            String content = input.params().getOrDefault("content", "");
-            int size = Integer.parseInt(input.params().getOrDefault("size", "300"));
+        ToolParams params = ToolParams.of(input);
+        String content = params.requireString("content");
+        int size = params.getInt("size", 300, 64, 2048);
+        int margin = params.getInt("margin", 4, 0, 10);
+        ErrorCorrectionLevel level =
+                params.getEnum("errorCorrection", ErrorCorrectionLevel.class, ErrorCorrectionLevel.M);
+        int foreground = CodeImageSupport.parseHexColor(
+                params.getString("foreground", "#000000"), "foreground");
+        int background = CodeImageSupport.parseHexColor(
+                params.getString("background", "#FFFFFF"), "background");
 
+        try {
             BitMatrix matrix = new QRCodeWriter().encode(
                     content, BarcodeFormat.QR_CODE, size, size,
-                    Map.of(EncodeHintType.MARGIN, 1)
+                    Map.of(
+                            EncodeHintType.MARGIN, margin,
+                            EncodeHintType.ERROR_CORRECTION, level
+                    )
             );
-            BufferedImage img = MatrixToImageWriter.toBufferedImage(matrix);
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ImageIO.write(img, "png", baos);
-            return ToolResult.ofText(Base64.getEncoder().encodeToString(baos.toByteArray()));
+            return ToolResult.ofText(CodeImageSupport.toBase64Png(matrix, foreground, background));
         } catch (WriterException | IOException e) {
             throw new ToolProcessingException("QR코드 생성 실패: " + e.getMessage(), e);
         }
