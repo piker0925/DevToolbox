@@ -22,4 +22,10 @@ public class ToolStatsController {
         toolStatsService.incrementLikeCount(moduleId);
         return ToolStatsResponse.from(toolStatsService.getOrCreate(moduleId));
     }
+
+    @DeleteMapping("/like")
+    public ToolStatsResponse unlike(@PathVariable String moduleId) {
+        toolStatsService.decrementLikeCount(moduleId);
+        return ToolStatsResponse.from(toolStatsService.getOrCreate(moduleId));
+    }
 }

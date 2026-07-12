@@ -22,20 +22,24 @@ public class ToolStatsService {
     @Transactional
     public ToolStats getOrCreate(String moduleId) {
         return toolStatsRepository.findById(moduleId)
-                .orElseGet(() -> toolStatsRepository.save(new ToolStats(moduleId)));
+                .orElseGet(() -> {
+                    toolStatsRepository.insertIfAbsent(moduleId);
+                    return toolStatsRepository.findById(moduleId).orElseThrow();
+                });
     }
 
     @Transactional
     public void incrementUseCount(String moduleId) {
-        ToolStats stats = getOrCreate(moduleId);
-        stats.setUseCount(stats.getUseCount() + 1);
-        toolStatsRepository.save(stats);
+        toolStatsRepository.upsertIncrementUseCount(moduleId);
     }
 
     @Transactional
     public void incrementLikeCount(String moduleId) {
-        ToolStats stats = getOrCreate(moduleId);
-        stats.setLikeCount(stats.getLikeCount() + 1);
-        toolStatsRepository.save(stats);
+        toolStatsRepository.upsertIncrementLikeCount(moduleId);
+    }
+
+    @Transactional
+    public void decrementLikeCount(String moduleId) {
+        toolStatsRepository.decrementLikeCount(moduleId);
     }
 }

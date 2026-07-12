@@ -37,7 +37,8 @@ public class JobController {
     public JobResultResponse getResult(@PathVariable String id) {
         Job job = jobService.get(id);
         if (job.getResultKey() != null) {
-            return new JobResultResponse(fileStorage.getUrl(job.getResultKey()), null);
+            // 파일 결과 + advisory 텍스트(예: 업스케일 경고)가 함께 있을 수 있다.
+            return new JobResultResponse(fileStorage.getUrl(job.getResultKey()), job.getResultText());
         }
         return new JobResultResponse(null, job.getResultText());
     }

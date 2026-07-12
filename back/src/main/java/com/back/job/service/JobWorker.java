@@ -69,6 +69,8 @@ public class JobWorker {
                 String key = jobId + "/result." + ext(result.outputFile());
                 fileStorage.save(key, result.outputFile());
                 job.setResultKey(key);
+                // 파일 결과에 advisory 텍스트(예: 업스케일 경고)가 동반될 수 있다.
+                job.setResultText(result.textResult());
             } else {
                 job.setResultText(result.textResult());
             }
