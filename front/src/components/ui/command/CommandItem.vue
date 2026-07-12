@@ -42,8 +42,8 @@ onMounted(() => {
   if (!(currentElement.value instanceof HTMLElement))
     return
 
-  // textValue to perform filter
-  allItems.value.set(id, currentElement.value.textContent ?? (props.value?.toString() ?? ""))
+  // textValue to perform filter — value prop이 있으면 그것을 우선한다 (검색 별칭 포함)
+  allItems.value.set(id, (props.value?.toString() || currentElement.value.textContent) ?? "")
 
   const groupId = groupContext?.id
   if (groupId) {

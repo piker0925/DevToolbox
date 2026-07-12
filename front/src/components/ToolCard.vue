@@ -1,23 +1,22 @@
 <template>
   <div
       :title="mod.description ?? mod.name"
-      class="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-all duration-150 hover:border-slate-300 hover:bg-slate-50 hover:shadow"
+      class="group relative flex cursor-pointer items-center gap-3 rounded-xl border border-border bg-card px-4 py-3.5 shadow-sm transition-all duration-150 hover:-translate-y-px hover:border-primary/35 hover:shadow"
       @click="router.push(`/tools/${mod.id}`)"
   >
     <!-- Category icon -->
     <div
-        :class="config.thumbBg"
-        class="flex size-9 shrink-0 items-center justify-center rounded-lg"
+        class="flex size-9 shrink-0 items-center justify-center rounded-lg bg-secondary text-muted-foreground transition-colors group-hover:bg-primary/10 group-hover:text-primary"
     >
-      <component :is="config.icon" class="size-4 text-white"/>
+      <component :is="config.icon" class="size-4"/>
     </div>
 
     <!-- Name + Description -->
     <div class="min-w-0 flex-1">
-      <p class="truncate text-[14px] font-semibold text-slate-800 group-hover:text-indigo-700">
+      <p class="truncate text-[14px] font-semibold text-card-foreground group-hover:text-primary">
         {{ mod.name }}
       </p>
-      <p v-if="mod.description" class="truncate text-[12px] text-slate-400">
+      <p v-if="mod.description" class="truncate text-[12px] text-muted-foreground">
         {{ mod.description }}
       </p>
     </div>
@@ -26,7 +25,7 @@
     <button
         :class="isFav
         ? 'opacity-100 text-amber-400'
-        : 'opacity-0 group-hover:opacity-100 text-slate-300 hover:text-amber-400'"
+        : 'opacity-0 group-hover:opacity-100 text-muted-foreground/50 hover:text-amber-400'"
         :title="isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'"
         class="flex size-6 shrink-0 items-center justify-center rounded transition-all"
         @click.stop="toggle(mod.id)"
@@ -35,7 +34,7 @@
     </button>
 
     <!-- Arrow -->
-    <ChevronRight class="size-4 shrink-0 text-slate-300 transition-colors group-hover:text-slate-400"/>
+    <ChevronRight class="size-4 shrink-0 text-muted-foreground/40 transition-colors group-hover:text-muted-foreground"/>
   </div>
 </template>
 

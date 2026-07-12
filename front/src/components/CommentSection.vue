@@ -1,21 +1,18 @@
 <template>
-  <div class="mt-8 border-t pt-6">
-    <h3 class="mb-4 text-sm font-semibold text-zinc-700">댓글</h3>
-
+  <div class="pt-4">
     <!-- Loading -->
-    <div v-if="loading" class="mb-4 py-4 text-center text-sm text-zinc-400">불러오는 중...</div>
+    <div v-if="loading" class="mb-4 py-4 text-center text-sm text-muted-foreground">불러오는 중...</div>
 
     <!-- Empty -->
-    <div v-else-if="comments.length === 0" class="mb-4 py-8 text-center">
-      <MessageSquare class="mx-auto mb-2 size-7 text-zinc-200"/>
-      <p class="text-sm text-zinc-400">아직 댓글이 없습니다.</p>
+    <div v-else-if="comments.length === 0" class="mb-4 py-6 text-center">
+      <p class="text-sm text-muted-foreground">아직 댓글이 없습니다. 첫 댓글을 남겨보세요.</p>
     </div>
 
     <!-- Comments list -->
     <ul v-else class="mb-4 space-y-3">
-      <li v-for="c in comments" :key="c.id" class="rounded-md border border-zinc-100 bg-zinc-50 px-4 py-3">
-        <p class="text-sm text-zinc-800">{{ c.content }}</p>
-        <p class="mt-1 text-xs text-zinc-400">{{ formatDate(c.createdAt) }}</p>
+      <li v-for="c in comments" :key="c.id" class="rounded-md border border-border bg-muted/40 px-4 py-3">
+        <p class="text-sm text-foreground">{{ c.content }}</p>
+        <p class="mt-1 font-mono text-xs text-muted-foreground">{{ formatDate(c.createdAt) }}</p>
       </li>
     </ul>
 
@@ -27,7 +24,7 @@
           placeholder="댓글을 남겨주세요..."
       />
       <div class="flex items-center justify-between">
-        <p class="text-xs text-zinc-400">익명 · 로그인 없이 댓글 작성</p>
+        <p class="text-xs text-muted-foreground">익명 · 로그인 없이 댓글 작성</p>
         <Button
             :disabled="submitting || !newContent.trim()"
             class="text-xs"
@@ -42,7 +39,6 @@
 
 <script lang="ts" setup>
 import {onMounted, ref} from 'vue'
-import {MessageSquare} from 'lucide-vue-next'
 import {Button} from '@/components/ui/button'
 import {Textarea} from '@/components/ui/textarea'
 import {apiClient} from '@/api/client'
@@ -54,6 +50,7 @@ interface Comment {
 }
 
 const props = defineProps<{ moduleId: string }>()
+const emit = defineEmits<{ count: [count: number] }>()
 
 const comments = ref<Comment[]>([])
 const loading = ref(false)
@@ -69,6 +66,7 @@ async function loadComments() {
     comments.value = []
   } finally {
     loading.value = false
+    emit('count', comments.value.length)
   }
 }
 

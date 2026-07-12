@@ -5,34 +5,35 @@
     <div v-if="moduleId === 'uuid'" class="flex flex-col gap-4 max-w-lg mx-auto w-full">
       <div class="flex items-center gap-4 flex-wrap">
         <div class="flex items-center gap-2">
-          <label class="text-[11px] font-medium text-slate-400">개수</label>
+          <label class="text-[11px] font-medium text-muted-foreground">개수</label>
           <select v-model="uuidCount"
-                  class="rounded-lg border border-slate-200 bg-white px-2 py-1 text-[12px] text-slate-700 outline-none focus:border-indigo-300">
+                  class="rounded-lg border border-border bg-card px-2 py-1 text-[12px] text-foreground outline-none focus:border-ring">
             <option v-for="n in 10" :key="n" :value="n">{{ n }}</option>
           </select>
         </div>
         <label class="flex items-center gap-1.5 cursor-pointer">
-          <input v-model="uuidNoHyphen" class="rounded accent-indigo-500" type="checkbox"/>
-          <span class="text-[11px] text-slate-500">하이픈 제거</span>
+          <input v-model="uuidNoHyphen" class="rounded accent-primary" type="checkbox"/>
+          <span class="text-[11px] text-muted-foreground">하이픈 제거</span>
         </label>
       </div>
       <div class="flex flex-col gap-1.5">
         <div v-for="(uid, i) in uuidList" :key="i"
-             class="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5">
-          <span class="flex-1 font-mono text-[13px] text-slate-800">{{ uid }}</span>
-          <button class="rounded p-1 transition-colors text-slate-300 hover:text-slate-500" @click="copyText(uid)">
+             class="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5">
+          <span class="flex-1 font-mono text-[13px] text-foreground">{{ uid }}</span>
+          <button class="rounded p-1 transition-colors text-muted-foreground/50 hover:text-foreground"
+                  @click="copyText(uid)">
             <Copy class="size-3.5"/>
           </button>
         </div>
-        <p v-if="uuidList.length === 0" class="text-[12px] text-slate-400 py-2">생성 버튼을 클릭하세요</p>
+        <p v-if="uuidList.length === 0" class="text-[12px] text-muted-foreground py-2">생성 버튼을 클릭하세요</p>
       </div>
       <div class="flex gap-2">
         <button
-            class="flex-1 rounded-xl bg-indigo-500 py-2.5 text-[14px] font-semibold text-white transition-colors hover:bg-indigo-600"
+            class="flex-1 rounded-xl bg-primary py-2.5 text-[14px] font-semibold text-primary-foreground transition-colors hover:opacity-90"
             @click="generateUuids()">생성
         </button>
         <button v-if="uuidList.length > 1"
-                class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[13px] text-slate-600 transition-colors hover:bg-slate-50"
+                class="rounded-xl border border-border bg-card px-4 py-2.5 text-[13px] text-foreground/80 transition-colors hover:bg-accent"
                 @click="copyText(uuidList.join('\n'))">전체 복사
         </button>
       </div>
@@ -41,66 +42,72 @@
     <!-- Timestamp -->
     <div v-else-if="moduleId === 'timestamp'" class="flex flex-col gap-4 max-w-lg mx-auto w-full">
       <div class="flex flex-col gap-1.5">
-        <label class="text-[11px] font-medium text-slate-400">Unix Timestamp (초)</label>
-        <input v-model="tsUnix" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-mono text-[13px] text-slate-800 outline-none focus:border-indigo-300" placeholder="예: 1700000000"
+        <label class="text-[11px] font-medium text-muted-foreground">Unix Timestamp (초)</label>
+        <input v-model="tsUnix"
+               class="rounded-xl border border-border bg-card px-4 py-2.5 font-mono text-[13px] text-foreground outline-none focus:border-ring"
+               placeholder="예: 1700000000"
                type="number"
                @input="onUnixInput"/>
       </div>
       <div class="flex items-center justify-center">
-        <ArrowUpDown class="size-4 text-slate-300"/>
+        <ArrowUpDown class="size-4 text-muted-foreground/50"/>
       </div>
       <div class="flex flex-col gap-1.5">
-        <label class="text-[11px] font-medium text-slate-400">날짜/시간 (ISO 8601)</label>
-        <input v-model="tsDate" class="rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-mono text-[13px] text-slate-800 outline-none focus:border-indigo-300" placeholder="예: 2023-11-14T22:13:20.000Z"
+        <label class="text-[11px] font-medium text-muted-foreground">날짜/시간 (ISO 8601)</label>
+        <input v-model="tsDate"
+               class="rounded-xl border border-border bg-card px-4 py-2.5 font-mono text-[13px] text-foreground outline-none focus:border-ring"
+               placeholder="예: 2023-11-14T22:13:20.000Z"
                type="text"
                @input="onDateInput"/>
       </div>
-      <p v-if="tsError" class="text-[11px] text-red-400">{{ tsError }}</p>
+      <p v-if="tsError" class="text-[11px] text-destructive/70">{{ tsError }}</p>
     </div>
 
     <!-- Color code -->
     <div v-else-if="moduleId === 'color-code'" class="flex flex-col gap-4 max-w-lg mx-auto w-full">
       <div class="flex flex-col gap-1.5">
-        <label class="text-[11px] font-medium text-slate-400">HEX</label>
+        <label class="text-[11px] font-medium text-muted-foreground">HEX</label>
         <div class="flex items-center gap-2">
-          <div :style="{ backgroundColor: colorInput }" class="size-9 rounded-lg border border-slate-200"/>
-          <input v-model="colorInput" class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 font-mono text-[13px] text-slate-800 outline-none focus:border-indigo-300" placeholder="#ff0000"
+          <div :style="{ backgroundColor: colorInput }" class="size-9 rounded-lg border border-border"/>
+          <input v-model="colorInput"
+                 class="flex-1 rounded-xl border border-border bg-card px-4 py-2.5 font-mono text-[13px] text-foreground outline-none focus:border-ring"
+                 placeholder="#ff0000"
                  type="text"
                  @input="computeColor"/>
         </div>
       </div>
-      <div v-if="colorResult" class="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-4">
+      <div v-if="colorResult" class="flex flex-col gap-2 rounded-xl border border-border bg-card p-4">
         <div v-for="row in colorResult" :key="row.label" class="flex items-center justify-between">
-          <span class="text-[11px] text-slate-400">{{ row.label }}</span>
+          <span class="text-[11px] text-muted-foreground">{{ row.label }}</span>
           <div class="flex items-center gap-2">
-            <span class="font-mono text-[13px] text-slate-800">{{ row.value }}</span>
-            <button class="rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500"
+            <span class="font-mono text-[13px] text-foreground">{{ row.value }}</span>
+            <button class="rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground"
                     @click="copyText(row.value)">
               <Copy class="size-3"/>
             </button>
           </div>
         </div>
       </div>
-      <p v-if="colorError" class="text-[11px] text-red-400">{{ colorError }}</p>
+      <p v-if="colorError" class="text-[11px] text-destructive/70">{{ colorError }}</p>
     </div>
 
     <!-- JSON Formatter -->
     <div v-else-if="moduleId === 'json-formatter'" class="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <!-- 옵션 바 -->
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
           <button v-for="opt in [{ value: 'format', label: '포맷' }, { value: 'minify', label: '미니파이' }]" :key="opt.value"
-                  :class="jsonMode === opt.value ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                  :class="jsonMode === opt.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                   class="rounded-md px-3 py-1 text-[12px] font-medium transition-colors"
                   @click="jsonMode = opt.value; compute()">{{ opt.label }}
           </button>
         </div>
         <template v-if="jsonMode === 'format'">
           <div class="flex items-center gap-1.5">
-            <span class="text-[11px] text-slate-400">들여쓰기</span>
-            <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+            <span class="text-[11px] text-muted-foreground">들여쓰기</span>
+            <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
               <button v-for="opt in jsonIndentOptions" :key="String(opt.value)"
-                      :class="jsonIndent === opt.value ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                      :class="jsonIndent === opt.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                       class="rounded-md px-2.5 py-1 text-[12px] font-medium transition-colors"
                       @click="jsonIndent = opt.value; compute()">{{ opt.label }}
               </button>
@@ -108,29 +115,31 @@
           </div>
         </template>
         <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
-          <input v-model="jsonSortKeys" class="accent-indigo-500" type="checkbox" @change="compute()"/>
-          <span class="text-[11px] text-slate-500">키 정렬 (A→Z)</span>
+          <input v-model="jsonSortKeys" class="accent-primary" type="checkbox" @change="compute()"/>
+          <span class="text-[11px] text-muted-foreground">키 정렬 (A→Z)</span>
         </label>
       </div>
 
       <!-- 2-패널 -->
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">JSON 입력</span>
-            <button v-if="input" class="rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors"
+        <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center justify-between border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">JSON 입력</span>
+            <button v-if="input" class="rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors"
                     @click="input = ''; output = ''; error = ''">
               <X class="size-3.5"/>
             </button>
           </div>
-          <textarea v-model="input" class="h-64 resize-none bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+          <textarea v-model="input"
+                    class="h-64 resize-none bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
                     placeholder='{"key": "value"}'
                     @input="compute()"/>
         </div>
-        <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">결과</span>
-            <button v-if="output" :class="copied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'"
+        <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center justify-between border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">결과</span>
+            <button v-if="output"
+                    :class="copied ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-foreground'"
                     class="rounded p-0.5 transition-colors"
                     @click="copyText(output)">
               <Check v-if="copied" class="size-3.5"/>
@@ -139,27 +148,27 @@
           </div>
           <div class="h-64 overflow-auto">
             <div v-if="error" class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <div class="flex size-8 items-center justify-center rounded-full bg-red-50">
-                <AlertCircle class="size-4 text-red-400"/>
+              <div class="flex size-8 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle class="size-4 text-destructive/70"/>
               </div>
-              <p class="text-[12px] text-slate-500">{{ error }}</p>
+              <p class="text-[12px] text-muted-foreground">{{ error }}</p>
             </div>
             <pre v-else-if="output"
-                 class="p-3 font-mono text-[13px] text-slate-800 whitespace-pre-wrap break-all">{{ output }}</pre>
+                 class="p-3 font-mono text-[13px] text-foreground whitespace-pre-wrap break-all">{{ output }}</pre>
             <div v-else class="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <ArrowRight class="size-4 text-slate-200"/>
-              <p class="text-[11px] text-slate-300">입력하면 바로 변환됩니다</p>
+              <ArrowRight class="size-4 text-muted-foreground/40"/>
+              <p class="text-[11px] text-muted-foreground/50">입력하면 바로 변환됩니다</p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- 크기 정보 -->
-      <div v-if="input && output && !error" class="flex items-center gap-3 text-[11px] text-slate-400">
-        <span>원본 <span class="font-mono text-slate-600">{{ formatBytes(jsonInputBytes) }}</span></span>
+      <div v-if="input && output && !error" class="flex items-center gap-3 text-[11px] text-muted-foreground">
+        <span>원본 <span class="font-mono text-foreground/80">{{ formatBytes(jsonInputBytes) }}</span></span>
         <span>→</span>
-        <span>결과 <span class="font-mono text-slate-600">{{ formatBytes(jsonOutputBytes) }}</span></span>
-        <span :class="jsonOutputBytes < jsonInputBytes ? 'text-emerald-500' : 'text-slate-400'">
+        <span>결과 <span class="font-mono text-foreground/80">{{ formatBytes(jsonOutputBytes) }}</span></span>
+        <span :class="jsonOutputBytes < jsonInputBytes ? 'text-emerald-500' : 'text-muted-foreground'">
           ({{
             jsonOutputBytes < jsonInputBytes ? '' : '+'
           }}{{ jsonInputBytes > 0 ? Math.round((jsonOutputBytes - jsonInputBytes) / jsonInputBytes * 100) : 0 }}%)
@@ -171,26 +180,28 @@
     <div v-else-if="moduleId === 'jwt-decoder'" class="grid grid-cols-2 gap-4 max-w-5xl mx-auto w-full">
       <!-- 왼쪽: 입력 + 옵션 -->
       <div class="flex flex-col gap-3">
-        <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">JWT 토큰</span>
-            <button v-if="jwtInput" class="ml-auto rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500"
+        <div class="rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">JWT 토큰</span>
+            <button v-if="jwtInput"
+                    class="ml-auto rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground"
                     @click="jwtInput = ''; jwtResult = null; jwtError = ''">
               <X class="size-3.5"/>
             </button>
           </div>
-          <textarea v-model="jwtInput" class="h-44 w-full resize-none bg-slate-50 p-3 font-mono text-[11px] text-slate-800 outline-none placeholder:text-slate-300 break-all"
+          <textarea v-model="jwtInput"
+                    class="h-44 w-full resize-none bg-muted/40 p-3 font-mono text-[11px] text-foreground outline-none placeholder:text-muted-foreground/40 break-all"
                     placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
                     @input="decodeJwtInput"/>
         </div>
-        <div class="rounded-xl border border-slate-200 bg-white p-4">
-          <p class="mb-3 text-[11px] font-medium text-slate-400">표시 옵션</p>
+        <div class="rounded-xl border border-border bg-card p-4">
+          <p class="mb-3 text-[11px] font-medium text-muted-foreground">표시 옵션</p>
           <div class="flex flex-col gap-2.5">
             <label v-for="opt in JWT_OPTIONS" :key="opt.key" class="flex items-start gap-2 cursor-pointer">
-              <input v-model="(jwtOptions as any)[opt.key]" class="mt-0.5 accent-indigo-500" type="checkbox"/>
+              <input v-model="(jwtOptions as any)[opt.key]" class="mt-0.5 accent-primary" type="checkbox"/>
               <div>
-                <span class="text-[12px] text-slate-700">{{ opt.label }}</span>
-                <span class="ml-1.5 text-[10px] text-slate-400">{{ opt.desc }}</span>
+                <span class="text-[12px] text-foreground">{{ opt.label }}</span>
+                <span class="ml-1.5 text-[10px] text-muted-foreground">{{ opt.desc }}</span>
               </div>
             </label>
           </div>
@@ -199,8 +210,8 @@
 
       <!-- 오른쪽: 결과 -->
       <div class="flex flex-col gap-3">
-        <div v-if="jwtError" class="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-          <p class="text-[12px] text-red-500">{{ jwtError }}</p>
+        <div v-if="jwtError" class="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3">
+          <p class="text-[12px] text-destructive">{{ jwtError }}</p>
         </div>
 
         <template v-else-if="jwtResult">
@@ -211,21 +222,23 @@
               <span :class="algBadgeClass" class="rounded-full px-2.5 py-0.5 text-[11px] font-bold">{{
                   (jwtResult.header as any).alg ?? 'unknown'
                 }}</span>
-              <span class="text-[11px] text-slate-400">{{ (jwtResult.header as any).typ ?? 'JWT' }}</span>
+              <span class="text-[11px] text-muted-foreground">{{ (jwtResult.header as any).typ ?? 'JWT' }}</span>
             </template>
             <div v-if="jwtOptions.showExpiry && jwtExpiry" class="ml-auto flex items-center gap-1.5">
-              <span :class="jwtExpiry.isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-600'"
+              <span
+                  :class="jwtExpiry.isExpired ? 'bg-destructive/10 text-destructive' : 'bg-emerald-100 text-emerald-600'"
                     class="rounded-full px-2 py-0.5 text-[10px] font-semibold">{{
                   jwtExpiry.isExpired ? '만료됨' : '유효'
                 }}</span>
-              <span class="text-[11px] text-slate-400">{{ jwtExpiry.timeStr }}</span>
+              <span class="text-[11px] text-muted-foreground">{{ jwtExpiry.timeStr }}</span>
             </div>
           </div>
 
           <!-- 탭 분리 -->
           <template v-if="jwtOptions.separateTabs">
-            <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
-              <button v-for="tab in ['payload', 'header']" :key="tab" :class="jwtActiveTab === tab ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+            <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
+              <button v-for="tab in ['payload', 'header']" :key="tab"
+                      :class="jwtActiveTab === tab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                       class="flex-1 rounded-md py-1 text-[12px] font-medium transition-colors"
                       @click="jwtActiveTab = tab">
                 {{ tab === 'header' ? '헤더' : '페이로드' }}
@@ -240,12 +253,12 @@
           <!-- 합쳐진 모드 -->
           <template v-else>
             <div>
-              <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-300">Header</p>
+              <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Header</p>
               <JwtPanel :data="jwtResult.header as Record<string,unknown>" :is-payload="false" :show-claims="false"
                         :show-expiry="false" :show-raw="true" @copy="copyText"/>
             </div>
             <div>
-              <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-slate-300">Payload</p>
+              <p class="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50">Payload</p>
               <JwtPanel :data="jwtResult.payload as Record<string,unknown>" :is-payload="true"
                         :show-claims="jwtOptions.showClaims" :show-expiry="jwtOptions.showExpiry"
                         :show-raw="jwtOptions.showRaw" @copy="copyText"/>
@@ -254,8 +267,8 @@
         </template>
 
         <div v-else class="flex flex-col items-center justify-center gap-2 py-16 text-center">
-          <ArrowRight class="size-4 text-slate-200"/>
-          <p class="text-[11px] text-slate-300">JWT 토큰을 입력하세요</p>
+          <ArrowRight class="size-4 text-muted-foreground/40"/>
+          <p class="text-[11px] text-muted-foreground/50">JWT 토큰을 입력하세요</p>
         </div>
       </div>
     </div>
@@ -263,35 +276,39 @@
     <!-- Base64 -->
     <div v-else-if="moduleId === 'base64'" class="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <div class="flex items-center gap-3">
-        <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
           <button v-for="opt in [{ value: 'encode', label: '인코딩' }, { value: 'decode', label: '디코딩' }]" :key="opt.value"
-                  :class="direction === opt.value ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                  :class="direction === opt.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                   class="rounded-md px-3 py-1 text-[12px] font-medium transition-colors"
                   @click="direction = opt.value; compute()">{{ opt.label }}
           </button>
         </div>
         <label class="flex items-center gap-1.5 cursor-pointer ml-auto">
-          <input v-model="base64UrlSafe" class="accent-indigo-500" type="checkbox" @change="compute()"/>
-          <span class="text-[11px] text-slate-500">URL-safe <span class="text-slate-300">(- _ 패딩 없음)</span></span>
+          <input v-model="base64UrlSafe" class="accent-primary" type="checkbox" @change="compute()"/>
+          <span class="text-[11px] text-muted-foreground">URL-safe <span
+              class="text-muted-foreground/50">(- _ 패딩 없음)</span></span>
         </label>
       </div>
       <div class="grid grid-cols-2 gap-3">
-        <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">{{ direction === 'encode' ? '텍스트' : 'Base64' }}</span>
-            <button v-if="input" class="rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors"
+        <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center justify-between border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">{{
+                direction === 'encode' ? '텍스트' : 'Base64'
+              }}</span>
+            <button v-if="input" class="rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors"
                     @click="input = ''; output = ''; error = ''">
               <X class="size-3.5"/>
             </button>
           </div>
           <textarea v-model="input" :placeholder="direction === 'encode' ? '인코딩할 텍스트를 입력하세요' : 'Base64 문자열을 입력하세요'"
-                    class="h-56 resize-none bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+                    class="h-56 resize-none bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
                     @input="compute()"/>
         </div>
-        <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">결과</span>
-            <button v-if="output" :class="copied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'"
+        <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center justify-between border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">결과</span>
+            <button v-if="output"
+                    :class="copied ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-foreground'"
                     class="rounded p-0.5 transition-colors"
                     @click="copyText(output)">
               <Check v-if="copied" class="size-3.5"/>
@@ -300,16 +317,16 @@
           </div>
           <div class="h-56 overflow-auto">
             <div v-if="error" class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-              <div class="flex size-8 items-center justify-center rounded-full bg-red-50">
-                <AlertCircle class="size-4 text-red-400"/>
+              <div class="flex size-8 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle class="size-4 text-destructive/70"/>
               </div>
-              <p class="text-[12px] text-slate-500">{{ error }}</p>
+              <p class="text-[12px] text-muted-foreground">{{ error }}</p>
             </div>
             <pre v-else-if="output"
-                 class="p-3 font-mono text-[13px] text-slate-800 whitespace-pre-wrap break-all">{{ output }}</pre>
+                 class="p-3 font-mono text-[13px] text-foreground whitespace-pre-wrap break-all">{{ output }}</pre>
             <div v-else class="flex h-full flex-col items-center justify-center gap-2 text-center">
-              <ArrowRight class="size-4 text-slate-200"/>
-              <p class="text-[11px] text-slate-300">입력하면 바로 변환됩니다</p>
+              <ArrowRight class="size-4 text-muted-foreground/40"/>
+              <p class="text-[11px] text-muted-foreground/50">입력하면 바로 변환됩니다</p>
             </div>
           </div>
         </div>
@@ -320,19 +337,19 @@
     <div v-else-if="moduleId === 'url-encode'" class="flex flex-col gap-3 max-w-4xl mx-auto w-full">
       <!-- 옵션 바 -->
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+        <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
           <button v-for="opt in [{ value: 'transform', label: '변환' }, { value: 'query', label: '쿼리 파싱' }]"
                   :key="opt.value"
-                  :class="urlMode === opt.value ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                  :class="urlMode === opt.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                   class="rounded-md px-3 py-1 text-[12px] font-medium transition-colors"
                   @click="urlMode = opt.value; input = ''; output = ''; error = ''; urlQueryParams = []">{{ opt.label }}
           </button>
         </div>
         <template v-if="urlMode === 'transform'">
-          <div class="flex gap-0.5 rounded-lg bg-slate-100 p-0.5">
+          <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
             <button v-for="opt in [{ value: 'encode', label: '인코딩' }, { value: 'decode', label: '디코딩' }]"
                     :key="opt.value"
-                    :class="direction === opt.value ? 'bg-white text-slate-700 shadow-sm' : 'text-slate-400 hover:text-slate-600'"
+                    :class="direction === opt.value ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
                     class="rounded-md px-3 py-1 text-[12px] font-medium transition-colors"
                     @click="direction = opt.value; compute()">{{ opt.label }}
             </button>
@@ -343,24 +360,26 @@
       <!-- 변환 모드: 2-패널 -->
       <template v-if="urlMode === 'transform'">
         <div class="grid grid-cols-2 gap-3">
-          <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-              <span class="text-[11px] font-medium text-slate-400">{{
+          <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+            <div class="flex h-9 items-center justify-between border-b border-border px-3">
+              <span class="text-[11px] font-medium text-muted-foreground">{{
                   direction === 'encode' ? '텍스트' : '인코딩된 텍스트'
                 }}</span>
-              <button v-if="input" class="rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors"
+              <button v-if="input"
+                      class="rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors"
                       @click="input = ''; output = ''; error = ''">
                 <X class="size-3.5"/>
               </button>
             </div>
             <textarea v-model="input" :placeholder="direction === 'encode' ? '인코딩할 텍스트를 입력하세요' : '디코딩할 텍스트를 입력하세요'"
-                      class="h-56 resize-none bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+                      class="h-56 resize-none bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
                       @input="compute()"/>
           </div>
-          <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-            <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-              <span class="text-[11px] font-medium text-slate-400">결과</span>
-              <button v-if="output" :class="copied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'"
+          <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+            <div class="flex h-9 items-center justify-between border-b border-border px-3">
+              <span class="text-[11px] font-medium text-muted-foreground">결과</span>
+              <button v-if="output"
+                      :class="copied ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-foreground'"
                       class="rounded p-0.5 transition-colors"
                       @click="copyText(output)">
                 <Check v-if="copied" class="size-3.5"/>
@@ -369,16 +388,16 @@
             </div>
             <div class="h-56 overflow-auto">
               <div v-if="error" class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-                <div class="flex size-8 items-center justify-center rounded-full bg-red-50">
-                  <AlertCircle class="size-4 text-red-400"/>
+                <div class="flex size-8 items-center justify-center rounded-full bg-destructive/10">
+                  <AlertCircle class="size-4 text-destructive/70"/>
                 </div>
-                <p class="text-[12px] text-slate-500">{{ error }}</p>
+                <p class="text-[12px] text-muted-foreground">{{ error }}</p>
               </div>
               <pre v-else-if="output"
-                   class="p-3 font-mono text-[13px] text-slate-800 whitespace-pre-wrap break-all">{{ output }}</pre>
+                   class="p-3 font-mono text-[13px] text-foreground whitespace-pre-wrap break-all">{{ output }}</pre>
               <div v-else class="flex h-full flex-col items-center justify-center gap-2 text-center">
-                <ArrowRight class="size-4 text-slate-200"/>
-                <p class="text-[11px] text-slate-300">입력하면 바로 변환됩니다</p>
+                <ArrowRight class="size-4 text-muted-foreground/40"/>
+                <p class="text-[11px] text-muted-foreground/50">입력하면 바로 변환됩니다</p>
               </div>
             </div>
           </div>
@@ -387,83 +406,87 @@
 
       <!-- 쿼리 파싱 모드 -->
       <template v-else>
-        <div class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center justify-between border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">URL 또는 쿼리스트링</span>
-            <button v-if="input" class="rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors"
+        <div class="rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center justify-between border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">URL 또는 쿼리스트링</span>
+            <button v-if="input" class="rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors"
                     @click="input = ''; urlQueryParams = []; error = ''">
               <X class="size-3.5"/>
             </button>
           </div>
-          <textarea v-model="input" class="h-24 w-full resize-none bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+          <textarea v-model="input"
+                    class="h-24 w-full resize-none bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
                     placeholder="https://example.com/search?q=한글&page=1"
                     @input="computeUrlQuery()"/>
         </div>
-        <div v-if="urlQueryParams.length > 0" class="rounded-xl border border-slate-200 bg-white overflow-hidden">
-          <div class="flex h-9 items-center border-b border-slate-100 px-3">
-            <span class="text-[11px] font-medium text-slate-400">파라미터</span>
-            <span class="ml-1.5 rounded-full bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-500">{{
+        <div v-if="urlQueryParams.length > 0" class="rounded-xl border border-border bg-card overflow-hidden">
+          <div class="flex h-9 items-center border-b border-border px-3">
+            <span class="text-[11px] font-medium text-muted-foreground">파라미터</span>
+            <span class="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{{
                 urlQueryParams.length
               }}</span>
           </div>
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-border">
             <div v-for="(param, i) in urlQueryParams" :key="i" class="flex items-start gap-3 px-4 py-3">
-              <span class="w-40 shrink-0 font-mono text-[12px] text-indigo-600 break-all">{{ param.key }}</span>
+              <span class="w-40 shrink-0 font-mono text-[12px] text-primary break-all">{{ param.key }}</span>
               <div class="flex-1 min-w-0">
-                <p class="font-mono text-[12px] text-slate-800 break-all">{{ param.value }}</p>
-                <p v-if="param.raw !== param.value" class="mt-0.5 font-mono text-[10px] text-slate-400 break-all">raw:
+                <p class="font-mono text-[12px] text-foreground break-all">{{ param.value }}</p>
+                <p v-if="param.raw !== param.value"
+                   class="mt-0.5 font-mono text-[10px] text-muted-foreground break-all">raw:
                   {{ param.raw }}</p>
               </div>
-              <button class="shrink-0 rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors"
+              <button class="shrink-0 rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors"
                       @click="copyText(param.value)">
                 <Copy class="size-3.5"/>
               </button>
             </div>
           </div>
         </div>
-        <div v-else-if="input && !error" class="rounded-xl border border-slate-200 bg-slate-50 px-4 py-8 text-center">
-          <p class="text-[12px] text-slate-400">쿼리 파라미터를 찾을 수 없습니다</p>
+        <div v-else-if="input && !error" class="rounded-xl border border-border bg-muted/40 px-4 py-8 text-center">
+          <p class="text-[12px] text-muted-foreground">쿼리 파라미터를 찾을 수 없습니다</p>
         </div>
-        <div v-if="error" class="rounded-xl border border-red-100 bg-red-50 px-4 py-3">
-          <p class="text-[12px] text-red-500">{{ error }}</p>
+        <div v-if="error" class="rounded-xl border border-destructive/20 bg-destructive/10 px-4 py-3">
+          <p class="text-[12px] text-destructive">{{ error }}</p>
         </div>
       </template>
     </div>
 
     <!-- 나머지 도구: 2-패널 자동 변환 -->
     <div v-else class="grid grid-cols-2 gap-4 max-w-4xl mx-auto w-full">
-      <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div class="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
-          <span class="text-[11px] font-medium text-slate-400">{{ config.inputLabel }}</span>
+      <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+        <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
+          <span class="text-[11px] font-medium text-muted-foreground">{{ config.inputLabel }}</span>
           <div class="flex items-center gap-1">
             <div v-if="config.hasToggle" class="flex gap-0.5">
               <button v-for="opt in config.toggleOptions" :key="opt.value"
-                      :class="direction === opt.value ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'"
+                      :class="direction === opt.value ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'"
                       class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors"
                       @click="direction = opt.value; compute()">{{ opt.label }}
               </button>
             </div>
             <div v-if="config.hasJsonToggle" class="flex gap-0.5">
               <button v-for="opt in [{ value: 'format', label: '포맷' }, { value: 'minify', label: '미니파이' }]"
-                      :key="opt.value" :class="jsonMode === opt.value ? 'bg-indigo-100 text-indigo-700' : 'text-slate-400 hover:text-slate-600'"
+                      :key="opt.value"
+                      :class="jsonMode === opt.value ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'"
                       class="rounded px-2 py-0.5 text-[10px] font-medium transition-colors"
                       @click="jsonMode = opt.value; compute()">{{ opt.label }}
               </button>
             </div>
-            <button v-if="input" class="ml-1 rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500"
+            <button v-if="input"
+                    class="ml-1 rounded p-0.5 text-muted-foreground/50 transition-colors hover:text-foreground"
                     @click="input = ''; output = ''; error = ''">
               <X class="size-3.5"/>
             </button>
           </div>
         </div>
         <textarea v-model="input" :placeholder="config.placeholder"
-                  class="h-56 resize-none bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
+                  class="h-56 resize-none bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
                   @input="compute()"/>
       </div>
-      <div class="flex flex-col rounded-xl border border-slate-200 bg-white overflow-hidden">
-        <div class="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-3">
-          <span class="text-[11px] font-medium text-slate-400">{{ config.outputLabel }}</span>
-          <button v-if="output" :class="copied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'"
+      <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
+        <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-3">
+          <span class="text-[11px] font-medium text-muted-foreground">{{ config.outputLabel }}</span>
+          <button v-if="output" :class="copied ? 'text-emerald-500' : 'text-muted-foreground/50 hover:text-foreground'"
                   class="rounded p-0.5 transition-colors"
                   @click="copyText(output)">
             <Check v-if="copied" class="size-3.5"/>
@@ -472,26 +495,26 @@
         </div>
         <div class="h-56 overflow-auto">
           <div v-if="error" class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <div class="flex size-8 items-center justify-center rounded-full bg-red-50">
-              <AlertCircle class="size-4 text-red-400"/>
+            <div class="flex size-8 items-center justify-center rounded-full bg-destructive/10">
+              <AlertCircle class="size-4 text-destructive/70"/>
             </div>
-            <p class="text-[12px] text-slate-500">{{ error }}</p>
+            <p class="text-[12px] text-muted-foreground">{{ error }}</p>
           </div>
           <div v-else-if="moduleId === 'char-count' && stats"
                class="flex h-full flex-col items-center justify-center gap-3 px-4">
             <div class="grid w-full grid-cols-3 gap-3">
               <div v-for="stat in stats" :key="stat.label"
-                   class="flex flex-col items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 py-4">
-                <span class="text-[22px] font-bold text-slate-800">{{ stat.value }}</span>
-                <span class="text-[10px] text-slate-400">{{ stat.label }}</span>
+                   class="flex flex-col items-center gap-1 rounded-xl border border-border bg-muted/40 py-4">
+                <span class="text-[22px] font-bold text-foreground">{{ stat.value }}</span>
+                <span class="text-[10px] text-muted-foreground">{{ stat.label }}</span>
               </div>
             </div>
           </div>
           <pre v-else-if="output"
-               class="p-3 font-mono text-[13px] text-slate-800 whitespace-pre-wrap break-all">{{ output }}</pre>
+               class="p-3 font-mono text-[13px] text-foreground whitespace-pre-wrap break-all">{{ output }}</pre>
           <div v-else class="flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
-            <ArrowRight class="size-4 text-slate-200"/>
-            <p class="text-[11px] text-slate-300">입력하면 바로 변환됩니다</p>
+            <ArrowRight class="size-4 text-muted-foreground/40"/>
+            <p class="text-[11px] text-muted-foreground/50">입력하면 바로 변환됩니다</p>
           </div>
         </div>
       </div>
@@ -571,14 +594,14 @@ const JwtPanel = defineComponent({
       if (props.showClaims && props.isPayload) {
         const rows = [
           ...knownEntries.value.map(([k, v]) =>
-              h('div', {class: 'flex items-start gap-3 px-3 py-2 border-b border-slate-100 last:border-0'}, [
+              h('div', {class: 'flex items-start gap-3 px-3 py-2 border-b border-border last:border-0'}, [
                 h('div', {class: 'w-28 shrink-0'}, [
-                  h('p', {class: 'text-[10px] font-medium text-slate-500'}, CLAIM_LABELS[k]),
-                  h('p', {class: 'font-mono text-[9px] text-slate-300'}, k),
+                  h('p', {class: 'text-[10px] font-medium text-muted-foreground'}, CLAIM_LABELS[k]),
+                  h('p', {class: 'font-mono text-[9px] text-muted-foreground/50'}, k),
                 ]),
-                h('span', {class: 'flex-1 font-mono text-[11px] text-slate-700 break-all'}, formatClaimValue(k, v, props.showExpiry)),
+                h('span', {class: 'flex-1 font-mono text-[11px] text-foreground break-all'}, formatClaimValue(k, v, props.showExpiry)),
                 h('button', {
-                      class: 'rounded p-0.5 text-slate-200 hover:text-slate-400 transition-colors',
+                      class: 'rounded p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors',
                       onClick: () => emit('copy', String(v))
                     },
                     h(Copy, {class: 'size-3'})
@@ -586,13 +609,13 @@ const JwtPanel = defineComponent({
               ])
           ),
           ...(unknownEntries.value.length ? [
-            h('div', {class: 'border-t border-dashed border-slate-100'}),
+            h('div', {class: 'border-t border-dashed border-border'}),
             ...unknownEntries.value.map(([k, v]) =>
-                h('div', {class: 'flex items-start gap-3 px-3 py-2 border-b border-slate-100 last:border-0'}, [
-                  h('div', {class: 'w-28 shrink-0'}, h('p', {class: 'font-mono text-[10px] text-slate-400'}, k)),
-                  h('span', {class: 'flex-1 font-mono text-[11px] text-slate-700 break-all'}, formatClaimValue(k, v, props.showExpiry)),
+                h('div', {class: 'flex items-start gap-3 px-3 py-2 border-b border-border last:border-0'}, [
+                  h('div', {class: 'w-28 shrink-0'}, h('p', {class: 'font-mono text-[10px] text-muted-foreground'}, k)),
+                  h('span', {class: 'flex-1 font-mono text-[11px] text-foreground break-all'}, formatClaimValue(k, v, props.showExpiry)),
                   h('button', {
-                        class: 'rounded p-0.5 text-slate-200 hover:text-slate-400 transition-colors',
+                        class: 'rounded p-0.5 text-muted-foreground/40 hover:text-muted-foreground transition-colors',
                         onClick: () => emit('copy', String(v))
                       },
                       h(Copy, {class: 'size-3'})
@@ -601,20 +624,20 @@ const JwtPanel = defineComponent({
             ),
           ] : []),
         ]
-        children.push(h('div', {class: 'rounded-xl border border-slate-200 bg-white overflow-hidden'}, rows))
+        children.push(h('div', {class: 'rounded-xl border border-border bg-card overflow-hidden'}, rows))
       }
 
       // Raw JSON
       if (props.showRaw || !props.isPayload || !props.showClaims) {
         children.push(
-            h('div', {class: 'relative rounded-xl border border-slate-200 bg-slate-50 overflow-hidden'}, [
+            h('div', {class: 'relative rounded-xl border border-border bg-muted/40 overflow-hidden'}, [
               h('button', {
-                    class: 'absolute right-2 top-2 rounded p-0.5 text-slate-300 hover:text-slate-500 transition-colors',
+                    class: 'absolute right-2 top-2 rounded p-0.5 text-muted-foreground/50 hover:text-foreground transition-colors',
                     onClick: () => emit('copy', rawJson.value)
                   },
                   h(Copy, {class: 'size-3'})
               ),
-              h('pre', {class: 'p-3 font-mono text-[11px] text-slate-700 whitespace-pre-wrap break-all'}, rawJson.value),
+              h('pre', {class: 'p-3 font-mono text-[11px] text-foreground whitespace-pre-wrap break-all'}, rawJson.value),
             ])
         )
       }
@@ -774,12 +797,12 @@ function decodeJwtInput() {
 
 const algBadgeClass = computed(() => {
   const alg = String((jwtResult.value?.header as Record<string, unknown>)?.alg ?? '')
-  if (!alg || alg === 'none') return 'bg-red-100 text-red-700'
+  if (!alg || alg === 'none') return 'bg-destructive/10 text-destructive'
   if (alg.startsWith('HS')) return 'bg-blue-100 text-blue-700'
   if (alg.startsWith('RS')) return 'bg-purple-100 text-purple-700'
   if (alg.startsWith('ES')) return 'bg-emerald-100 text-emerald-700'
   if (alg.startsWith('PS')) return 'bg-orange-100 text-orange-700'
-  return 'bg-slate-100 text-slate-700'
+  return 'bg-muted text-foreground'
 })
 
 const jwtExpiry = computed(() => {

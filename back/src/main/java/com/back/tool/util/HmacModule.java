@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.util.HexFormat;
 
 @Component
 public class HmacModule implements ToolModule {
@@ -34,7 +35,7 @@ public class HmacModule implements ToolModule {
             Mac mac = Mac.getInstance(algorithm);
             mac.init(new SecretKeySpec(key.getBytes(StandardCharsets.UTF_8), algorithm));
             byte[] result = mac.doFinal(text.getBytes(StandardCharsets.UTF_8));
-            return ToolResult.ofText(Sha256Module.toHex(result));
+            return ToolResult.ofText(HexFormat.of().formatHex(result));
         } catch (Exception e) {
             throw new ToolProcessingException("HMAC 생성 실패: " + e.getMessage(), e);
         }

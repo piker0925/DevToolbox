@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -36,7 +37,7 @@ public class MultiHashModule implements ToolModule {
         Map<String, String> hashes = new LinkedHashMap<>();
         try {
             for (String algo : ALGORITHMS) {
-                hashes.put(algo, Sha256Module.toHex(MessageDigest.getInstance(algo).digest(bytes)));
+                hashes.put(algo, HexFormat.of().formatHex(MessageDigest.getInstance(algo).digest(bytes)));
             }
         } catch (Exception e) {
             throw new ToolProcessingException("해시 생성 실패: " + e.getMessage(), e);

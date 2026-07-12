@@ -5,6 +5,8 @@ export interface Module {
     isHeavy: boolean
     isFrontendOnly?: boolean
     description?: string
+    /** 검색 별칭 (통합 도구가 흡수한 기존 도구명 등) */
+    keywords?: string[]
 }
 
 export interface Job {

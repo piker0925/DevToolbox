@@ -11,29 +11,22 @@
         <CommandItem
             v-for="mod in group"
             :key="mod.id"
-            :value="`${mod.name} ${mod.category} ${mod.description ?? ''}`"
+            :value="`${mod.name} ${mod.category} ${mod.description ?? ''} ${mod.keywords?.join(' ') ?? ''}`"
             class="flex items-center gap-2.5 py-2"
             @select="navigate(mod.id)"
         >
-          <div
-              :class="getCategoryConfig(String(category)).bg"
-              class="flex size-6 shrink-0 items-center justify-center rounded"
-          >
+          <div class="flex size-6 shrink-0 items-center justify-center rounded bg-secondary text-muted-foreground">
             <component
                 :is="getCategoryConfig(String(category)).icon"
-                :class="getCategoryConfig(String(category)).color"
                 class="size-3.5"
             />
           </div>
           <span class="flex-1 truncate text-[13px]">{{ mod.name }}</span>
-          <span
-              :class="getCategoryConfig(String(category)).color"
-              class="shrink-0 text-[11px]"
-          >{{ category }}</span>
+          <span class="shrink-0 font-mono text-[11px] text-muted-foreground">{{ category }}</span>
         </CommandItem>
       </CommandGroup>
     </CommandList>
-    <div class="flex items-center gap-5 border-t border-slate-100 px-4 py-2.5 text-[11px] text-slate-400">
+    <div class="flex items-center gap-5 border-t border-border px-4 py-2.5 font-mono text-[11px] text-muted-foreground">
       <span>↑↓ 이동</span>
       <span>↵ 선택</span>
       <span>Esc 닫기</span>

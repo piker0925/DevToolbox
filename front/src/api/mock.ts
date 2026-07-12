@@ -26,16 +26,8 @@ export const MOCK_MODULES: Module[] = [
     // 포맷터
     {id: 'sql-formatter', name: 'SQL 포맷터', category: '포맷터', isHeavy: false, description: 'SQL 쿼리 정렬 및 포맷'},
     {id: 'xml-formatter', name: 'XML 포맷터', category: '포맷터', isHeavy: false, description: 'XML 문서 들여쓰기 정렬'},
-    {id: 'html-entity', name: 'HTML Entity', category: '포맷터', isHeavy: false, description: 'HTML 특수문자 인코딩/디코딩'},
-
-    // 변환기
-    {id: 'json-yaml', name: 'JSON ↔ YAML', category: '변환기', isHeavy: false, description: 'JSON ↔ YAML 상호 변환'},
-    {id: 'json-toml', name: 'JSON ↔ TOML', category: '변환기', isHeavy: false, description: 'JSON ↔ TOML 상호 변환'},
-    {id: 'json-xml', name: 'JSON ↔ XML', category: '변환기', isHeavy: false, description: 'JSON ↔ XML 상호 변환'},
-    {id: 'csv-json', name: 'CSV ↔ JSON', category: '변환기', isHeavy: false, description: 'CSV ↔ JSON 상호 변환'},
 
     // 텍스트
-    {id: 'case-converter', name: '케이스 변환', category: '텍스트', isHeavy: false, description: 'camelCase, snake_case 등 변환'},
     {id: 'text-diff', name: 'Diff 비교', category: '텍스트', isHeavy: false, description: '두 텍스트 차이 시각화'},
     {id: 'regex-tester', name: 'Regex 테스터', category: '텍스트', isHeavy: false, description: '정규표현식 실시간 테스트'},
 
@@ -49,21 +41,39 @@ export const MOCK_MODULES: Module[] = [
     {id: 'docker-compose', name: 'Docker Compose 변환', category: 'DevOps', isHeavy: false, description: 'docker run 명령어 → docker-compose.yml 변환'},
 
     // 유틸
-    {id: 'sha256', name: 'SHA-256 해시', category: '유틸', isHeavy: false, description: '텍스트 SHA-256 해시 생성'},
-    {id: 'multi-hash', name: '다중 해시', category: '유틸', isHeavy: false, description: 'MD5, SHA-1, SHA-256, SHA-512 동시 생성'},
+    {
+        id: 'multi-hash',
+        name: '다중 해시',
+        category: '유틸',
+        isHeavy: false,
+        description: 'MD5 · SHA-1 · SHA-256 · SHA-512 동시 생성',
+        keywords: ['sha256', 'sha-256', 'md5', 'sha512', 'hash', '해시']
+    },
     {id: 'hmac', name: 'HMAC 서명', category: '유틸', isHeavy: false, description: 'HMAC-SHA256/SHA512 서명 생성'},
     {id: 'aes', name: 'AES 암호화', category: '유틸', isHeavy: false, description: 'AES-256 CBC 암호화/복호화'},
     {id: 'totp', name: 'TOTP 생성', category: '유틸', isHeavy: false, description: 'TOTP 일회용 코드 생성 (RFC 6238)'},
 
     // 프론트엔드 전용 도구 (브라우저에서 직접 처리)
     {id: 'json-formatter', name: 'JSON 포맷터', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'JSON 정렬 및 미니파이'},
-    {id: 'base64', name: 'Base64', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: '텍스트 ↔ Base64 인코딩/디코딩'},
-    {id: 'url-encode', name: 'URL 인코딩', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: '텍스트 ↔ URL 인코딩'},
     {id: 'jwt-decoder', name: 'JWT 디코더', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'JWT 토큰 Header·Payload 파싱'},
     {id: 'timestamp', name: '타임스탬프', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'Unix timestamp ↔ 날짜/시간 변환'},
     {id: 'color-code', name: '색상 코드', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'HEX ↔ RGB ↔ HSL 변환'},
     {id: 'uuid', name: 'UUID 생성기', category: '생성기', isHeavy: false, isFrontendOnly: true, description: 'UUID v4 무작위 생성'},
-    {id: 'char-count', name: '글자 수 카운터', category: '텍스트', isHeavy: false, isFrontendOnly: true, description: '문자 수·단어 수·바이트 수 계산'},
-    {id: 'keyboard-convert', name: '한영 변환', category: '텍스트', isHeavy: false, isFrontendOnly: true, description: '한→영, 영→한 키보드 레이아웃 변환'},
-    {id: 'whitespace', name: '공백 정규화', category: '텍스트', isHeavy: false, isFrontendOnly: true, description: '연속 공백·탭·줄바꿈 정규화'},
+
+    // 통합 도구 (여러 도구를 하나의 화면으로 흡수)
+    {
+        id: 'encoder', name: '인코더/디코더', category: '포맷터', isHeavy: false, isFrontendOnly: true,
+        description: 'Base64 · URL · HTML Entity 인코딩/디코딩',
+        keywords: ['base64', 'url encode', 'url 인코딩', 'html entity', 'escape', '인코딩', '디코딩'],
+    },
+    {
+        id: 'data-convert', name: '데이터 포맷 변환', category: '변환기', isHeavy: false, isFrontendOnly: true,
+        description: 'JSON · YAML · TOML · XML · CSV 상호 변환',
+        keywords: ['json', 'yaml', 'toml', 'xml', 'csv', 'json-yaml', 'csv-json', '변환'],
+    },
+    {
+        id: 'text-utils', name: '텍스트 유틸', category: '텍스트', isHeavy: false, isFrontendOnly: true,
+        description: '케이스 변환 · 글자 수 · 한영 변환 · 공백 정규화',
+        keywords: ['case', 'camel', 'snake', 'kebab', '케이스', '글자 수', 'count', '한영', '공백', 'whitespace'],
+    },
 ]

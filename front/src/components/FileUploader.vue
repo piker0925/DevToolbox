@@ -19,24 +19,24 @@
     <ul class="flex flex-col gap-1">
       <li
           v-for="(f, i) in staged" :key="f.name + i"
-          class="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1.5 text-[12px] text-slate-700"
+          class="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] text-foreground"
       >
-        <span class="flex-1 truncate">{{ f.name }}</span>
+        <span class="flex-1 truncate font-mono">{{ f.name }}</span>
         <button
             :data-testid="`move-up-${i}`" :disabled="i === 0"
-            class="rounded p-0.5 text-slate-400 transition-colors hover:text-slate-700 disabled:opacity-30 disabled:hover:text-slate-400"
+            class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
             type="button" @click="staged = moveItem(staged, i, -1)"
         >↑
         </button>
         <button
             :data-testid="`move-down-${i}`" :disabled="i === staged.length - 1"
-            class="rounded p-0.5 text-slate-400 transition-colors hover:text-slate-700 disabled:opacity-30 disabled:hover:text-slate-400"
+            class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
             type="button" @click="staged = moveItem(staged, i, 1)"
         >↓
         </button>
         <button
             :data-testid="`remove-${i}`"
-            class="rounded p-0.5 text-slate-400 transition-colors hover:text-red-500"
+            class="rounded p-0.5 text-muted-foreground transition-colors hover:text-destructive"
             type="button" @click="staged.splice(i, 1)"
         >✕
         </button>

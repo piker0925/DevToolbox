@@ -1,279 +1,352 @@
 <template>
-  <div v-if="loading" class="flex items-center gap-2 p-6 text-sm text-slate-400">
+  <div v-if="loading" class="flex items-center gap-2 p-6 text-sm text-muted-foreground">
     <Loader2 class="size-4 animate-spin"/>
     불러오는 중...
   </div>
 
-  <div v-else-if="!mod" class="p-6 text-sm text-slate-500">모듈을 찾을 수 없습니다.</div>
+  <div v-else-if="!mod" class="p-6 text-sm text-muted-foreground">모듈을 찾을 수 없습니다.</div>
 
   <template v-else>
-    <!-- Header -->
-    <div class="sticky top-0 z-10 flex h-12 items-center border-b border-slate-100 bg-white px-6 gap-3">
-      <nav class="flex items-center gap-1.5 text-[13px] text-slate-400">
-        <router-link class="transition-colors hover:text-slate-600" to="/">홈</router-link>
-        <ChevronRight class="size-3.5"/>
-        <span class="text-slate-500">{{ mod.category }}</span>
-        <ChevronRight class="size-3.5"/>
-        <span class="font-medium text-slate-800">{{ mod.name }}</span>
+    <!-- Breadcrumb -->
+    <div
+        class="sticky top-0 z-10 flex h-11 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6">
+      <nav class="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
+        <router-link class="shrink-0 transition-colors hover:text-foreground" to="/">홈</router-link>
+        <ChevronRight class="size-3.5 shrink-0"/>
+        <span class="shrink-0">{{ mod.category }}</span>
+        <ChevronRight class="size-3.5 shrink-0"/>
+        <span class="truncate font-medium text-foreground">{{ mod.name }}</span>
       </nav>
-      <span
-          :class="mod.isHeavy ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800'"
-          class="rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
-      >{{ mod.isHeavy ? 'Heavy' : 'Light' }}</span>
-      <p v-if="mod.description" class="ml-auto text-[12px] text-slate-400 hidden lg:block">{{ mod.description }}</p>
     </div>
 
-    <!-- Frontend-only -->
-    <FrontendToolPage v-if="mod.isFrontendOnly" :moduleId="mod.id"/>
+    <div class="mx-auto w-full max-w-[1440px] px-4 pb-10 sm:px-6">
 
-    <!-- Heavy -->
-    <div v-else-if="mod.isHeavy" class="flex justify-center px-6 py-8">
-      <div
-          class="grid w-full max-w-4xl min-h-[280px] grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <!-- Left: Params + Upload -->
-      <div class="flex flex-col overflow-hidden">
-        <div class="flex h-10 shrink-0 items-center border-b border-slate-100 px-4">
-          <span class="text-[11px] font-medium text-slate-400">파일 업로드</span>
-          <button v-if="jobId || batchId || result" class="ml-auto rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500" @click="resetAll">
-            <X class="size-3.5"/>
-          </button>
-        </div>
-
-        <!-- Heavy params (있을 때만) -->
-        <div v-if="heavyConfig?.params.length" class="shrink-0 border-b border-slate-100 p-4 flex flex-col gap-3">
-          <span class="text-[11px] font-medium text-slate-400">파라미터</span>
-          <div v-for="p in heavyConfig.params" :key="p.key" class="flex flex-col gap-1">
-            <label class="text-[11px] text-slate-500">{{ p.label }}</label>
-            <input
-                v-if="p.type === 'text'"
-                v-model="heavyFormValues[p.key]"
-                :placeholder="p.placeholder ?? ''"
-                class="rounded-md border border-slate-200 bg-slate-50 px-3 py-1.5 text-[13px] text-slate-800 outline-none focus:border-indigo-300"
-                type="text"
-            />
-            <select
-                v-else-if="p.type === 'select'"
-                v-model="heavyFormValues[p.key]"
-                class="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[13px] text-slate-700 outline-none focus:border-indigo-300"
-            >
-              <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 텍스트 직접 입력 (json-schema-to-dto, openapi-to-code) -->
-        <div v-if="heavyConfig?.textInput" class="flex flex-col border-b border-slate-100">
-          <div class="flex h-9 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-            <span class="text-[11px] font-medium text-slate-400">{{ heavyConfig.textInput.label }}</span>
-          </div>
-          <textarea
-              v-model="heavyTextContent"
-              :placeholder="heavyConfig.textInput.placeholder"
-              class="h-48 resize-none bg-slate-50 p-3 font-mono text-[12px] text-slate-800 outline-none placeholder:text-slate-300"
-          />
-          <div class="flex items-center gap-2 px-4 py-2">
-            <Button :disabled="!heavyTextContent.trim()" class="h-7 text-[12px]" @click="uploadTextAsFile">
-              텍스트로 생성
-            </Button>
-            <span class="text-[11px] text-slate-400">또는 아래에서 파일 업로드</span>
-          </div>
-        </div>
-
-        <div class="flex flex-1 flex-col p-6 overflow-auto">
-          <FileUploader
-              :accept="heavyConfig?.fileAccept"
-              :moduleId="mod.id"
-              :multiple="heavyConfig?.fileMultiple ?? true"
-              :params="heavyFormValues"
-              :reorderable="heavyConfig?.reorderable ?? false"
-              @uploaded="onUploaded"
-          />
-        </div>
-      </div>
-
-      <!-- Right: Result -->
-      <div class="flex flex-col">
-        <div class="flex h-10 shrink-0 items-center border-b border-slate-100 px-4">
-          <span class="text-[11px] font-medium text-slate-400">결과</span>
-        </div>
-        <div class="flex flex-1 items-center justify-center p-6">
-          <!-- 배치: 여러 파일을 각각 처리 후 ZIP -->
-          <div v-if="batchId" class="flex w-full flex-col items-center gap-4 text-center">
-            <BatchPoller
-                v-if="!batchComplete"
-                :batchId="batchId"
-                @done="onBatchDone"
-                @progress="onBatchProgress"
-            />
-            <template v-if="!batchComplete">
-              <Loader2 class="size-8 animate-spin text-indigo-400"/>
-              <p class="text-[13px] text-slate-500">
-                일괄 처리 중… {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
-                <span v-if="batchProgress?.failCount" class="text-red-400">(실패 {{ batchProgress.failCount }})</span>
-              </p>
-            </template>
-            <template v-else>
-              <p class="text-[13px] text-slate-600">
-                완료 {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
-                <span v-if="batchProgress?.failCount" class="text-red-400">(실패 {{ batchProgress.failCount }})</span>
-              </p>
-              <a
-                  :href="batchResultUrl"
-                  class="inline-flex h-9 items-center rounded-md bg-indigo-600 px-4 text-[13px] font-medium text-white transition-colors hover:bg-indigo-700"
-                  data-testid="batch-download"
-                  download
-              >ZIP 다운로드</a>
-              <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
-            </template>
-          </div>
-
-          <div v-else-if="!jobId && !result" class="flex flex-col items-center gap-3 text-center">
-            <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-slate-200">
-              <ArrowRight class="size-5 text-slate-300"/>
-            </div>
-            <p class="text-[12px] text-slate-400">파일을 업로드하면 처리가 시작됩니다</p>
-          </div>
-          <div v-else-if="!result" class="flex flex-col items-center gap-4">
-            <Loader2 class="size-8 animate-spin text-indigo-400"/>
-            <p class="text-[13px] text-slate-500">처리 중입니다...</p>
-          </div>
-          <div v-else class="flex w-full flex-col gap-4">
-            <ResultViewer :text="result.text" :url="result.url"/>
-            <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
-          </div>
-        </div>
-      </div>
-    </div>
-    </div>
-
-    <!-- Light -->
-    <div v-else class="flex justify-center px-6 py-8">
-      <div
-          class="grid w-full max-w-4xl min-h-[280px] grid-cols-2 divide-x divide-slate-200 rounded-xl border border-slate-200 bg-white overflow-hidden">
-      <!-- Input -->
-        <div class="flex flex-col">
-        <div class="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-          <span class="text-[11px] font-medium text-slate-400">입력</span>
-          <button v-if="hasInput" class="rounded p-0.5 text-slate-300 transition-colors hover:text-slate-500" @click="resetLight">
-            <X class="size-3.5"/>
-          </button>
-        </div>
-
-        <!-- CONFIGS 기반 입력 -->
-        <div v-if="moduleConfig" class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
-          <div v-for="p in moduleConfig.params" :key="p.key" class="flex flex-col gap-1.5">
-            <label class="text-[11px] font-medium text-slate-500">{{ p.label }}</label>
-            <textarea
-                v-if="p.type === 'textarea'"
-                v-model="formValues[p.key]"
-                :placeholder="p.placeholder ?? ''"
-                class="min-h-[120px] resize-y rounded-md border border-slate-200 bg-slate-50 p-3 font-mono text-[13px] text-slate-800 outline-none focus:border-indigo-300 placeholder:text-slate-300"
-                @keydown="handleTextareaKeydown"
-            />
-            <input
-                v-else-if="p.type === 'text'"
-                v-model="formValues[p.key]"
-                :placeholder="p.placeholder ?? ''"
-                class="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-[13px] text-slate-800 outline-none focus:border-indigo-300 placeholder:text-slate-300"
-                type="text"
-                @keydown="handleTextareaKeydown"
-            />
-            <select
-                v-else-if="p.type === 'select'"
-                v-model="formValues[p.key]"
-                class="rounded-md border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-700 outline-none focus:border-indigo-300"
-            >
-              <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- 단일 textarea (CONFIGS 없는 모듈) -->
-        <textarea
-            v-else
-            v-model="runInput"
-            class="min-h-[160px] flex-1 resize-y bg-slate-50 p-4 font-mono text-[13px] text-slate-800 outline-none placeholder:text-slate-300"
-            placeholder="입력값을 입력하세요"
-            @keydown="handleTextareaKeydown"
-        />
-
-        <div class="flex shrink-0 h-12 items-center gap-3 border-t border-slate-100 px-4">
-          <Button :disabled="running" class="flex-1 h-8 text-[13px]" @click="runLight">
-            <Loader2 v-if="running" class="size-3.5 animate-spin"/>
-            <span>{{ running ? '실행 중...' : '실행' }}</span>
-          </Button>
-          <span class="text-[10px] text-slate-400 font-mono">⌘↵</span>
-        </div>
-      </div>
-
-      <!-- Output -->
-      <div class="flex flex-col">
-        <div class="flex h-10 shrink-0 items-center justify-between border-b border-slate-100 px-4">
-          <span class="text-[11px] font-medium text-slate-400">결과</span>
+      <!-- Title -->
+      <div class="flex flex-wrap items-center gap-x-3 gap-y-2 pb-4 pt-6">
+        <h1 class="text-lg font-semibold tracking-tight text-foreground">{{ mod.name }}</h1>
+        <span
+            v-if="mod.isHeavy"
+            class="rounded-full border border-border bg-secondary px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground"
+        >파일 처리</span>
+        <p v-if="mod.description" class="text-[13px] text-muted-foreground">{{ mod.description }}</p>
+        <div class="ml-auto flex items-center gap-3 text-[12px] text-muted-foreground">
+          <span class="flex items-center gap-1.5">
+            <BarChart2 class="size-3.5"/>
+            사용 <span class="font-mono">{{ stats?.useCount ?? 0 }}</span>회
+          </span>
           <button
-              v-if="result?.text && moduleConfig?.resultType !== 'image'"
-              :class="copied ? 'text-emerald-500' : 'text-slate-300 hover:text-slate-500'"
-              class="rounded p-0.5 transition-colors"
-              @click="copyResult"
+              :class="liked ? 'border-rose-300 text-rose-500' : 'border-border hover:border-rose-300 hover:text-rose-500'"
+              class="flex items-center gap-1.5 rounded-full border px-3 py-0.5 font-mono text-[12px] transition-colors"
+              @click="toggleLike"
           >
-            <Check v-if="copied" class="size-3.5"/>
-            <Copy v-else class="size-3.5"/>
+            <Heart :class="liked ? 'fill-rose-500 text-rose-500' : ''" class="size-3.5"/>
+            {{ stats?.likeCount ?? 0 }}
           </button>
         </div>
+      </div>
 
-        <div class="flex-1 overflow-auto">
-          <div v-if="runError" class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
-            <div class="flex size-10 items-center justify-center rounded-full bg-red-50">
-              <AlertCircle class="size-5 text-red-400"/>
-            </div>
-            <div>
-              <p class="text-[13px] font-medium text-slate-700">서버에 연결할 수 없습니다</p>
-              <p class="mt-0.5 text-[11px] text-slate-400">잠시 후 다시 시도해 주세요</p>
-            </div>
-            <Button class="text-[12px]" size="sm" variant="outline" @click="runLight">다시 시도</Button>
+      <!-- 통합 도구 -->
+      <UnifiedConvertPage v-if="mod.id === 'data-convert'"/>
+      <UnifiedEncoderPage v-else-if="mod.id === 'encoder'"/>
+      <UnifiedTextUtilsPage v-else-if="mod.id === 'text-utils'"/>
+
+      <!-- Frontend-only -->
+      <FrontendToolPage v-else-if="mod.isFrontendOnly" :moduleId="mod.id"/>
+
+      <!-- Heavy -->
+      <div
+          v-else-if="mod.isHeavy"
+          class="grid min-h-[420px] grid-cols-1 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-2 lg:divide-x lg:divide-y-0"
+      >
+        <!-- Left: Params + Upload -->
+        <div class="flex flex-col overflow-hidden">
+          <div class="flex h-10 shrink-0 items-center border-b border-border px-4">
+            <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">파일 업로드</span>
+            <button
+                v-if="jobId || batchId || result"
+                class="ml-auto rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+                @click="resetAll"
+            >
+              <X class="size-3.5"/>
+            </button>
           </div>
 
-          <div v-else-if="moduleConfig?.resultType === 'image' && result?.text" class="flex flex-col items-center gap-4 p-6">
-            <img :src="`data:image/png;base64,${result.text}`" alt="생성된 이미지" class="max-w-full rounded border border-slate-200 shadow-sm"/>
-            <Button class="text-[12px]" size="sm" variant="outline" @click="downloadImage">다운로드</Button>
-          </div>
-
-          <div v-else-if="result" class="p-4">
-            <ResultViewer :text="result.text" :url="result.url"/>
-          </div>
-
-          <div v-else class="flex h-full flex-col items-center justify-center gap-2.5 px-6 text-center">
-            <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-slate-200">
-              <ArrowRight class="size-5 text-slate-300"/>
+          <!-- Heavy params (있을 때만) -->
+          <div v-if="heavyConfig?.params.length" class="flex shrink-0 flex-col gap-3 border-b border-border p-4">
+            <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">파라미터</span>
+            <div v-for="p in heavyConfig.params" :key="p.key" class="flex flex-col gap-1">
+              <label class="text-[11px] text-muted-foreground">{{ p.label }}</label>
+              <input
+                  v-if="p.type === 'text'"
+                  v-model="heavyFormValues[p.key]"
+                  :placeholder="p.placeholder ?? ''"
+                  class="rounded-md border border-input bg-background px-3 py-1.5 text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/50 focus:border-ring focus:ring-2 focus:ring-ring/20"
+                  type="text"
+              />
+              <select
+                  v-else-if="p.type === 'select'"
+                  v-model="heavyFormValues[p.key]"
+                  class="rounded-md border border-input bg-background px-3 py-1.5 text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
+              >
+                <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
             </div>
-            <p class="text-[12px] text-slate-400">
-              입력 후 <kbd class="rounded bg-slate-100 px-1 py-0.5 font-mono text-[10px]">⌘↵</kbd> 또는 실행 버튼을 누르세요
-            </p>
+          </div>
+
+          <!-- 텍스트 직접 입력 (json-schema-to-dto, openapi-to-code) -->
+          <div v-if="heavyConfig?.textInput" class="flex flex-col border-b border-border">
+            <div class="flex h-9 shrink-0 items-center justify-between border-b border-border px-4">
+              <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">{{
+                  heavyConfig.textInput.label
+                }}</span>
+            </div>
+            <textarea
+                v-model="heavyTextContent"
+                :placeholder="heavyConfig.textInput.placeholder"
+                class="h-56 resize-none bg-muted/40 p-3 font-mono text-[12px] text-foreground outline-none placeholder:text-muted-foreground/40"
+            />
+            <div class="flex items-center gap-2 px-4 py-2">
+              <Button :disabled="!heavyTextContent.trim()" class="h-7 text-[12px]" @click="uploadTextAsFile">
+                텍스트로 생성
+              </Button>
+              <span class="text-[11px] text-muted-foreground">또는 아래에서 파일 업로드</span>
+            </div>
+          </div>
+
+          <div class="flex flex-1 flex-col overflow-auto p-6">
+            <FileUploader
+                :accept="heavyConfig?.fileAccept"
+                :moduleId="mod.id"
+                :multiple="heavyConfig?.fileMultiple ?? true"
+                :params="heavyFormValues"
+                :reorderable="heavyConfig?.reorderable ?? false"
+                @uploaded="onUploaded"
+            />
+          </div>
+        </div>
+
+        <!-- Right: Result -->
+        <div class="flex flex-col">
+          <div class="flex h-10 shrink-0 items-center border-b border-border px-4">
+            <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">결과</span>
+          </div>
+          <div class="flex flex-1 items-center justify-center p-6">
+            <!-- 배치: 여러 파일을 각각 처리 후 ZIP -->
+            <div v-if="batchId" class="flex w-full flex-col items-center gap-4 text-center">
+              <BatchPoller
+                  v-if="!batchComplete"
+                  :batchId="batchId"
+                  @done="onBatchDone"
+                  @progress="onBatchProgress"
+              />
+              <template v-if="!batchComplete">
+                <Loader2 class="size-8 animate-spin text-primary/60"/>
+                <p class="text-[13px] text-muted-foreground">
+                  일괄 처리 중… {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
+                  <span v-if="batchProgress?.failCount" class="text-destructive">(실패 {{
+                      batchProgress.failCount
+                    }})</span>
+                </p>
+              </template>
+              <template v-else>
+                <p class="text-[13px] text-foreground">
+                  완료 {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
+                  <span v-if="batchProgress?.failCount" class="text-destructive">(실패 {{
+                      batchProgress.failCount
+                    }})</span>
+                </p>
+                <a
+                    :href="batchResultUrl"
+                    class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                    data-testid="batch-download"
+                    download
+                >ZIP 다운로드</a>
+                <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
+              </template>
+            </div>
+
+            <div v-else-if="!jobId && !result" class="flex flex-col items-center gap-3 text-center">
+              <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-border">
+                <ArrowRight class="size-5 text-muted-foreground/50"/>
+              </div>
+              <p class="text-[12px] text-muted-foreground">파일을 업로드하면 처리가 시작됩니다</p>
+            </div>
+            <div v-else-if="!result" class="flex flex-col items-center gap-4">
+              <Loader2 class="size-8 animate-spin text-primary/60"/>
+              <p class="text-[13px] text-muted-foreground">처리 중입니다...</p>
+            </div>
+            <div v-else class="flex w-full flex-col gap-4">
+              <ResultViewer :text="result.text" :url="result.url"/>
+              <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
-    </div>
 
-    <!-- Stats + Comments -->
-    <div class="border-t border-slate-100 px-6 py-8 space-y-6">
-      <!-- Stats bar -->
-      <div class="flex items-center gap-4 text-[13px] text-slate-500">
-        <span class="flex items-center gap-1.5">
-          <BarChart2 class="size-3.5 text-slate-400"/>
-          사용 {{ stats?.useCount ?? 0 }}회
-        </span>
-        <button
-            class="flex items-center gap-1.5 rounded-full border border-slate-200 px-3 py-0.5 text-[12px] transition-colors hover:border-rose-300 hover:text-rose-500"
-            :class="liked ? 'border-rose-300 text-rose-500' : ''"
-            @click="toggleLike"
-        >
-          <Heart class="size-3.5" :class="liked ? 'fill-rose-500 text-rose-500' : ''"/>
-          {{ stats?.likeCount ?? 0 }}
-        </button>
+      <!-- Light -->
+      <div
+          v-else
+          class="grid min-h-[420px] grid-cols-1 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card lg:grid-cols-2 lg:divide-x lg:divide-y-0"
+      >
+        <!-- Input -->
+        <div class="flex flex-col">
+          <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
+            <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">입력</span>
+            <div class="flex items-center gap-1">
+              <button
+                  v-if="moduleConfig?.sample"
+                  class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
+                  @click="applySample"
+              >
+                <Wand2 class="size-3"/>
+                예시
+              </button>
+              <button
+                  v-if="hasInput"
+                  class="rounded p-0.5 text-muted-foreground/60 transition-colors hover:text-foreground"
+                  @click="resetLight"
+              >
+                <X class="size-3.5"/>
+              </button>
+            </div>
+          </div>
+
+          <!-- CONFIGS 기반 입력 -->
+          <div v-if="moduleConfig" class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
+            <div v-for="p in moduleConfig.params" :key="p.key" class="flex flex-col gap-1.5">
+              <label class="text-[11px] font-medium text-muted-foreground">{{ p.label }}</label>
+              <textarea
+                  v-if="p.type === 'textarea'"
+                  v-model="formValues[p.key]"
+                  :class="textareaCount > 1 ? 'min-h-[20vh]' : 'min-h-[36vh]'"
+                  :placeholder="p.placeholder ?? ''"
+                  class="flex-1 resize-y rounded-md border border-input bg-muted/40 p-3 font-mono text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-ring focus:ring-2 focus:ring-ring/20"
+                  @keydown="handleTextareaKeydown"
+              />
+              <input
+                  v-else-if="p.type === 'text'"
+                  v-model="formValues[p.key]"
+                  :placeholder="p.placeholder ?? ''"
+                  class="rounded-md border border-input bg-muted/40 px-3 py-2 font-mono text-[13px] text-foreground outline-none transition-colors placeholder:text-muted-foreground/40 focus:border-ring focus:ring-2 focus:ring-ring/20"
+                  type="text"
+                  @keydown="handleTextareaKeydown"
+              />
+              <select
+                  v-else-if="p.type === 'select'"
+                  v-model="formValues[p.key]"
+                  class="rounded-md border border-input bg-background px-3 py-2 text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
+              >
+                <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 단일 textarea (CONFIGS 없는 모듈) -->
+          <textarea
+              v-else
+              v-model="runInput"
+              class="min-h-[40vh] flex-1 resize-y bg-muted/40 p-4 font-mono text-[13px] text-foreground outline-none placeholder:text-muted-foreground/40"
+              placeholder="입력값을 입력하세요"
+              @keydown="handleTextareaKeydown"
+          />
+
+          <div class="flex h-11 shrink-0 items-center gap-3 border-t border-border px-4">
+            <p class="flex-1 text-[11px] text-muted-foreground/70">
+              <template v-if="autoRunEnabled">입력하면 자동으로 실행됩니다</template>
+              <template v-else>입력 후 실행 버튼을 누르세요</template>
+            </p>
+            <span class="font-mono text-[10px] text-muted-foreground/60">⌘↵</span>
+            <Button :disabled="running" class="h-8 px-4 text-[13px]" size="sm" @click="() => runLight()">
+              <Loader2 v-if="running" class="size-3.5 animate-spin"/>
+              <span>{{ running ? '실행 중' : '실행' }}</span>
+            </Button>
+          </div>
+        </div>
+
+        <!-- Output -->
+        <div class="flex flex-col">
+          <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
+            <span
+                class="flex items-center gap-2 font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+              결과
+              <Loader2 v-if="running" class="size-3 animate-spin"/>
+            </span>
+            <button
+                v-if="result?.text && moduleConfig?.resultType !== 'image'"
+                :class="copied ? 'text-emerald-500' : 'text-muted-foreground/60 hover:text-foreground'"
+                class="rounded p-0.5 transition-colors"
+                @click="copyResult"
+            >
+              <Check v-if="copied" class="size-3.5"/>
+              <Copy v-else class="size-3.5"/>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-auto">
+            <div v-if="runError && !result"
+                 class="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+              <div class="flex size-10 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle class="size-5 text-destructive/70"/>
+              </div>
+              <div>
+                <p class="text-[13px] font-medium text-foreground">{{ runError }}</p>
+                <p class="mt-0.5 text-[11px] text-muted-foreground">입력을 확인하거나 잠시 후 다시 시도해 주세요</p>
+              </div>
+              <Button class="text-[12px]" size="sm" variant="outline" @click="() => runLight()">다시 시도</Button>
+            </div>
+
+            <div v-else-if="moduleConfig?.resultType === 'image' && result?.text"
+                 class="flex flex-col items-center gap-4 p-6">
+              <img :src="`data:image/png;base64,${result.text}`" alt="생성된 이미지"
+                   class="max-w-full rounded border border-border bg-white shadow-sm"/>
+              <Button class="text-[12px]" size="sm" variant="outline" @click="downloadImage">다운로드</Button>
+            </div>
+
+            <div v-else-if="result" class="flex h-full flex-col p-4">
+              <p v-if="runError" class="mb-2 text-[11px] text-destructive/80">{{ runError }}</p>
+              <ResultViewer :text="result.text" :url="result.url" class="flex-1"/>
+            </div>
+
+            <div v-else class="flex h-full flex-col items-center justify-center gap-2.5 px-6 text-center">
+              <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-border">
+                <ArrowRight class="size-5 text-muted-foreground/50"/>
+              </div>
+              <p class="text-[12px] text-muted-foreground">
+                <template v-if="autoRunEnabled">입력과 동시에 결과가 나타납니다</template>
+                <template v-else>입력 후 <kbd class="rounded bg-muted px-1 py-0.5 font-mono text-[10px]">⌘↵</kbd> 또는 실행 버튼을
+                  누르세요
+                </template>
+              </p>
+              <Button
+                  v-if="moduleConfig?.sample"
+                  class="text-[12px]"
+                  size="sm"
+                  variant="outline"
+                  @click="applySample"
+              >
+                <Wand2 class="size-3.5"/>
+                예시로 실행해 보기
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <CommentSection :module-id="(route.params.moduleId as string)"/>
+      <!-- Comments (접이식) -->
+      <div class="mt-8 border-t border-border pt-4">
+        <button
+            class="flex items-center gap-2 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+            @click="showComments = !showComments"
+        >
+          <MessageSquare class="size-4"/>
+          댓글
+          <span v-if="commentCount !== null" class="font-mono text-[11px]">{{ commentCount }}</span>
+          <ChevronDown :class="showComments ? 'rotate-180' : ''" class="size-3.5 transition-transform"/>
+        </button>
+        <div v-show="showComments">
+          <CommentSection :module-id="(route.params.moduleId as string)" @count="commentCount = $event"/>
+        </div>
+      </div>
     </div>
   </template>
 </template>
@@ -281,7 +354,20 @@
 <script lang="ts" setup>
 import {computed, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {AlertCircle, ArrowRight, BarChart2, Check, ChevronRight, Copy, Heart, Loader2, X} from 'lucide-vue-next'
+import {
+  AlertCircle,
+  ArrowRight,
+  BarChart2,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Copy,
+  Heart,
+  Loader2,
+  MessageSquare,
+  Wand2,
+  X,
+} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
@@ -289,7 +375,11 @@ import {buildFallbackParams} from '../utils/lightParams'
 import type {BatchProgress, Module, UploadResult} from '../types'
 import {isBatchResult} from '../types'
 import {Button} from '@/components/ui/button'
+import {useRecentTools} from '../composables/useRecentTools'
 import FrontendToolPage from '../components/FrontendToolPage.vue'
+import UnifiedConvertPage from '../components/UnifiedConvertPage.vue'
+import UnifiedEncoderPage from '../components/UnifiedEncoderPage.vue'
+import UnifiedTextUtilsPage from '../components/UnifiedTextUtilsPage.vue'
 import FileUploader from '../components/FileUploader.vue'
 import BatchPoller from '../components/BatchPoller.vue'
 import ResultViewer from '../components/ResultViewer.vue'
@@ -311,6 +401,7 @@ interface ParamDef {
 interface ModuleConfig {
   params: ParamDef[]
   resultType?: 'image'
+  sample?: Record<string, string>
   textInput?: { label: string; placeholder: string; filename: string }
   fileAccept?: string
   fileMultiple?: boolean
@@ -327,6 +418,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'size', label: '크기 (px)', type: 'text', placeholder: '300', default: '300'},
     ],
     resultType: 'image',
+    sample: {content: 'https://github.com'},
   },
   'barcode': {
     params: [
@@ -335,6 +427,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'height', label: '높이 (px)', type: 'text', placeholder: '120', default: '120'},
     ],
     resultType: 'image',
+    sample: {content: '0123456789'},
   },
 
   // 보안
@@ -343,6 +436,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'password', label: '비밀번호', type: 'text', placeholder: '해시할 비밀번호 입력'},
       {key: 'rounds', label: 'Rounds (강도)', type: 'select', options: ['10', '11', '12', '13'], default: '10'},
     ],
+    sample: {password: 'p@ssw0rd!'},
   },
   'rsa-key': {
     params: [
@@ -355,6 +449,7 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'key', label: '서명 키', type: 'text', placeholder: 'secret-key'},
       {key: 'algorithm', label: '알고리즘', type: 'select', options: ['HmacSHA256', 'HmacSHA512'], default: 'HmacSHA256'},
     ],
+    sample: {text: 'hello world', key: 'secret-key'},
   },
   'aes': {
     params: [
@@ -362,23 +457,27 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'key', label: 'AES 키', type: 'text', placeholder: '16·24·32자 키'},
       {key: 'mode', label: '모드', type: 'select', options: ['encrypt', 'decrypt'], default: 'encrypt'},
     ],
+    sample: {text: '민감한 데이터', key: '0123456789abcdef'},
   },
 
   // 포맷터
   'sql-formatter': {
     params: [{key: 'sql', label: 'SQL', type: 'textarea', placeholder: 'SELECT * FROM users WHERE id = 1;'}],
+    sample: {sql: 'SELECT u.id, u.name, o.total FROM users u JOIN orders o ON o.user_id = u.id WHERE o.total > 1000 ORDER BY o.total DESC;'},
   },
   'xml-formatter': {
     params: [
       {key: 'xml', label: 'XML', type: 'textarea', placeholder: '<root><item>1</item></root>'},
       {key: 'minify', label: '출력 형식', type: 'select', options: ['false', 'true'], default: 'false'},
     ],
+    sample: {xml: '<root><item id="1"><name>foo</name></item><item id="2"><name>bar</name></item></root>'},
   },
   'html-entity': {
     params: [
       {key: 'text', label: '텍스트', type: 'textarea', placeholder: '<div>hello & world</div>'},
       {key: 'mode', label: '모드', type: 'select', options: ['encode', 'decode'], default: 'encode'},
     ],
+    sample: {text: '<div class="greeting">hello & world</div>'},
   },
 
   // 변환기
@@ -387,24 +486,28 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'input', label: '입력', type: 'textarea', placeholder: '{"key": "value"}'},
       {key: 'direction', label: '변환 방향', type: 'select', options: ['json-to-yaml', 'yaml-to-json'], default: 'json-to-yaml'},
     ],
+    sample: {input: '{"name": "DevToolbox", "tags": ["dev", "tools"], "active": true}'},
   },
   'json-toml': {
     params: [
       {key: 'input', label: '입력', type: 'textarea', placeholder: '{"key": "value"}'},
       {key: 'direction', label: '변환 방향', type: 'select', options: ['json-to-toml', 'toml-to-json'], default: 'json-to-toml'},
     ],
+    sample: {input: '{"name": "DevToolbox", "tags": ["dev", "tools"], "active": true}'},
   },
   'json-xml': {
     params: [
       {key: 'input', label: '입력', type: 'textarea', placeholder: '{"key": "value"}'},
       {key: 'direction', label: '변환 방향', type: 'select', options: ['json-to-xml', 'xml-to-json'], default: 'json-to-xml'},
     ],
+    sample: {input: '{"name": "DevToolbox", "tags": ["dev", "tools"], "active": true}'},
   },
   'csv-json': {
     params: [
       {key: 'input', label: '입력', type: 'textarea', placeholder: 'name,age\nAlice,30'},
       {key: 'direction', label: '변환 방향', type: 'select', options: ['csv-to-json', 'json-to-csv'], default: 'csv-to-json'},
     ],
+    sample: {input: 'name,age\nAlice,30\nBob,25'},
   },
 
   // 텍스트
@@ -413,12 +516,17 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'original', label: '원본 텍스트', type: 'textarea', placeholder: '원본 텍스트 입력...'},
       {key: 'revised', label: '수정된 텍스트', type: 'textarea', placeholder: '수정된 텍스트 입력...'},
     ],
+    sample: {
+      original: 'The quick brown fox\njumps over the lazy dog',
+      revised: 'The quick red fox\nleaps over the lazy dog',
+    },
   },
   'regex-tester': {
     params: [
       {key: 'pattern', label: '정규식 패턴', type: 'text', placeholder: '[a-z]+'},
       {key: 'text', label: '테스트 텍스트', type: 'textarea', placeholder: '검사할 텍스트 입력...'},
     ],
+    sample: {pattern: '[a-z]+@[a-z]+\\.[a-z]{2,}', text: 'contact: alice@example.com, bob@test.org'},
   },
   'case-converter': {
     params: [
@@ -426,14 +534,17 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'from', label: 'From', type: 'select', options: ['camel', 'pascal', 'snake', 'kebab'], default: 'camel'},
       {key: 'to', label: 'To', type: 'select', options: ['camel', 'pascal', 'snake', 'kebab'], default: 'snake'},
     ],
+    sample: {text: 'myVariableName'},
   },
 
   // 네트워크
   'url-parser': {
     params: [{key: 'url', label: 'URL', type: 'text', placeholder: 'https://example.com/path?q=1#hash'}],
+    sample: {url: 'https://user@example.com:8443/path/to/page?q=devtoolbox&lang=ko#section'},
   },
   'subnet-calc': {
     params: [{key: 'cidr', label: 'CIDR 표기', type: 'text', placeholder: '192.168.1.0/24'}],
+    sample: {cidr: '192.168.1.0/24'},
   },
   'html-fetch': {
     params: [{key: 'url', label: 'URL', type: 'text', placeholder: 'https://example.com'}],
@@ -445,14 +556,21 @@ const MODULE_CONFIGS: Record<string, ModuleConfig> = {
       {key: 'expression', label: 'Cron 표현식', type: 'text', placeholder: '0 0 * * *'},
       {key: 'count', label: '다음 실행 횟수', type: 'text', placeholder: '5', default: '5'},
     ],
+    sample: {expression: '*/15 9-18 * * 1-5'},
   },
   'docker-compose': {
     params: [{key: 'command', label: 'docker run 명령어', type: 'textarea', placeholder: 'docker run -p 8080:8080 -e ENV=prod nginx'}],
+    sample: {command: 'docker run -d -p 8080:80 -e TZ=Asia/Seoul --name web nginx:alpine'},
   },
 
   // 유틸
   'totp': {
     params: [{key: 'secret', label: 'TOTP Secret (Base32)', type: 'text', placeholder: 'JBSWY3DPEHPK3PXP'}],
+    sample: {secret: 'JBSWY3DPEHPK3PXP'},
+  },
+  'multi-hash': {
+    params: [{key: 'text', label: '텍스트', type: 'textarea', placeholder: '해시를 생성할 텍스트'}],
+    sample: {text: 'hello world'},
   },
 }
 
@@ -541,10 +659,18 @@ const heavyTextContent = ref('')
 const running = ref(false)
 const runError = ref('')
 const copied = ref(false)
+const showComments = ref(false)
+const commentCount = ref<number | null>(null)
+
+const {record: recordRecent} = useRecentTools()
 
 const moduleConfig = computed(() => mod.value ? MODULE_CONFIGS[mod.value.id] ?? null : null)
 const heavyConfig = computed(() => mod.value ? HEAVY_CONFIGS[mod.value.id] ?? null : null)
 const batchResultUrl = computed(() => batchId.value ? `${API_BASE}/api/v1/batches/${batchId.value}/result` : '')
+
+const textareaCount = computed(() =>
+    moduleConfig.value?.params.filter(p => p.type === 'textarea').length ?? 0,
+)
 
 const hasInput = computed(() => {
   if (moduleConfig.value) return Object.values(formValues.value).some(v => v !== '' && v !== undefined)
@@ -589,6 +715,8 @@ async function loadModule(moduleId: string) {
   mod.value = null
   stats.value = null
   liked.value = false
+  showComments.value = false
+  commentCount.value = null
   resetAll()
   try {
     const {data} = await apiClient.get<Module[]>('/api/v1/modules')
@@ -600,6 +728,7 @@ async function loadModule(moduleId: string) {
     loading.value = false
     initForm()
     loadStats(moduleId)
+    if (mod.value) recordRecent(mod.value.id)
   }
 }
 
@@ -696,11 +825,47 @@ function onFailed() {
 
 // ── Light ─────────────────────────────────────────────────────────────────
 
-async function runLight() {
-  if (running.value) return
+// 키 입력마다 외부 요청이 나가면 안 되는 모듈은 자동 실행에서 제외한다
+const AUTO_RUN_DISABLED = new Set(['html-fetch'])
+
+const autoRunEnabled = computed(() =>
+    !!mod.value && !mod.value.isHeavy && !mod.value.isFrontendOnly
+    && !AUTO_RUN_DISABLED.has(mod.value.id)
+    && autoRunReady.value !== null,
+)
+
+// 자동 실행 트리거 기준: 첫 번째 자유 입력 필드(select 제외)가 비어있지 않을 때.
+// select만 있는 모듈(rsa-key 등)은 자동 실행하지 않는다 (null).
+const autoRunReady = computed<boolean | null>(() => {
+  if (moduleConfig.value) {
+    const primary = moduleConfig.value.params.find(p => p.type !== 'select')
+    if (!primary) return null
+    return (formValues.value[primary.key]?.trim() ?? '') !== ''
+  }
+  return runInput.value.trim() !== ''
+})
+
+let runToken = 0
+let debounceTimer: ReturnType<typeof setTimeout> | null = null
+
+watch([formValues, runInput], () => {
+  if (!autoRunEnabled.value || !autoRunReady.value) return
+  if (debounceTimer) clearTimeout(debounceTimer)
+  debounceTimer = setTimeout(() => runLight({auto: true}), 600)
+}, {deep: true})
+
+onUnmounted(() => {
+  if (debounceTimer) clearTimeout(debounceTimer)
+})
+
+async function runLight(opts: { auto?: boolean } = {}) {
+  if (running.value && opts.auto) return
+  const token = ++runToken
   running.value = true
-  runError.value = ''
-  result.value = null
+  if (!opts.auto) {
+    runError.value = ''
+    result.value = null
+  }
   try {
     let params: Record<string, string>
     if (moduleConfig.value) {
@@ -714,12 +879,23 @@ async function runLight() {
       params = buildFallbackParams(runInput.value)
     }
     const {data} = await apiClient.post(`/api/v1/tools/${mod.value?.id}/run`, params)
+    if (token !== runToken) return
     result.value = {url: null, text: data.result ?? null}
-  } catch {
-    runError.value = '서버가 준비 중입니다. 잠시 후 다시 시도해 주세요.'
+    runError.value = ''
+  } catch (e: unknown) {
+    if (token !== runToken) return
+    const err = e as { response?: { data?: { message?: string } } }
+    runError.value = err.response?.data?.message ?? '서버에 연결할 수 없습니다'
+    if (!opts.auto) result.value = null
   } finally {
-    running.value = false
+    if (token === runToken) running.value = false
   }
+}
+
+function applySample() {
+  const sample = moduleConfig.value?.sample
+  if (!sample) return
+  formValues.value = {...formValues.value, ...sample}
 }
 
 function handleTextareaKeydown(e: KeyboardEvent) {

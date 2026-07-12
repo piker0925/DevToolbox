@@ -1,44 +1,85 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn-vue/tailwind.css";
+@import "@fontsource-variable/jetbrains-mono";
 
 @custom-variant dark (&:is(.dark *));
 
-
+/*
+ * Workbench 팔레트
+ * - 라이트: 웜 페이퍼 그레이 바탕 + 그래파이트 잉크, 액센트는 코발트 1색
+ * - 다크: 미드나잇 그래파이트 (파랑 기미 살짝)
+ * - 사이드바는 양 테마 공통 다크 (브랜드 앵커)
+ */
 :root {
-    color-scheme: light only;
-    --radius: 0.625rem;
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
+    color-scheme: light;
+    --radius: 0.5rem;
+    --background: oklch(0.972 0.0035 85);
+    --foreground: oklch(0.235 0.012 262);
     --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
+    --card-foreground: oklch(0.235 0.012 262);
     --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.5573 0.2243 264.36);
-    --primary-foreground: oklch(1 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.235 0.012 262);
+    --primary: oklch(0.495 0.185 257);
+    --primary-foreground: oklch(0.985 0.002 85);
+    --secondary: oklch(0.955 0.004 85);
+    --secondary-foreground: oklch(0.32 0.012 262);
+    --muted: oklch(0.945 0.0045 85);
+    --muted-foreground: oklch(0.52 0.014 262);
+    --accent: oklch(0.945 0.0045 85);
+    --accent-foreground: oklch(0.28 0.012 262);
     --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.5573 0.2243 264.36);
+    --border: oklch(0.898 0.005 85);
+    --input: oklch(0.898 0.005 85);
+    --ring: oklch(0.495 0.185 257);
     --chart-1: oklch(0.87 0 0);
     --chart-2: oklch(0.556 0 0);
     --chart-3: oklch(0.439 0 0);
     --chart-4: oklch(0.371 0 0);
     --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.5573 0.2243 264.36);
-    --sidebar-primary-foreground: oklch(1 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.5573 0.2243 264.36);
+    --sidebar: oklch(0.195 0.008 262);
+    --sidebar-foreground: oklch(0.72 0.008 262);
+    --sidebar-primary: oklch(0.495 0.185 257);
+    --sidebar-primary-foreground: oklch(0.985 0.002 85);
+    --sidebar-accent: oklch(1 0 0 / 8%);
+    --sidebar-accent-foreground: oklch(0.88 0.005 262);
+    --sidebar-border: oklch(1 0 0 / 8%);
+    --sidebar-ring: oklch(0.495 0.185 257);
+}
+
+.dark {
+    color-scheme: dark;
+    --background: oklch(0.185 0.008 262);
+    --foreground: oklch(0.92 0.005 262);
+    --card: oklch(0.225 0.009 262);
+    --card-foreground: oklch(0.92 0.005 262);
+    --popover: oklch(0.225 0.009 262);
+    --popover-foreground: oklch(0.92 0.005 262);
+    --primary: oklch(0.74 0.14 257);
+    --primary-foreground: oklch(0.185 0.008 262);
+    --secondary: oklch(0.27 0.01 262);
+    --secondary-foreground: oklch(0.92 0.005 262);
+    --muted: oklch(0.265 0.01 262);
+    --muted-foreground: oklch(0.67 0.012 262);
+    --accent: oklch(0.27 0.01 262);
+    --accent-foreground: oklch(0.92 0.005 262);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 14%);
+    --ring: oklch(0.74 0.14 257);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.165 0.008 262);
+    --sidebar-foreground: oklch(0.72 0.008 262);
+    --sidebar-primary: oklch(0.74 0.14 257);
+    --sidebar-primary-foreground: oklch(0.185 0.008 262);
+    --sidebar-accent: oklch(1 0 0 / 8%);
+    --sidebar-accent-foreground: oklch(0.88 0.005 262);
+    --sidebar-border: oklch(1 0 0 / 8%);
+    --sidebar-ring: oklch(0.74 0.14 257);
 }
 
 html, body {
@@ -60,13 +101,14 @@ html, body {
 .file-uploader:hover,
 .file-uploader.dragging {
     border-color: var(--primary);
-    background: oklch(0.97 0.01 264);
+    background: color-mix(in oklab, var(--primary) 6%, transparent);
     color: var(--primary);
 }
 
 @theme inline {
     --font-sans: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     --font-heading: var(--font-sans);
+    --font-mono: 'JetBrains Mono Variable', ui-monospace, SFMono-Regular, Menlo, 'Pretendard Variable', monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -104,40 +146,6 @@ html, body {
     --radius-xl: calc(var(--radius) + 4px);
 }
 
-.dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
-}
-
 @layer base {
     * {
         @apply border-border outline-ring/50;
@@ -146,5 +154,24 @@ html, body {
     body {
         @apply bg-background text-foreground;
         @apply font-sans;
+    }
+}
+
+/* 홈 그리드 진입 스태거 (reduced-motion 존중) */
+@media (prefers-reduced-motion: no-preference) {
+    .stagger-in {
+        animation: stagger-fade-up .35s ease-out both;
+        animation-delay: calc(var(--stagger-i, 0) * 30ms);
+    }
+
+    @keyframes stagger-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(4px);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
     }
 }
