@@ -82,10 +82,26 @@
 
 <script lang="ts" setup>
 import {computed, onUnmounted, ref, watch} from 'vue'
-import {useRoute} from 'vue-router'
+import {useRoute, useRouter} from 'vue-router'
 import {AlertCircle, ArrowRight, Check, Copy, Loader2, Wand2} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
-import {decodeBase64, decodeUrl, encodeBase64, encodeUrl} from '../utils/frontendTools'
+import {
+  decodeBase64,
+  decodeBase64Url,
+  decodeUrl,
+  encodeBase64,
+  encodeBase64Url,
+  encodeUrl,
+} from '../utils/frontendTools'
+import {
+  decodeCharCodes,
+  decodeHex,
+  decodeUnicode,
+  encodeCharCodes,
+  encodeHex,
+  encodeUnicode,
+  rot13,
+} from './encoderUtils'
 import {Button} from '@/components/ui/button'
 
 interface EncoderMode {
@@ -100,8 +116,27 @@ interface EncoderMode {
 const MODES: EncoderMode[] = [
   {id: 'base64-encode', label: 'Base64 인코드', fn: encodeBase64, sample: 'hello world 안녕하세요'},
   {id: 'base64-decode', label: 'Base64 디코드', fn: decodeBase64, sample: 'aGVsbG8gd29ybGQ='},
+  {
+    id: 'base64url-encode',
+    label: 'Base64 인코드 (URL-safe)',
+    fn: encodeBase64Url,
+    sample: '개발 도구? a+b/c',
+  },
+  {
+    id: 'base64url-decode',
+    label: 'Base64 디코드 (URL-safe)',
+    fn: decodeBase64Url,
+    sample: '6rCc67CcIOuPhOq1rD8gYStiL2M',
+  },
   {id: 'url-encode', label: 'URL 인코드', fn: encodeUrl, sample: 'https://example.com/검색?q=개발 도구'},
   {id: 'url-decode', label: 'URL 디코드', fn: decodeUrl, sample: 'https%3A%2F%2Fexample.com%2F%EA%B2%80%EC%83%89'},
+  {id: 'hex-encode', label: 'Hex 인코드', fn: encodeHex, sample: 'hello 안녕'},
+  {id: 'hex-decode', label: 'Hex 디코드', fn: decodeHex, sample: '68656c6c6f20ec9588eb8595'},
+  {id: 'unicode-encode', label: 'Unicode 이스케이프 (\\uXXXX)', fn: encodeUnicode, sample: '안녕하세요 hello'},
+  {id: 'unicode-decode', label: 'Unicode 언이스케이프', fn: decodeUnicode, sample: '\\uc548\\ub155\\ud558\\uc138\\uc694 hello'},
+  {id: 'charcode-encode', label: '텍스트 → 문자 코드 (10진)', fn: encodeCharCodes, sample: 'Hello!'},
+  {id: 'charcode-decode', label: '문자 코드 → 텍스트', fn: decodeCharCodes, sample: '72 101 108 108 111 33'},
+  {id: 'rot13', label: 'ROT13 (적용/해제 동일)', fn: rot13, sample: 'Hello, World!'},
   {
     id: 'html-encode',
     label: 'HTML Entity 인코드',
@@ -117,12 +152,23 @@ const MODES: EncoderMode[] = [
 ]
 
 const route = useRoute()
+const router = useRouter()
 
 const initialMode = typeof route.query.mode === 'string' && MODES.some(m => m.id === route.query.mode)
     ? route.query.mode
     : 'base64-encode'
 
 const modeId = ref(initialMode)
+
+// URL query 양방향 동기화 (replace라 뒤로가기 이력을 오염시키지 않음)
+watch(modeId, id => {
+  if (route.query.mode === id) return
+  router.replace({query: {...route.query, mode: id}})
+})
+
+watch(() => route.query.mode, q => {
+  if (typeof q === 'string' && q !== modeId.value && MODES.some(m => m.id === q)) modeId.value = q
+})
 const input = ref('')
 const output = ref('')
 const error = ref('')
@@ -145,9 +191,9 @@ watch([input, modeId], () => {
     try {
       output.value = mode.value.fn(input.value)
       error.value = ''
-    } catch {
+    } catch (e) {
       output.value = ''
-      error.value = '변환할 수 없는 입력입니다'
+      error.value = e instanceof Error && e.message ? e.message : '변환할 수 없는 입력입니다'
     }
     return
   }

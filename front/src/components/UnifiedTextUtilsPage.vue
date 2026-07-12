@@ -21,13 +21,23 @@
       <div class="flex flex-col">
         <div class="flex h-10 shrink-0 items-center justify-between border-b border-border px-4">
           <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">입력</span>
-          <button
-              class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
-              @click="applySample"
-          >
-            <Wand2 class="size-3"/>
-            예시
-          </button>
+          <div class="flex items-center gap-1">
+            <button
+                v-if="input"
+                class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground/70 transition-colors hover:text-destructive"
+                @click="clearInput"
+            >
+              <Eraser class="size-3"/>
+              지우기
+            </button>
+            <button
+                class="flex items-center gap-1 rounded px-1.5 py-0.5 text-[11px] text-muted-foreground/70 transition-colors hover:text-primary"
+                @click="applySample"
+            >
+              <Wand2 class="size-3"/>
+              예시
+            </button>
+          </div>
         </div>
 
         <!-- 케이스 변환: 방향 선택 -->
@@ -38,7 +48,7 @@
                 v-model="caseFrom"
                 class="rounded-md border border-input bg-background px-3 py-2 font-mono text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
             >
-              <option v-for="c in CASES" :key="c" :value="c">{{ c }}</option>
+              <option v-for="c in CASES" :key="c.id" :value="c.id">{{ c.label }}</option>
             </select>
           </div>
           <div class="flex flex-1 flex-col gap-1.5">
@@ -47,7 +57,7 @@
                 v-model="caseTo"
                 class="rounded-md border border-input bg-background px-3 py-2 font-mono text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
             >
-              <option v-for="c in CASES" :key="c" :value="c">{{ c }}</option>
+              <option v-for="c in CASES" :key="c.id" :value="c.id">{{ c.label }}</option>
             </select>
           </div>
         </div>
@@ -139,8 +149,8 @@
 
 <script lang="ts" setup>
 import {computed, onUnmounted, ref, watch} from 'vue'
-import {useRoute} from 'vue-router'
-import {AlertCircle, ArrowRight, Check, Copy, Loader2, Wand2} from 'lucide-vue-next'
+import {useRoute, useRouter} from 'vue-router'
+import {AlertCircle, ArrowRight, Check, Copy, Eraser, Loader2, Wand2} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {convertKeyboard, countChars, normalizeWhitespace} from '../utils/frontendTools'
 import {Button} from '@/components/ui/button'
@@ -159,16 +169,32 @@ const TABS: Array<{ id: TabId; label: string; placeholder: string; sample: strin
   },
 ]
 
-const CASES = ['camel', 'pascal', 'snake', 'kebab']
+const CASES: Array<{ id: string; label: string }> = [
+  {id: 'camel', label: 'camelCase'},
+  {id: 'pascal', label: 'PascalCase'},
+  {id: 'snake', label: 'snake_case'},
+  {id: 'kebab', label: 'kebab-case'},
+  {id: 'constant', label: 'CONSTANT_CASE'},
+  {id: 'dot', label: 'dot.case'},
+  {id: 'title', label: 'Title Case'},
+]
 
 const route = useRoute()
+const router = useRouter()
 
 const initialTab = typeof route.query.tab === 'string' && TABS.some(t => t.id === route.query.tab)
     ? route.query.tab as TabId
     : 'case'
 
 const tab = ref<TabId>(initialTab)
-const input = ref('')
+// 탭별 입력을 따로 보존한다 — 탭을 오가도 작성 내용이 사라지지 않는다
+const inputs = ref<Record<TabId, string>>({case: '', count: '', keyboard: '', whitespace: ''})
+const input = computed({
+  get: () => inputs.value[tab.value],
+  set: v => {
+    inputs.value[tab.value] = v
+  },
+})
 const output = ref('')
 const error = ref('')
 const running = ref(false)
@@ -180,16 +206,24 @@ const keyboardDirection = ref<'en-ko' | 'ko-en'>('en-ko')
 const currentTab = computed(() => TABS.find(t => t.id === tab.value) ?? TABS[0])
 const charStats = computed(() => tab.value === 'count' && input.value ? countChars(input.value) : null)
 
-watch(tab, () => {
-  input.value = ''
-  output.value = ''
-  error.value = ''
+// URL query 양방향 동기화 (replace라 뒤로가기 이력을 오염시키지 않음)
+watch(tab, id => {
+  if (route.query.tab === id) return
+  router.replace({query: {...route.query, tab: id}})
+})
+
+watch(() => route.query.tab, q => {
+  if (typeof q === 'string' && q !== tab.value && TABS.some(t => t.id === q)) tab.value = q as TabId
 })
 
 let debounceTimer: ReturnType<typeof setTimeout> | null = null
 let runToken = 0
 
-watch([input, caseFrom, caseTo, keyboardDirection], () => {
+function recompute() {
+  // 진행 중인 이전 탭/입력의 요청·디바운스는 무효화한다
+  runToken++
+  running.value = false
+  if (debounceTimer) clearTimeout(debounceTimer)
   error.value = ''
   if (!input.value) {
     output.value = ''
@@ -207,10 +241,12 @@ watch([input, caseFrom, caseTo, keyboardDirection], () => {
       output.value = normalizeWhitespace(input.value)
       return
     case 'case':
-      if (debounceTimer) clearTimeout(debounceTimer)
       debounceTimer = setTimeout(runCaseConvert, 500)
   }
-})
+}
+
+// 탭 전환 시에도 초기화하지 않고 보존된 입력으로 결과를 다시 계산한다
+watch([tab, input, caseFrom, caseTo, keyboardDirection], recompute)
 
 onUnmounted(() => {
   if (debounceTimer) clearTimeout(debounceTimer)
@@ -241,6 +277,10 @@ async function runCaseConvert() {
 
 function applySample() {
   input.value = currentTab.value.sample
+}
+
+function clearInput() {
+  input.value = ''
 }
 
 async function copyOutput() {
