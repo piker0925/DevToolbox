@@ -2,6 +2,7 @@ package com.back.tool.pdf;
 
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
+import com.back.tool.model.ToolParams;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
@@ -11,16 +12,21 @@ import com.vladsch.flexmark.util.ast.Node;
 import com.vladsch.flexmark.util.data.MutableDataSet;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Component
 public class MarkdownToPdfModule implements ToolModule {
 
     private static final Parser PARSER;
     private static final HtmlRenderer RENDERER;
+    private static final Set<String> PAPER_SIZES = Set.of("A4", "LETTER", "A5");
+    private static final Pattern HEADING = Pattern.compile("<h([1-6])>(.*?)</h\\1>", Pattern.DOTALL);
+    private static final Pattern TAG = Pattern.compile("<[^>]+>");
 
     static {
         MutableDataSet options = new MutableDataSet();
@@ -42,14 +48,25 @@ public class MarkdownToPdfModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
+        ToolParams params = ToolParams.of(input);
+        String paperSize = resolvePaperSize(params.getString("paperSize", "A4"));
+        int marginMm = params.getInt("margin", 20, 0, 50);
+        boolean toc = params.getBool("toc", false);
+
         try {
             String markdown = Files.readString(input.files().get(0));
             Node document = PARSER.parse(markdown);
             String body = RENDERER.render(document);
+            if (toc) {
+                body = injectToc(body);
+            }
             String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/>"
-                    + "<style>body{font-family:sans-serif;margin:40px;line-height:1.6}"
+                    + "<style>@page{size:" + paperSize + ";margin:" + marginMm + "mm}"
+                    + "body{font-family:sans-serif;margin:0;line-height:1.6}"
                     + "pre{background:#f4f4f4;padding:12px;border-radius:4px}"
-                    + "code{font-family:monospace}</style></head><body>"
+                    + "code{font-family:monospace}"
+                    + "ul.toc{list-style:none;padding:0;page-break-after:always}"
+                    + "ul.toc a{color:#1a56db;text-decoration:none}</style></head><body>"
                     + body + "</body></html>";
 
             Path output = Files.createTempFile("md2pdf-", ".pdf");
@@ -63,5 +80,41 @@ public class MarkdownToPdfModule implements ToolModule {
         } catch (Exception e) {
             throw new ToolProcessingException("마크다운 → PDF 변환 실패: " + e.getMessage(), e);
         }
+    }
+
+    /**
+     * 본문의 h1~h6에 id를 부여하고, 문서 맨 앞에 내부 링크 목차를 삽입한다.
+     * 헤딩이 없으면 원본 그대로 반환한다.
+     */
+    static String injectToc(String body) {
+        Matcher m = HEADING.matcher(body);
+        StringBuilder rewritten = new StringBuilder();
+        StringBuilder tocItems = new StringBuilder();
+        int count = 0;
+        while (m.find()) {
+            count++;
+            int level = Integer.parseInt(m.group(1));
+            String inner = m.group(2);
+            String id = "toc-" + count;
+            m.appendReplacement(rewritten, Matcher.quoteReplacement(
+                    "<h" + level + " id=\"" + id + "\">" + inner + "</h" + level + ">"));
+            String plainText = TAG.matcher(inner).replaceAll("").trim();
+            tocItems.append("<li style=\"margin-left:").append((level - 1) * 14).append("px\">")
+                    .append("<a href=\"#").append(id).append("\">").append(plainText).append("</a></li>");
+        }
+        if (count == 0) {
+            return body;
+        }
+        m.appendTail(rewritten);
+        return "<ul class=\"toc\">" + tocItems + "</ul>" + rewritten;
+    }
+
+    private String resolvePaperSize(String paperSize) {
+        String normalized = paperSize.trim().toUpperCase();
+        if (!PAPER_SIZES.contains(normalized)) {
+            throw new ToolProcessingException(
+                    "용지 크기는 A4, Letter, A5 중 하나여야 합니다. (입력값: " + paperSize + ")");
+        }
+        return normalized;
     }
 }

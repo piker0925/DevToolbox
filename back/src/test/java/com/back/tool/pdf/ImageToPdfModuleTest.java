@@ -1,8 +1,11 @@
 package com.back.tool.pdf;
 
 import com.back.tool.model.ToolInput;
+import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,43 +17,113 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 class ImageToPdfModuleTest {
 
     @TempDir
     Path tempDir;
 
-    @Test
-    void singleImageConvertsToPdf() throws Exception {
-        Path imgPath = tempDir.resolve("test.jpg");
-        BufferedImage img = new BufferedImage(100, 100, BufferedImage.TYPE_INT_RGB);
+    private final ImageToPdfModule module = new ImageToPdfModule();
+
+    private Path createBlueImage(String name, int width, int height) throws Exception {
+        Path imgPath = tempDir.resolve(name);
+        BufferedImage img = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
         Graphics2D g = img.createGraphics();
         g.setColor(Color.BLUE);
-        g.fillRect(0, 0, 100, 100);
+        g.fillRect(0, 0, width, height);
         g.dispose();
-        ImageIO.write(img, "jpg", imgPath.toFile());
+        ImageIO.write(img, "png", imgPath.toFile());
+        return imgPath;
+    }
 
-        ImageToPdfModule module = new ImageToPdfModule();
-        ToolResult result = module.process(new ToolInput(List.of(imgPath), Map.of()));
+    private static boolean isBlue(int rgb) {
+        Color c = new Color(rgb);
+        return c.getBlue() > 200 && c.getRed() < 100 && c.getGreen() < 100;
+    }
 
-        assertThat(result.isFile()).isTrue();
-        assertThat(result.outputFile()).exists();
-        assertThat(result.outputFile().toString()).endsWith(".pdf");
+    private static boolean isWhite(int rgb) {
+        Color c = new Color(rgb);
+        return c.getRed() > 240 && c.getGreen() > 240 && c.getBlue() > 240;
+    }
+
+    @Test
+    void defaultParamsProduceA4PortraitWithCenteredImage() throws Exception {
+        Path img = createBlueImage("a.png", 100, 100);
+
+        ToolResult result = module.process(new ToolInput(List.of(img), Map.of()));
+
         try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
             assertThat(doc.getNumberOfPages()).isEqualTo(1);
+            PDRectangle box = doc.getPage(0).getMediaBox();
+            assertThat(box.getWidth()).isCloseTo(PDRectangle.A4.getWidth(), within(0.5f));
+            assertThat(box.getHeight()).isCloseTo(PDRectangle.A4.getHeight(), within(0.5f));
+
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            // 이미지가 가운데 배치되어 중앙은 파란색, 여백 영역(모서리)은 흰색
+            assertThat(isBlue(rendered.getRGB(rendered.getWidth() / 2, rendered.getHeight() / 2))).isTrue();
+            assertThat(isWhite(rendered.getRGB(3, 3))).isTrue();
+        }
+    }
+
+    @Test
+    void letterLandscapeSwapsPageDimensions() throws Exception {
+        Path img = createBlueImage("b.png", 100, 100);
+
+        ToolResult result = module.process(new ToolInput(List.of(img),
+                Map.of("paperSize", "Letter", "orientation", "landscape")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            PDRectangle box = doc.getPage(0).getMediaBox();
+            assertThat(box.getWidth()).isCloseTo(PDRectangle.LETTER.getHeight(), within(0.5f)); // 792
+            assertThat(box.getHeight()).isCloseTo(PDRectangle.LETTER.getWidth(), within(0.5f)); // 612
+        }
+    }
+
+    @Test
+    void originalSizeWithZeroMarginKeepsExactImageDimensions() throws Exception {
+        Path img = createBlueImage("c.png", 120, 80);
+
+        ToolResult result = module.process(new ToolInput(List.of(img),
+                Map.of("paperSize", "원본", "margin", "0")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            PDRectangle box = doc.getPage(0).getMediaBox();
+            assertThat(box.getWidth()).isCloseTo(120f, within(0.1f));
+            assertThat(box.getHeight()).isCloseTo(80f, within(0.1f));
+
+            // 여백 0이면 모서리까지 이미지가 채워진다
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(isBlue(rendered.getRGB(2, 2))).isTrue();
+        }
+    }
+
+    @Test
+    void originalSizeWithMarginAddsBorderAroundImage() throws Exception {
+        Path img = createBlueImage("d.png", 100, 100);
+
+        ToolResult result = module.process(new ToolInput(List.of(img),
+                Map.of("paperSize", "원본", "margin", "10")));
+
+        float marginPt = 10 * 72f / 25.4f; // 28.35pt
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            PDRectangle box = doc.getPage(0).getMediaBox();
+            assertThat(box.getWidth()).isCloseTo(100 + 2 * marginPt, within(0.1f));
+            assertThat(box.getHeight()).isCloseTo(100 + 2 * marginPt, within(0.1f));
+
+            // 여백 영역은 흰색, 중앙은 파란색
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(isWhite(rendered.getRGB(3, 3))).isTrue();
+            assertThat(isBlue(rendered.getRGB(rendered.getWidth() / 2, rendered.getHeight() / 2))).isTrue();
         }
     }
 
     @Test
     void multipleImagesProduceMultiPagePdf() throws Exception {
-        Path img1 = tempDir.resolve("a.png");
-        Path img2 = tempDir.resolve("b.png");
-        for (Path p : List.of(img1, img2)) {
-            BufferedImage img = new BufferedImage(50, 50, BufferedImage.TYPE_INT_RGB);
-            ImageIO.write(img, "png", p.toFile());
-        }
+        Path img1 = createBlueImage("e1.png", 50, 50);
+        Path img2 = createBlueImage("e2.png", 50, 50);
 
-        ImageToPdfModule module = new ImageToPdfModule();
         ToolResult result = module.process(new ToolInput(List.of(img1, img2), Map.of()));
 
         try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
@@ -59,16 +132,32 @@ class ImageToPdfModuleTest {
     }
 
     @Test
+    void invalidPaperSizeThrowsKoreanError() throws Exception {
+        Path img = createBlueImage("f.png", 10, 10);
+
+        assertThatThrownBy(() -> module.process(new ToolInput(List.of(img), Map.of("paperSize", "B5"))))
+                .isInstanceOf(ToolProcessingException.class)
+                .hasMessageContaining("용지 크기는 A4, Letter, 원본");
+    }
+
+    @Test
+    void invalidOrientationThrowsKoreanError() throws Exception {
+        Path img = createBlueImage("g.png", 10, 10);
+
+        assertThatThrownBy(() -> module.process(new ToolInput(List.of(img), Map.of("orientation", "diagonal"))))
+                .isInstanceOf(ToolProcessingException.class)
+                .hasMessageContaining("방향은 portrait");
+    }
+
+    @Test
     void acceptsMultipleFilesAsOneJob() {
         // 컨트롤러가 여러 파일을 하나의 job으로 넘겨야 여러 이미지가 한 PDF로 합쳐진다.
         // 이 값이 false면 파일마다 별도 배치 job으로 쪼개져 1페이지짜리 PDF가 여러 개 생성된다.
-        ImageToPdfModule module = new ImageToPdfModule();
         assertThat(module.acceptsMultipleFiles()).isTrue();
     }
 
     @Test
     void moduleMetadata() {
-        ImageToPdfModule module = new ImageToPdfModule();
         assertThat(module.getId()).isEqualTo("image-to-pdf");
         assertThat(module.isHeavy()).isTrue();
         assertThat(module.getCategory()).isEqualTo("pdf");
