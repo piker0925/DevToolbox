@@ -182,13 +182,15 @@
                       batchProgress.failCount
                     }})</span>
                 </p>
-                <a
-                    :href="batchResultUrl"
-                    class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                    data-testid="batch-download"
-                    download
-                >ZIP 다운로드</a>
-                <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
+                <div class="flex flex-wrap items-center justify-center gap-2">
+                  <a
+                      :href="batchResultUrl"
+                      class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                      data-testid="batch-download"
+                      download
+                  >ZIP 다운로드</a>
+                  <Button variant="ghost" @click="resetAll">다시 실행</Button>
+                </div>
               </template>
             </div>
 
@@ -226,8 +228,11 @@
               <p v-else class="text-[13px] text-muted-foreground">처리 중입니다...</p>
             </div>
             <div v-else class="flex w-full flex-col gap-4">
-              <ResultViewer :text="result.text" :url="result.url"/>
-              <Button class="w-fit" variant="outline" @click="resetAll">다시 실행</Button>
+              <ResultViewer :text="result.text" :url="result.url">
+                <template #actions>
+                  <Button variant="ghost" @click="resetAll">다시 실행</Button>
+                </template>
+              </ResultViewer>
             </div>
           </div>
         </div>
@@ -451,6 +456,7 @@ import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
 import {buildFallbackParams} from '../utils/lightParams'
 import {uploadErrorMessage} from '../utils/uploadError'
+import {clearPreviousRun, type RunResult} from '../utils/runState'
 import type {BatchProgress, Module, UploadResult} from '../types'
 import {isBatchResult} from '../types'
 import {Button} from '@/components/ui/button'
@@ -472,11 +478,6 @@ import CommentSection from '../components/CommentSection.vue'
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 // ── 상태 ──────────────────────────────────────────────────────────────────
-
-interface RunResult {
-  url: string | null
-  text: string | null
-}
 
 const route = useRoute()
 const mod = ref<Module | null>(null)
@@ -640,9 +641,30 @@ function onUploadError(message: string) {
   runError.value = message
 }
 
+// 재업로드 시작 시 직전 실행의 잔여 상태(result·반대쪽 경로 jobId/batchId·batchComplete 등)를
+// 전부 비운다. 안 그러면 템플릿이 옛 결과/배치 화면에 머문다(033 문제 1).
+function resetRunState() {
+  stopSse()
+  const cleared = clearPreviousRun({
+    jobId: jobId.value,
+    jobProgress: jobProgress.value,
+    batchId: batchId.value,
+    batchProgress: batchProgress.value,
+    batchComplete: batchComplete.value,
+    result: result.value,
+    runError: runError.value,
+  })
+  jobId.value = cleared.jobId
+  jobProgress.value = cleared.jobProgress
+  batchId.value = cleared.batchId
+  batchProgress.value = cleared.batchProgress
+  batchComplete.value = cleared.batchComplete
+  result.value = cleared.result
+  runError.value = cleared.runError
+}
+
 function onUploaded(r: UploadResult) {
-  runError.value = ''
-  jobProgress.value = null
+  resetRunState()
   if (isBatchResult(r)) {
     // 배치: 단건 SSE를 시작하지 않도록 jobId는 null로 두고 배치 진행률로 진입한다.
     batchId.value = r.batchId
