@@ -467,7 +467,7 @@ const heavyTextContent = ref('')
 const running = ref(false)
 const runError = ref('')
 const copied = ref(false)
-const showComments = ref(false)
+const showComments = ref(true)
 const commentCount = ref<number | null>(null)
 
 const {record: recordRecent} = useRecentTools()
@@ -537,7 +537,7 @@ async function loadModule(moduleId: string) {
   loading.value = true
   mod.value = null
   stats.value = null
-  showComments.value = false
+  showComments.value = true
   commentCount.value = null
   resetAll()
   try {
