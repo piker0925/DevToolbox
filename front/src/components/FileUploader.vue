@@ -15,7 +15,7 @@
     </slot>
   </div>
 
-  <div v-if="reorderable && staged.length" class="mt-3 flex flex-col gap-2" @click.stop>
+  <div v-if="staged.length" class="mt-3 flex flex-col gap-2" @click.stop>
     <ul class="flex flex-col gap-1">
       <li
           v-for="(f, i) in staged" :key="f.name + i"
@@ -23,12 +23,14 @@
       >
         <span class="flex-1 truncate font-mono">{{ f.name }}</span>
         <button
+            v-if="reorderable"
             :data-testid="`move-up-${i}`" :disabled="i === 0"
             class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
             type="button" @click="staged = moveItem(staged, i, -1)"
         >↑
         </button>
         <button
+            v-if="reorderable"
             :data-testid="`move-down-${i}`" :disabled="i === staged.length - 1"
             class="rounded p-0.5 text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30 disabled:hover:text-muted-foreground"
             type="button" @click="staged = moveItem(staged, i, 1)"
@@ -43,7 +45,7 @@
       </li>
     </ul>
     <Button class="h-7 text-[12px]" data-testid="confirm-upload" @click="upload(staged)">
-      {{ staged.length }}개 파일 병합 업로드
+      {{ staged.length >= 2 ? `${staged.length}개 파일 실행` : '실행' }}
     </Button>
   </div>
 </template>
@@ -95,12 +97,11 @@ async function upload(files: File[]) {
 
 function handleFiles(files: File[]) {
   if (!files.length) return
+  // 파일 업로드하는 모든 모듈은 즉시 실행하지 않고 스테이징한다(034). 사용자가 파라미터를
+  // 조정하거나 잘못 올린 파일을 취소·교체한 뒤 '실행' 버튼을 눌러야 그 시점 값으로 실행된다.
   const selected = props.multiple ? files : files.slice(0, 1)
-  if (props.reorderable) {
-    staged.value = [...staged.value, ...selected]
-  } else {
-    upload(selected)
-  }
+  // multiple이면 여러 번 나눠 담을 수 있게 누적, 단일 모듈이면 새 선택으로 교체한다.
+  staged.value = props.multiple ? [...staged.value, ...selected] : selected
 }
 
 function onDrop(e: DragEvent) {

@@ -54,11 +54,14 @@ afterEach(() => {
 })
 
 describe('ToolPage 업로드 실패 표시 (032)', () => {
+    // 034: 파일 선택은 스테이징만 하고, '실행' 버튼을 눌러야 업로드된다.
     async function selectFile(wrapper: ReturnType<typeof mount>, name: string) {
         const file = new File(['x'], name, {type: 'image/jpeg'})
         const inputEl = wrapper.find('input[type="file"]').element as HTMLInputElement
         Object.defineProperty(inputEl, 'files', {value: [file], configurable: true})
         await wrapper.find('input[type="file"]').trigger('change')
+        await flushPromises()
+        await wrapper.find('[data-testid="confirm-upload"]').trigger('click')
         await flushPromises()
     }
 
