@@ -1,6 +1,12 @@
 <template>
   <div class="flex h-full flex-col gap-3">
     <template v-if="url">
+      <img
+          v-if="isImage"
+          :src="url"
+          alt="처리 결과 미리보기"
+          class="max-h-[360px] w-fit rounded-md border border-border object-contain"
+      />
       <Button as-child>
         <a :href="url" download>⬇ 다운로드</a>
       </Button>
@@ -15,10 +21,13 @@
 </template>
 
 <script lang="ts" setup>
+import {computed} from 'vue'
 import {Button} from '@/components/ui/button'
 import {Textarea} from '@/components/ui/textarea'
 
 const props = defineProps<{ url: string | null; text: string | null }>()
+
+const isImage = computed(() => !!props.url && /\.(png|jpe?g|gif|webp)$/i.test(props.url))
 
 function copy() {
   if (props.text) navigator.clipboard.writeText(props.text)

@@ -12,6 +12,23 @@ describe('ResultViewer', () => {
         expect(wrapper.find('textarea').exists()).toBe(false)
     })
 
+    it('이미지 확장자 url이면 다운로드 링크와 함께 미리보기 이미지를 보여준다', () => {
+        const wrapper = mount(ResultViewer, {
+            props: {url: 'http://example.com/files/job-1/result.png', text: null},
+        })
+        expect(wrapper.find('img').exists()).toBe(true)
+        expect(wrapper.find('img').attributes('src')).toBe('http://example.com/files/job-1/result.png')
+        expect(wrapper.find('a[download]').exists()).toBe(true)
+    })
+
+    it('이미지가 아닌 확장자 url이면 미리보기 없이 다운로드 링크만 보여준다', () => {
+        const wrapper = mount(ResultViewer, {
+            props: {url: 'http://example.com/files/job-1/result.pdf', text: null},
+        })
+        expect(wrapper.find('img').exists()).toBe(false)
+        expect(wrapper.find('a[download]').exists()).toBe(true)
+    })
+
     it('text가 있으면 textarea와 복사 버튼을 보여준다', () => {
         const wrapper = mount(ResultViewer, {
             props: {url: null, text: 'e3b0c442...'},
