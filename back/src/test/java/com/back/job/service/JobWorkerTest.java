@@ -31,7 +31,9 @@ import static org.awaitility.Awaitility.await;
 @TestPropertySource(properties = {
         "storage.upload-dir=build/test-uploads",
         "scheduling.worker.delay=200",
-        "scheduling.ttl.delay=200"
+        "scheduling.ttl.delay=200",
+        "scheduling.worker.lane.heavy=2",
+        "scheduling.worker.lane.video=1"
 })
 @Import(JobWorkerTest.TestModules.class)
 class JobWorkerTest extends AbstractMySQLIntegrationTest {
@@ -98,6 +100,45 @@ class JobWorkerTest extends AbstractMySQLIntegrationTest {
 
         assertThat(java.nio.file.Files.exists(inputDir)).isFalse();
         assertThat(java.nio.file.Files.exists(unrelated)).isTrue();
+    }
+
+    @Test
+    void lane_dispatchesUpToPermitConcurrently_andCapsAtLaneLimit() throws Exception {
+        // HEAVY 레인 permit=2 (test property). block 모듈은 latch가 열릴 때까지 처리 스레드를 붙잡는다.
+        // 3개를 넣으면: 2개는 RUNNING으로 올라가고(폴링당 1개만 처리하던 옛 구조라면 불가),
+        // 3번째는 permit 소진으로 PENDING에 머물러야 한다 (레인 상한이 실제로 강제됨).
+        BlockingModule.reset();
+        Job a = pending("block");
+        Job b = pending("block");
+        Job c = pending("block");
+
+        try {
+            // 정확히 2개가 RUNNING이 될 때까지 대기 (한 번에 여러 건 디스패치 + permit 상한)
+            await().atMost(10, SECONDS).until(() -> runningCount("block") == 2);
+
+            // 세 번째는 여유 permit이 없어 PENDING이어야 한다 — "2개 동시"와 "전부 실행"을 구분
+            assertThat(pendingCount("block")).isEqualTo(1);
+            assertThat(runningCount("block")).isEqualTo(2);
+        } finally {
+            BlockingModule.release(); // 처리 스레드 해제 — permit 반납되어 나머지도 흘러감
+        }
+
+        // latch 해제 후 3개 모두 완료 (반납된 permit으로 3번째까지 처리)
+        await().atMost(10, SECONDS).until(() ->
+                jobRepository.findAllById(List.of(a.getId(), b.getId(), c.getId())).stream()
+                        .allMatch(j -> j.getStatus() == JobStatus.DONE));
+    }
+
+    private long runningCount(String moduleId) {
+        return jobRepository.findAll().stream()
+                .filter(j -> moduleId.equals(j.getModuleId()) && j.getStatus() == JobStatus.RUNNING)
+                .count();
+    }
+
+    private long pendingCount(String moduleId) {
+        return jobRepository.findAll().stream()
+                .filter(j -> moduleId.equals(j.getModuleId()) && j.getStatus() == JobStatus.PENDING)
+                .count();
     }
 
     @Test
@@ -181,6 +222,11 @@ class JobWorkerTest extends AbstractMySQLIntegrationTest {
         }
 
         @Bean
+        ToolModule blockingModule() {
+            return new BlockingModule();
+        }
+
+        @Bean
         ToolModule failModule() {
             return new ToolModule() {
                 public String getId() {
@@ -203,6 +249,44 @@ class JobWorkerTest extends AbstractMySQLIntegrationTest {
                     throw new ToolProcessingException("boom");
                 }
             };
+        }
+    }
+
+    /** latch가 열릴 때까지 처리 스레드를 붙잡아 permit 상한을 관찰 가능하게 만드는 테스트용 Heavy 모듈. */
+    static class BlockingModule implements ToolModule {
+        private static volatile java.util.concurrent.CountDownLatch latch = new java.util.concurrent.CountDownLatch(1);
+
+        static void reset() {
+            latch = new java.util.concurrent.CountDownLatch(1);
+        }
+
+        static void release() {
+            latch.countDown();
+        }
+
+        public String getId() {
+            return "block";
+        }
+
+        public String getName() {
+            return "Block";
+        }
+
+        public String getCategory() {
+            return "test";
+        }
+
+        public boolean isHeavy() {
+            return true;
+        }
+
+        public ToolResult process(ToolInput input) {
+            try {
+                latch.await(15, SECONDS); // 테스트가 release()로 열어줄 때까지 대기 (self-timeout 방어)
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            return ToolResult.ofText("done");
         }
     }
 }

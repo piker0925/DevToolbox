@@ -19,6 +19,19 @@ storage:
   # 로컬은 짧게 두어 청소 동작을 빠르게 확인할 수 있게 한다.
   result-ttl: PT2M
 
+# 익명 식별·쿼터 (ADR-0019). 식별자는 프론트가 X-Client-Id 헤더로 보낸다(쿠키 아님).
+# 사용자별 동시 작업(PENDING+RUNNING) 상한. "전부 처리" 목표에 맞춰 넉넉히 둔다(배치가 이보다 크면 거부됨).
+identity:
+  quota:
+    max-in-flight: 200
+
+# 워커 레인별 동시 실행 상한 (ADR-0019). 2 OCPU 기준 기본값. 재배포 없이 조정 가능.
+scheduling:
+  worker:
+    lane:
+      heavy: 2
+      video: 1
+
 management:
   endpoints:
     web:

@@ -5,6 +5,7 @@ import com.back.global.storage.OrphanFileSweeper;
 import com.back.job.entity.Job;
 import com.back.job.entity.JobStatus;
 import com.back.job.repository.JobRepository;
+import com.back.tool.model.Lane;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
 import com.back.tool.model.ToolProcessingException;
@@ -18,9 +19,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
+import java.time.LocalDateTime;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -33,6 +40,7 @@ public class JobWorker {
     private final FileStorage fileStorage;
     private final ThreadPoolTaskExecutor taskExecutor;
     private final OrphanFileSweeper fileSweeper;
+    private final LaneLimiter laneLimiter;
 
     private Map<String, ToolModule> modules;
 
@@ -45,16 +53,75 @@ public class JobWorker {
     @Scheduled(fixedDelayString = "${scheduling.worker.delay:3000}")
     @Transactional
     public void poll() {
-        jobRepository.findFirstPendingWithLock().ifPresent(job -> {
-            job.setStatus(JobStatus.RUNNING);
-            jobRepository.save(job);
-            String jobId = job.getId();
-            taskExecutor.execute(() -> processJob(jobId));
-        });
+        for (Lane lane : Lane.values()) {
+            dispatchLane(lane);
+        }
     }
 
-    void processJob(String jobId) {
+    private void dispatchLane(Lane lane) {
+        int available = laneLimiter.available(lane);
+        if (available <= 0) {
+            return; // 이 레인은 지금 여유 없음 — PENDING으로 두고 다음 틱에
+        }
+        List<Job> candidates = jobRepository.findPendingBatchByLane(lane.name());
+        if (candidates.isEmpty()) {
+            return;
+        }
+        for (Job job : selectFair(candidates, available)) {
+            if (!laneLimiter.tryAcquire(lane)) {
+                break; // 방어적: 여기까지 오면 permit 계산과 어긋난 것 — 남은 건 다음 틱에
+            }
+            String jobId = job.getId();
+            job.setStatus(JobStatus.RUNNING);
+            jobRepository.save(job);
+            try {
+                taskExecutor.execute(() -> processJob(jobId, lane));
+            } catch (RejectedExecutionException e) {
+                // permit 설계상 발생하지 않아야 하지만, 발생하면 permit·상태를 되돌려 다음 틱 재시도
+                laneLimiter.release(lane);
+                job.setStatus(JobStatus.PENDING);
+                jobRepository.save(job);
+                log.warn("Job {} 실행 제출 거부 — PENDING 복원", jobId);
+            }
+        }
+    }
+
+    /**
+     * 후보(created_at 오름차순)를 소유자별로 묶어 라운드로빈으로 limit개 고른다 — ADR-0019.
+     * 한 소유자가 창을 가득 채워도 다른 소유자가 뒤에서 굶지 않게 번갈아 선택한다.
+     * 그룹 내부는 오래된 순이라 같은 소유자 안에서는 FIFO가 유지된다.
+     */
+    List<Job> selectFair(List<Job> candidates, int limit) {
+        LinkedHashMap<String, Deque<Job>> byOwner = new LinkedHashMap<>();
+        for (Job job : candidates) {
+            String owner = job.getOwnerToken() == null ? "" : job.getOwnerToken();
+            byOwner.computeIfAbsent(owner, k -> new ArrayDeque<>()).add(job);
+        }
+        List<Job> chosen = new ArrayList<>(limit);
+        while (chosen.size() < limit) {
+            boolean progressed = false;
+            for (Deque<Job> queue : byOwner.values()) {
+                if (chosen.size() >= limit) {
+                    break;
+                }
+                Job job = queue.poll();
+                if (job != null) {
+                    chosen.add(job);
+                    progressed = true;
+                }
+            }
+            if (!progressed) {
+                break; // 후보 소진
+            }
+        }
+        return chosen;
+    }
+
+    void processJob(String jobId, Lane lane) {
         Job job = jobRepository.findById(jobId).orElseThrow();
+        // startedAt은 poll이 아닌 여기(실행 스레드)서 찍는다 — poll이 잡은 행 잠금이 커밋될 때까지
+        // 실행 스레드는 커밋 전 스냅샷을 읽으므로, poll에서 startedAt을 써도 이 save로 덮여 유실된다.
+        job.setStartedAt(LocalDateTime.now());
         try {
             ToolModule module = Optional.ofNullable(modules.get(job.getModuleId()))
                     .orElseThrow(() -> new ToolProcessingException("Module not found: " + job.getModuleId()));
@@ -75,10 +142,12 @@ public class JobWorker {
                 job.setResultText(result.textResult());
             }
             job.setStatus(JobStatus.DONE);
+            job.setProgress(100);
         } catch (Exception e) {
             log.error("Job {} 처리 실패: {}", jobId, e.getMessage(), e);
             job.setStatus(JobStatus.FAILED);
         } finally {
+            laneLimiter.release(lane); // 레인 permit 반납 — 다음 폴링이 이 슬롯을 즉시 재사용
             jobRepository.save(job);
             deleteInputs(job);
         }

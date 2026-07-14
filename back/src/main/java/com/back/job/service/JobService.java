@@ -7,6 +7,7 @@ import com.back.job.entity.JobStatus;
 import com.back.job.repository.BatchStats;
 import com.back.job.repository.JobRepository;
 import com.back.stats.service.ToolStatsService;
+import com.back.tool.model.Lane;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -14,30 +15,55 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @Service
 public class JobService {
 
+    private static final Set<JobStatus> IN_FLIGHT = Set.of(JobStatus.PENDING, JobStatus.RUNNING);
+
     private final JobRepository jobRepository;
     private final ToolStatsService toolStatsService;
     private final Duration resultTtl;
+    private final int maxInFlight;
 
     public JobService(JobRepository jobRepository,
                       ToolStatsService toolStatsService,
-                      @Value("${storage.result-ttl}") Duration resultTtl) {
+                      @Value("${storage.result-ttl}") Duration resultTtl,
+                      @Value("${identity.quota.max-in-flight:200}") int maxInFlight) {
         this.jobRepository = jobRepository;
         this.toolStatsService = toolStatsService;
         this.resultTtl = resultTtl;
+        this.maxInFlight = maxInFlight;
     }
 
-    public Job create(String moduleId, List<String> inputPaths, Map<String, String> params) {
-        return create(moduleId, null, inputPaths, params);
+    /**
+     * 소유자의 in-flight(PENDING+RUNNING) 작업이 상한을 넘지 않는지 확인한다 (ADR-0019).
+     * 배치 업로드는 incoming(추가될 job 수)을 미리 합산해 한 번에 판정한다.
+     * 공정 스케줄링이 이미 독점을 막지만, 디스크·남용에 대한 2차 방어선이다.
+     */
+    public void assertWithinQuota(String ownerToken, int incoming) {
+        if (ownerToken == null) {
+            return; // 식별자 없으면(비정상 경로) 쿼터 판정 생략 — 공정성 라운드로빈이 여전히 보호
+        }
+        int current = jobRepository.countByOwnerTokenAndStatusIn(ownerToken, IN_FLIGHT);
+        if (current + incoming > maxInFlight) {
+            throw new AppException(ErrorCode.QUOTA_EXCEEDED);
+        }
     }
 
-    public Job create(String moduleId, String batchId, List<String> inputPaths, Map<String, String> params) {
+    public Job create(String moduleId, Lane lane, String ownerToken,
+                      List<String> inputPaths, Map<String, String> params) {
+        return create(moduleId, lane, ownerToken, null, inputPaths, params);
+    }
+
+    public Job create(String moduleId, Lane lane, String ownerToken, String batchId,
+                      List<String> inputPaths, Map<String, String> params) {
         toolStatsService.incrementUseCount(moduleId);
         Job job = new Job();
         job.setModuleId(moduleId);
+        job.setLane(lane);
+        job.setOwnerToken(ownerToken);
         job.setBatchId(batchId);
         job.setStatus(JobStatus.PENDING);
         job.setInputPaths(inputPaths);
@@ -49,6 +75,28 @@ public class JobService {
     public Job get(String id) {
         return jobRepository.findById(id)
                 .orElseThrow(() -> new AppException(ErrorCode.JOB_NOT_FOUND));
+    }
+
+    /** 같은 레인에서 이 작업 앞에 대기 중인 PENDING 수(대략치). RUNNING 이후면 0. */
+    public int queuePosition(Job job) {
+        if (job.getStatus() != JobStatus.PENDING) {
+            return 0;
+        }
+        return jobRepository.countByLaneAndStatusAndCreatedAtBefore(
+                job.getLane(), JobStatus.PENDING, job.getCreatedAt());
+    }
+
+    /**
+     * 남은 예상 시간(초). 진행률이 있는 RUNNING 작업에서만 정직하게 계산한다
+     * (경과시간 × (100-progress)/progress). 그 외(PENDING 등)는 큐 순번으로 안내하고 null 반환.
+     */
+    public Long etaSeconds(Job job) {
+        if (job.getStatus() != JobStatus.RUNNING || job.getStartedAt() == null
+                || job.getProgress() <= 0 || job.getProgress() >= 100) {
+            return null;
+        }
+        long elapsed = Duration.between(job.getStartedAt(), LocalDateTime.now()).getSeconds();
+        return elapsed * (100 - job.getProgress()) / job.getProgress();
     }
 
     public List<Job> getBatchJobs(String batchId) {

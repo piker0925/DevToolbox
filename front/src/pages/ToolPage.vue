@@ -197,9 +197,26 @@
               </div>
               <p class="text-[12px] text-muted-foreground">파일을 업로드하면 처리가 시작됩니다</p>
             </div>
-            <div v-else-if="!result" class="flex flex-col items-center gap-4">
+            <div v-else-if="!result" class="flex w-full max-w-sm flex-col items-center gap-4">
               <Loader2 class="size-8 animate-spin text-primary/60"/>
-              <p class="text-[13px] text-muted-foreground">처리 중입니다...</p>
+              <!-- 대기 중: 큐 순번 안내 (ADR-0019 진행 가시화) -->
+              <p v-if="jobProgress && jobProgress.queuePosition > 0" class="text-[13px] text-muted-foreground">
+                대기 중… 앞에 {{ jobProgress.queuePosition }}개
+              </p>
+              <!-- 처리 중: 진행률 바 + ETA -->
+              <template v-else-if="jobProgress && jobProgress.progress > 0">
+                <div class="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                      :style="{width: jobProgress.progress + '%'}"
+                      class="h-full rounded-full bg-primary transition-all"
+                  ></div>
+                </div>
+                <p class="text-[13px] text-muted-foreground">
+                  처리 중… {{ jobProgress.progress }}%
+                  <span v-if="jobProgress.etaSeconds != null"> · 약 {{ formatEta(jobProgress.etaSeconds) }} 남음</span>
+                </p>
+              </template>
+              <p v-else class="text-[13px] text-muted-foreground">처리 중입니다...</p>
             </div>
             <div v-else class="flex w-full flex-col gap-4">
               <ResultViewer :text="result.text" :url="result.url"/>
@@ -456,6 +473,8 @@ const route = useRoute()
 const mod = ref<Module | null>(null)
 const loading = ref(true)
 const jobId = ref<string | null>(null)
+// 단건 작업 진행 가시화 (ADR-0019): 큐 순번·진행률·ETA를 SSE로 받아 표시
+const jobProgress = ref<{ queuePosition: number; progress: number; etaSeconds: number | null } | null>(null)
 const batchId = ref<string | null>(null)
 const batchProgress = ref<BatchProgress | null>(null)
 const batchComplete = ref(false)
@@ -572,6 +591,11 @@ function startSse(id: string) {
   eventSource = es
   es.addEventListener('job-status-changed', (e: MessageEvent) => {
     const d = JSON.parse(e.data)
+    jobProgress.value = {
+      queuePosition: d.queuePosition ?? 0,
+      progress: d.progress ?? 0,
+      etaSeconds: d.etaSeconds ?? null,
+    }
     if (d.status === 'DONE' || d.status === 'FAILED') {
       stopSse()
       if (d.status === 'DONE') onDone(id)
@@ -604,12 +628,21 @@ function initForm() {
 // ── Heavy ─────────────────────────────────────────────────────────────────
 
 function onUploaded(r: UploadResult) {
+  jobProgress.value = null
   if (isBatchResult(r)) {
     // 배치: 단건 SSE를 시작하지 않도록 jobId는 null로 두고 배치 진행률로 진입한다.
     batchId.value = r.batchId
     return
   }
   jobId.value = r.jobId
+}
+
+// ETA 초 → 사람이 읽는 문자열 (예: "45초", "2분 10초")
+function formatEta(seconds: number): string {
+  if (seconds < 60) return `${Math.max(1, Math.round(seconds))}초`
+  const m = Math.floor(seconds / 60)
+  const s = Math.round(seconds % 60)
+  return s > 0 ? `${m}분 ${s}초` : `${m}분`
 }
 
 function onBatchProgress(p: BatchProgress) {
@@ -749,6 +782,7 @@ function downloadImage() {
 function resetAll() {
   stopSse()
   jobId.value = null
+  jobProgress.value = null
   batchId.value = null
   batchProgress.value = null
   batchComplete.value = false

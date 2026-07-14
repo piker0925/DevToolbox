@@ -22,6 +22,19 @@ storage:
   # 결과 파일 보존 시간. 만료된 Job의 결과·입력 파일과 고아 파일 청소 기준.
   result-ttl: PT1H
 
+# 익명 식별·쿼터 (ADR-0019). 식별자는 프론트가 X-Client-Id 헤더로 보낸다(교차 사이트에서 서드파티 쿠키 차단 회피).
+# 사용자별 동시 작업(PENDING+RUNNING) 상한. "전부 처리" 목표에 맞춰 넉넉히 둔다(배치가 이보다 크면 거부됨).
+identity:
+  quota:
+    max-in-flight: 200
+
+# 워커 레인별 동시 실행 상한 (ADR-0019). 2 OCPU 기준. 4 OCPU로 확장 시 값만 올리면 됨.
+scheduling:
+  worker:
+    lane:
+      heavy: 2
+      video: 1
+
 management:
   endpoints:
     web:

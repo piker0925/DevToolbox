@@ -1,5 +1,6 @@
 package com.back.job.entity;
 
+import com.back.tool.model.Lane;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -33,6 +34,17 @@ public class Job {
     @Column(length = 36)
     private String batchId;
 
+    // 익명 소유자 식별자(쿠키 기반). 공정 스케줄링·in-flight 쿼터의 기준 (ADR-0019)
+    @Setter
+    @Column(length = 36)
+    private String ownerToken;
+
+    // 자원 등급 레인. 생성 시 모듈의 getLane()으로 확정 (ADR-0019)
+    @Setter
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Lane lane = Lane.HEAVY;
+
     @Setter
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
@@ -58,6 +70,15 @@ public class Job {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    // RUNNING 전환 시각. ETA 추정·진행률 계산 기준 (ADR-0019)
+    @Setter
+    private LocalDateTime startedAt;
+
+    // 롱잡 진행률 0~100. 비디오는 FFmpeg 진행 파싱, 그 외는 coarse (ADR-0019)
+    @Setter
+    @Column(nullable = false)
+    private int progress = 0;
 
     @Setter
     @Column(nullable = false)

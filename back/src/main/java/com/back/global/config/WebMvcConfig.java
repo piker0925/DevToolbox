@@ -16,12 +16,12 @@ public class WebMvcConfig implements WebMvcConfigurer {
         registry.addMapping("/api/**")
                 .allowedOrigins(corsOrigin.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
+                .allowedHeaders("*") // X-Client-Id(익명 식별 헤더, ADR-0019) 포함 — 쿠키 credentials는 불필요
                 .maxAge(3600);
         registry.addMapping("/admin/**")
                 .allowedOrigins(corsOrigin.split(","))
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
-                .allowedHeaders("*")
+                .allowedHeaders("*") // X-Client-Id(익명 식별 헤더, ADR-0019) 포함 — 쿠키 credentials는 불필요
                 .maxAge(3600);
     }
 }

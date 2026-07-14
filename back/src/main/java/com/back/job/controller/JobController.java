@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -30,7 +31,17 @@ public class JobController {
     @GetMapping("/{id}")
     public JobStatusResponse getStatus(@PathVariable String id) {
         Job job = jobService.get(id);
-        return new JobStatusResponse(job.getId(), job.getStatus().name(), job.getExpiresAt());
+        return toStatus(job);
+    }
+
+    private JobStatusResponse toStatus(Job job) {
+        return new JobStatusResponse(
+                job.getId(),
+                job.getStatus().name(),
+                jobService.queuePosition(job),
+                job.getProgress(),
+                jobService.etaSeconds(job),
+                job.getExpiresAt());
     }
 
     @GetMapping("/{id}/result")
@@ -52,17 +63,26 @@ public class JobController {
         emitter.onTimeout(exec::shutdownNow);
 
         exec.submit(() -> {
-            String lastStatus = null;
+            String lastSignature = null;
             try {
                 while (!Thread.currentThread().isInterrupted()) {
                     Job job = jobService.get(id);
                     String status = job.getStatus().name();
-                    if (!status.equals(lastStatus)) {
-                        lastStatus = status;
+                    int queuePosition = jobService.queuePosition(job);
+                    Long etaSeconds = jobService.etaSeconds(job);
+                    // 상태뿐 아니라 진행률·큐 순번이 바뀌어도 푸시한다 (ADR-0019 진행 가시화).
+                    String signature = status + ":" + job.getProgress() + ":" + queuePosition;
+                    if (!signature.equals(lastSignature)) {
+                        lastSignature = signature;
+                        Map<String, Object> payload = new HashMap<>();
+                        payload.put("jobId", id);
+                        payload.put("status", status);
+                        payload.put("queuePosition", queuePosition);
+                        payload.put("progress", job.getProgress());
+                        payload.put("etaSeconds", etaSeconds); // null 가능 → HashMap 사용
                         emitter.send(SseEmitter.event()
                                 .name("job-status-changed")
-                                .data(Map.of("jobId", id, "status", status),
-                                        MediaType.APPLICATION_JSON));
+                                .data(payload, MediaType.APPLICATION_JSON));
                     }
                     if (job.getStatus() == JobStatus.DONE || job.getStatus() == JobStatus.FAILED) {
                         emitter.complete();
