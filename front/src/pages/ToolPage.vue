@@ -157,7 +157,17 @@
           <div class="flex h-10 shrink-0 items-center border-b border-border px-4">
             <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">결과</span>
           </div>
-          <div class="flex flex-1 items-center justify-center p-6">
+
+          <!-- 단건 파일 결과: 패널을 채우고 하단 고정 액션 바(FileResultPanel) -->
+          <FileResultPanel
+              v-if="result && !batchId && result.url"
+              class="min-h-0 flex-1"
+              :url="result.url"
+              :advisory="result.text"
+          />
+
+          <!-- 그 외 상태(배치·오류·대기·처리중·텍스트 결과)는 중앙 정렬 -->
+          <div v-else class="flex flex-1 items-center justify-center p-6">
             <!-- 배치: 여러 파일을 각각 처리 후 ZIP -->
             <div v-if="batchId" class="flex w-full flex-col items-center gap-4 text-center">
               <BatchPoller
@@ -182,15 +192,12 @@
                       batchProgress.failCount
                     }})</span>
                 </p>
-                <div class="flex flex-wrap items-center justify-center gap-2">
-                  <a
-                      :href="batchResultUrl"
-                      class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
-                      data-testid="batch-download"
-                      download
-                  >ZIP 다운로드</a>
-                  <Button variant="ghost" @click="resetAll">다시 실행</Button>
-                </div>
+                <a
+                    :href="batchResultUrl"
+                    class="inline-flex h-9 items-center rounded-md bg-primary px-4 text-[13px] font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                    data-testid="batch-download"
+                    download
+                >ZIP 다운로드</a>
               </template>
             </div>
 
@@ -228,11 +235,7 @@
               <p v-else class="text-[13px] text-muted-foreground">처리 중입니다...</p>
             </div>
             <div v-else class="flex w-full flex-col gap-4">
-              <ResultViewer :text="result.text" :url="result.url">
-                <template #actions>
-                  <Button variant="ghost" @click="resetAll">다시 실행</Button>
-                </template>
-              </ResultViewer>
+              <ResultViewer :text="result.text"/>
             </div>
           </div>
         </div>
@@ -386,7 +389,7 @@
 
             <div v-else-if="result" class="flex h-full flex-col p-4">
               <p v-if="runError" class="mb-2 text-[11px] text-destructive/80">{{ runError }}</p>
-              <ResultViewer :text="result.text" :url="result.url" class="flex-1"/>
+              <ResultViewer :text="result.text" class="flex-1"/>
             </div>
 
             <div v-else class="flex h-full flex-col items-center justify-center gap-2.5 px-6 text-center">
@@ -473,6 +476,7 @@ import UnifiedCodeGenPage from '../components/UnifiedCodeGenPage.vue'
 import FileUploader from '../components/FileUploader.vue'
 import BatchPoller from '../components/BatchPoller.vue'
 import ResultViewer from '../components/ResultViewer.vue'
+import FileResultPanel from '../components/FileResultPanel.vue'
 import CommentSection from '../components/CommentSection.vue'
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
