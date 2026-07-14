@@ -147,5 +147,17 @@ jobs:
             echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GH_ACTOR}" --password-stdin
             docker compose -f docker-compose.prod.yml pull backend
             docker compose -f docker-compose.prod.yml up -d
-            docker exec devtoolbox-nginx nginx -s reload
+
+            # nginx.conf은 단일 파일 바인드 마운트라, 실행 중 컨테이너는 시작 시점의 inode를 계속 본다.
+            # 파일만 교체(SCP)되면 새 inode를 안 봐서 `nginx -s reload`로는 새 설정이 반영되지 않는다.
+            # → 컨테이너를 재생성해야 마운트가 새 inode로 다시 잡힌다. 다만 잘못된 설정으로 재생성하면
+            #   nginx가 부팅 실패해 사이트가 다운되므로, 실제와 동일한 이미지·네트워크·인증서로 먼저 검증한다.
+            #   (검증 실패 시 set -e로 배포가 중단되고 기존 nginx는 그대로 살아남는다.)
+            NGINX_NET=$(docker inspect devtoolbox-nginx -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' | awk '{print $1}')
+            docker run --rm --network "${NGINX_NET}" \
+              -v "$PWD/nginx/nginx.conf:/etc/nginx/nginx.conf:ro" \
+              -v "$PWD/nginx/ssl:/etc/nginx/ssl:ro" \
+              nginx:alpine nginx -t
+            docker compose -f docker-compose.prod.yml up -d --force-recreate nginx
+
             docker image prune -f
