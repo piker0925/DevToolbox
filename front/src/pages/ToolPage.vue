@@ -167,13 +167,24 @@
             <!-- 배치: 여러 파일을 각각 처리 후 ZIP -->
             <div v-if="batchId" class="flex w-full flex-col items-center gap-4 text-center">
               <BatchPoller
-                  v-if="!batchComplete"
+                  v-if="!batchComplete && !batchFailed"
                   :batchId="batchId"
                   @done="onBatchDone"
+                  @error="onBatchError"
                   @progress="onBatchProgress"
+                  @retrying="onBatchRetrying"
               />
-              <template v-if="!batchComplete">
+              <!-- 배치 폴링 반복 실패 (042): 무한 대기로 방치하지 않고 명확히 실패 안내 -->
+              <template v-if="batchFailed">
+                <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-destructive/40">
+                  <AlertTriangle class="size-5 text-destructive/70"/>
+                </div>
+                <p class="max-w-xs text-[13px] font-medium text-destructive">상태를 확인할 수 없습니다 — 새로고침해 주세요</p>
+              </template>
+              <template v-else-if="!batchComplete">
                 <Loader2 class="size-8 animate-spin text-primary/60"/>
+                <!-- 폴링 재시도 중 (042): 진행률이 멈춘 채 방치되지 않도록 명시적으로 알림 -->
+                <p v-if="batchReconnecting" class="text-[12px] text-amber-600">연결이 끊겼습니다 · 재연결 중...</p>
                 <p class="text-[13px] text-muted-foreground">
                   일괄 처리 중… {{ batchProgress?.doneCount ?? 0 }} / {{ batchProgress?.totalCount ?? 0 }}
                   <span v-if="batchProgress?.failCount" class="text-destructive">(실패 {{
@@ -209,8 +220,17 @@
               </div>
               <p class="text-[12px] text-muted-foreground">파일을 업로드하면 처리가 시작됩니다</p>
             </div>
+            <!-- SSE 재연결 반복 실패 (042): 무한 스피너로 방치하지 않고 명확히 실패 안내 -->
+            <div v-else-if="!result && sseFailed" class="flex flex-col items-center gap-3 text-center">
+              <div class="flex size-12 items-center justify-center rounded-xl border-2 border-dashed border-destructive/40">
+                <AlertTriangle class="size-5 text-destructive/70"/>
+              </div>
+              <p class="max-w-xs text-[13px] font-medium text-destructive">상태를 확인할 수 없습니다 — 새로고침해 주세요</p>
+            </div>
             <div v-else-if="!result" class="flex w-full max-w-sm flex-col items-center gap-4">
               <Loader2 class="size-8 animate-spin text-primary/60"/>
+              <!-- 연결 끊김 상태 (042): 진행률이 멈춘 채 방치되지 않도록 명시적으로 알림 -->
+              <p v-if="sseReconnecting" class="text-[12px] text-amber-600">연결이 끊겼습니다 · 재연결 중...</p>
               <!-- 대기 중: 큐 순번 안내 (ADR-0019 진행 가시화) -->
               <p v-if="jobProgress && jobProgress.queuePosition > 0" class="text-[13px] text-muted-foreground">
                 대기 중… 앞에 {{ jobProgress.queuePosition }}개
@@ -481,9 +501,13 @@ const loading = ref(true)
 const jobId = ref<string | null>(null)
 // 단건 작업 진행 가시화 (ADR-0019): 큐 순번·진행률·ETA를 SSE로 받아 표시
 const jobProgress = ref<{ queuePosition: number; progress: number; etaSeconds: number | null } | null>(null)
+const sseReconnecting = ref(false)
+const sseFailed = ref(false)
 const batchId = ref<string | null>(null)
 const batchProgress = ref<BatchProgress | null>(null)
 const batchComplete = ref(false)
+const batchFailed = ref(false)
+const batchReconnecting = ref(false)
 const result = ref<RunResult | null>(null)
 const runInput = ref('')
 const formValues = ref<Record<string, string>>({})
@@ -589,6 +613,8 @@ async function loadModule(moduleId: string) {
 // ── SSE ───────────────────────────────────────────────────────────────────
 
 let eventSource: EventSource | null = null
+let sseErrorCount = 0
+const SSE_MAX_CONSECUTIVE_ERRORS = 5
 
 watch(() => route.params.moduleId as string, loadModule, {immediate: true})
 
@@ -600,10 +626,15 @@ onUnmounted(stopSse)
 
 function startSse(id: string) {
   stopSse()
+  sseErrorCount = 0
+  sseReconnecting.value = false
+  sseFailed.value = false
   const es = new EventSource(`${API_BASE}/api/v1/jobs/${id}/stream`)
   eventSource = es
   es.addEventListener('job-status-changed', (e: MessageEvent) => {
     const d = JSON.parse(e.data)
+    sseErrorCount = 0
+    sseReconnecting.value = false
     jobProgress.value = {
       queuePosition: d.queuePosition ?? 0,
       progress: d.progress ?? 0,
@@ -615,7 +646,19 @@ function startSse(id: string) {
       else onFailed()
     }
   })
-  es.onerror = stopSse
+  es.onerror = () => {
+    sseErrorCount += 1
+    // CLOSED: 네이티브가 재연결을 완전히 포기한 상태(예: 리다이렉트 거부·잘못된 content-type) —
+    // 더 이상 onerror가 안 불릴 것이므로 카운트가 상한에 도달할 기회 자체가 없다. 즉시 실패 처리.
+    const gaveUp = es.readyState === EventSource.CLOSED
+    if (gaveUp || sseErrorCount >= SSE_MAX_CONSECUTIVE_ERRORS) {
+      sseReconnecting.value = false
+      sseFailed.value = true
+      stopSse()
+      return
+    }
+    sseReconnecting.value = true
+  }
 }
 
 function stopSse() {
@@ -648,6 +691,10 @@ function onUploadError(message: string) {
 // 전부 비운다. 안 그러면 템플릿이 옛 결과/배치 화면에 머문다(033 문제 1).
 function resetRunState() {
   stopSse()
+  sseReconnecting.value = false
+  sseFailed.value = false
+  batchFailed.value = false
+  batchReconnecting.value = false
   const cleared = clearPreviousRun({
     jobId: jobId.value,
     jobProgress: jobProgress.value,
@@ -685,12 +732,23 @@ function formatEta(seconds: number): string {
 }
 
 function onBatchProgress(p: BatchProgress) {
+  batchReconnecting.value = false
   batchProgress.value = p
 }
 
 function onBatchDone(p: BatchProgress) {
+  batchReconnecting.value = false
   batchProgress.value = p
   batchComplete.value = true
+}
+
+function onBatchError() {
+  batchReconnecting.value = false
+  batchFailed.value = true
+}
+
+function onBatchRetrying() {
+  batchReconnecting.value = true
 }
 
 async function uploadTextAsFile() {
@@ -826,9 +884,13 @@ function resetAll() {
   stopSse()
   jobId.value = null
   jobProgress.value = null
+  sseReconnecting.value = false
+  sseFailed.value = false
   batchId.value = null
   batchProgress.value = null
   batchComplete.value = false
+  batchFailed.value = false
+  batchReconnecting.value = false
   result.value = null
   runInput.value = ''
   runError.value = ''

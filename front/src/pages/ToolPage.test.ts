@@ -27,6 +27,47 @@ const router = createRouter({
     routes: [{path: '/tools/:moduleId', component: ToolPage}],
 })
 
+// jsdom엔 EventSource가 없어 최소 mock을 직접 둔다(브라우저 API — 외부 경계이므로 모킹 대상).
+// readyState를 직접 조작할 수 있어야 "에러 후 native가 재연결 시도 중(CONNECTING)"과
+// "완전히 닫힘(CLOSED)"을 구분하는 실제 동작을 재현할 수 있다.
+class MockEventSource {
+    static readonly CONNECTING = 0
+    static readonly OPEN = 1
+    static readonly CLOSED = 2
+    static instances: MockEventSource[] = []
+
+    readyState = MockEventSource.OPEN
+    onerror: ((e: Event) => void) | null = null
+    closeSpy = vi.fn()
+    private listeners: Record<string, Array<(e: MessageEvent) => void>> = {}
+    url: string
+
+    constructor(url: string) {
+        this.url = url
+        MockEventSource.instances.push(this)
+    }
+
+    addEventListener(type: string, cb: (e: MessageEvent) => void) {
+        (this.listeners[type] ??= []).push(cb)
+    }
+
+    close() {
+        this.readyState = MockEventSource.CLOSED
+        this.closeSpy()
+    }
+
+    emitMessage(type: string, data: unknown) {
+        const event = {data: JSON.stringify(data)} as MessageEvent
+        for (const cb of this.listeners[type] ?? []) cb(event)
+    }
+
+    // readyState 기본값 CONNECTING: native EventSource가 에러 후 자동 재연결을 시도할 때의 상태.
+    emitError(readyState: number = MockEventSource.CONNECTING) {
+        this.readyState = readyState
+        this.onerror?.(new Event('error'))
+    }
+}
+
 // mountAt으로 만든 wrapper를 추적해 매 테스트 후 언마운트한다.
 // 언마운트하지 않으면 BatchPoller의 setTimeout 폴링이 다음 테스트(다른 mock 상태)까지
 // 살아남아 "unexpected GET" 같은 미처리 프라미스 거부를 흘린다.
@@ -47,11 +88,24 @@ function inputForLabel(wrapper: ReturnType<typeof mount>, labelText: string) {
     return label.element.parentElement?.querySelector('input') as HTMLInputElement | null
 }
 
-beforeEach(() => vi.clearAllMocks())
+beforeEach(() => {
+    vi.clearAllMocks()
+    MockEventSource.instances = []
+    vi.stubGlobal('EventSource', MockEventSource)
+})
 
 afterEach(() => {
     mountedWrappers.splice(0).forEach(w => w.unmount())
+    vi.unstubAllGlobals()
 })
+
+async function uploadAndGetSse(wrapper: ReturnType<typeof mount>, jobId: string) {
+    await wrapper.findComponent(FileUploader).vm.$emit('uploaded', {jobId})
+    await flushPromises()
+    const es = MockEventSource.instances.at(-1)
+    if (!es) throw new Error('EventSource가 생성되지 않았다')
+    return es
+}
 
 describe('ToolPage 업로드 실패 표시 (032)', () => {
     // 034: 파일 선택은 스테이징만 하고, '실행' 버튼을 눌러야 업로드된다.
@@ -200,5 +254,119 @@ describe('ToolPage 배치 (027)', () => {
         await flushPromises()
 
         expect(wrapper.text()).toContain('1 / 3')
+    })
+})
+
+describe('ToolPage 단건 SSE 재연결 (042)', () => {
+    const imgHeavy: Module = {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true}
+
+    it('SSE 에러(native 재연결 중) 시 연결을 닫지 않고 "재연결 중" 상태를 보여준다', async () => {
+        const wrapper = await mountAt('img-heavy', [imgHeavy])
+        const es = await uploadAndGetSse(wrapper, 'job-1')
+
+        es.emitError() // 기본값 CONNECTING — native가 재연결을 시도 중인 상태
+
+        await flushPromises()
+        expect(es.closeSpy).not.toHaveBeenCalled()
+        expect(wrapper.text()).toContain('재연결 중')
+    })
+
+    it('재연결 중 정상 메시지가 오면 "재연결 중" 상태가 해제되고 진행률을 이어서 보여준다', async () => {
+        const wrapper = await mountAt('img-heavy', [imgHeavy])
+        const es = await uploadAndGetSse(wrapper, 'job-1')
+
+        es.emitError()
+        await flushPromises()
+        expect(wrapper.text()).toContain('재연결 중')
+
+        es.emitMessage('job-status-changed', {status: 'RUNNING', queuePosition: 0, progress: 42, etaSeconds: 10})
+        await flushPromises()
+
+        expect(wrapper.text()).not.toContain('재연결 중')
+        expect(wrapper.text()).toContain('42%')
+    })
+
+    it('정상 종료(FAILED)는 재연결과 무관하게 연결을 닫고 실패 결과를 보여준다 (격리검증)', async () => {
+        const wrapper = await mountAt('img-heavy', [imgHeavy])
+        const es = await uploadAndGetSse(wrapper, 'job-1')
+
+        es.emitMessage('job-status-changed', {status: 'FAILED', queuePosition: 0, progress: 0, etaSeconds: null})
+        await flushPromises()
+
+        expect(es.closeSpy).toHaveBeenCalled()
+        expect(wrapper.text()).not.toContain('재연결 중')
+        // ResultViewer는 textarea에 값을 프로퍼티로 바인딩해 wrapper.text()엔 안 잡힌다.
+        const textarea = wrapper.find('textarea')
+        expect(textarea.element.value).toContain('처리에 실패했습니다')
+    })
+
+    it('연속 5회 에러 시 명시적으로 닫고 최종 실패 메시지를 보여준다', async () => {
+        const wrapper = await mountAt('img-heavy', [imgHeavy])
+        const es = await uploadAndGetSse(wrapper, 'job-1')
+
+        for (let i = 0; i < 5; i++) {
+            es.emitError()
+        }
+        await flushPromises()
+
+        expect(es.closeSpy).toHaveBeenCalled()
+        expect(wrapper.text()).toContain('상태를 확인할 수 없습니다')
+    })
+
+    it('네이티브가 완전히 포기(readyState=CLOSED)하면 5회를 기다리지 않고 즉시 실패 처리한다', async () => {
+        const wrapper = await mountAt('img-heavy', [imgHeavy])
+        const es = await uploadAndGetSse(wrapper, 'job-1')
+
+        // CLOSED면 native가 더 이상 onerror를 호출하지 않으므로, 카운트가 5에 도달할 기회 자체가 없다.
+        es.emitError(MockEventSource.CLOSED)
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('상태를 확인할 수 없습니다')
+    })
+})
+
+describe('ToolPage 배치 폴링 실패 (042)', () => {
+    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true}
+
+    it('BatchPoller가 error를 emit하면 실패 메시지를 보여주고 폴러를 내린다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2']})
+        await flushPromises()
+        wrapper.findComponent(BatchPoller).vm.$emit('error')
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('상태를 확인할 수 없습니다')
+        expect(wrapper.findComponent(BatchPoller).exists()).toBe(false)
+    })
+
+    it('배치 실패 후 새로 업로드하면 실패 상태가 초기화되고 폴러가 다시 뜬다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2']})
+        await flushPromises()
+        wrapper.findComponent(BatchPoller).vm.$emit('error')
+        await flushPromises()
+        expect(wrapper.text()).toContain('상태를 확인할 수 없습니다')
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-10', jobIds: ['j3', 'j4']})
+        await flushPromises()
+
+        expect(wrapper.text()).not.toContain('상태를 확인할 수 없습니다')
+        expect(wrapper.findComponent(BatchPoller).exists()).toBe(true)
+    })
+
+    it('BatchPoller가 retrying을 emit하면 재연결 중 상태를 보여주고, progress가 오면 해제한다', async () => {
+        const wrapper = await mountAt('image-resize', [imageResize])
+
+        wrapper.findComponent(FileUploader).vm.$emit('uploaded', {batchId: 'b-9', jobIds: ['j1', 'j2']})
+        await flushPromises()
+        wrapper.findComponent(BatchPoller).vm.$emit('retrying')
+        await flushPromises()
+        expect(wrapper.text()).toContain('재연결 중')
+
+        wrapper.findComponent(BatchPoller).vm.$emit('progress', {batchId: 'b-9', totalCount: 2, doneCount: 1, failCount: 0})
+        await flushPromises()
+        expect(wrapper.text()).not.toContain('재연결 중')
     })
 })

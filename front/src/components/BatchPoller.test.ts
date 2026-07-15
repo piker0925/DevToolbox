@@ -73,3 +73,60 @@ describe('BatchPoller', () => {
         expect(wrapper.emitted('done')![0]).toEqual([{batchId: 'b-1', totalCount: 2, doneCount: 2, failCount: 0}])
     })
 })
+
+describe('BatchPoller 폴링 실패 복원력 (042)', () => {
+    it('폴링 요청 1회 실패는 전체 루프를 중단시키지 않고 다음 시도로 이어간다', async () => {
+        mockGet
+            .mockRejectedValueOnce(new Error('네트워크 오류'))
+            .mockResolvedValueOnce(progress(2, 2, 0))
+
+        const wrapper = mount(BatchPoller, {props: {batchId: 'b-1', intervalMs: 0}})
+        await vi.waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+        await flushPromises()
+
+        expect(wrapper.emitted('done')).toBeTruthy()
+    })
+
+    it('폴링 실패마다(포기 전) retrying을 emit해 진행 상황이 조용히 방치되지 않게 한다', async () => {
+        mockGet
+            .mockRejectedValueOnce(new Error('네트워크 오류'))
+            .mockResolvedValueOnce(progress(2, 2, 0))
+
+        const wrapper = mount(BatchPoller, {props: {batchId: 'b-1', intervalMs: 0}})
+        await vi.waitFor(() => expect(mockGet).toHaveBeenCalledTimes(2))
+        await flushPromises()
+
+        expect(wrapper.emitted('retrying')).toBeTruthy()
+        expect(wrapper.emitted('retrying')!.length).toBe(1)
+    })
+
+    it('연속 5회 실패하면 폴링을 멈추고 error를 emit한다', async () => {
+        mockGet.mockRejectedValue(new Error('네트워크 오류'))
+
+        const wrapper = mount(BatchPoller, {props: {batchId: 'b-1', intervalMs: 0}})
+        await vi.waitFor(() => expect(mockGet).toHaveBeenCalledTimes(5))
+        await flushPromises()
+
+        expect(wrapper.emitted('error')).toBeTruthy()
+
+        const callsAfterGiveUp = mockGet.mock.calls.length
+        await new Promise(resolve => setTimeout(resolve, 20))
+        expect(mockGet.mock.calls.length).toBe(callsAfterGiveUp) // 더 이상 폴링하지 않음
+    })
+
+    it('4회 실패 후 성공하면 error를 emit하지 않고 정상 진행한다 (격리검증)', async () => {
+        mockGet
+            .mockRejectedValueOnce(new Error('e1'))
+            .mockRejectedValueOnce(new Error('e2'))
+            .mockRejectedValueOnce(new Error('e3'))
+            .mockRejectedValueOnce(new Error('e4'))
+            .mockResolvedValueOnce(progress(2, 2, 0))
+
+        const wrapper = mount(BatchPoller, {props: {batchId: 'b-1', intervalMs: 0}})
+        await vi.waitFor(() => expect(mockGet).toHaveBeenCalledTimes(5))
+        await flushPromises()
+
+        expect(wrapper.emitted('error')).toBeFalsy()
+        expect(wrapper.emitted('done')).toBeTruthy()
+    })
+})
