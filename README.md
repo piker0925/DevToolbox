@@ -164,12 +164,13 @@ DevToolbox/
 │       ├── global/
 │       │   ├── config/          # AsyncConfig, SecurityConfig, WebMvcConfig
 │       │   ├── exception/       # AppException, ErrorCode, GlobalExceptionHandler
+│       │   ├── ratelimit/        # RateLimiter, ClientIpResolver — IP 기반 rate limiting
 │       │   ├── response/        # ErrorResponse
 │       │   ├── storage/         # FileStorage 인터페이스, LocalFileStorage, OrphanFileSweeper
 │       │   └── util/            # 공통 유틸
-│       ├── tool/                # 도구 플랫폼(model·service·controller·dto) + 카테고리별 구현체 33개
+│       ├── tool/                # 도구 플랫폼(model·service·controller·dto) + 카테고리별 구현체 23개
 │       │   ├── pdf/  image/  codegen/  security/  util/
-│       │   └── generator/  formatter/  converter/  text/  network/  devops/
+│       │   └── generator/  formatter/  converter/  network/  devops/
 │       ├── job/                 # Job 엔티티·Worker·스케줄러·배치 (entity·repository·service·controller·dto)
 │       ├── comment/
 │       ├── stats/
