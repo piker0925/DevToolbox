@@ -145,7 +145,7 @@ Heavy 도구의 처리 단위인 `Job` 테이블이 큐의 핵심이다.
 
 | 영역 | 기술 |
 |------|------|
-| 백엔드 | Spring Boot 4.0.6, JDK 25, Gradle Kotlin DSL, Spring Security |
+| 백엔드 | Spring Boot 4.1.0, JDK 25, Gradle Kotlin DSL, Spring Security |
 | 데이터 | MySQL 8, JPA |
 | 주요 라이브러리 | PDFBox, Thumbnailator, flexmark+openhtmltopdf, ZXing, Bouncy Castle, Jackson |
 | 테스트 | JUnit 5, Testcontainers, Awaitility |
@@ -165,25 +165,16 @@ DevToolbox/
 │       │   ├── config/          # AsyncConfig, SecurityConfig, WebMvcConfig
 │       │   ├── exception/       # AppException, ErrorCode, GlobalExceptionHandler
 │       │   ├── response/        # ErrorResponse
-│       │   └── storage/         # FileStorage 인터페이스, LocalFileStorage, OrphanFileSweeper
-│       └── domain/
-│           ├── tool/            # ToolModule 인터페이스 + 30개 구현체
-│           │   ├── pdf/
-│           │   ├── image/
-│           │   ├── codegen/
-│           │   ├── security/
-│           │   ├── generator/
-│           │   ├── formatter/
-│           │   ├── converter/
-│           │   ├── text/
-│           │   ├── network/
-│           │   ├── devops/
-│           │   └── util/
-│           ├── job/             # Job 엔티티, Worker, 배치
-│           ├── comment/
-│           ├── stats/
-│           ├── suggestion/
-│           └── admin/
+│       │   ├── storage/         # FileStorage 인터페이스, LocalFileStorage, OrphanFileSweeper
+│       │   └── util/            # 공통 유틸
+│       ├── tool/                # 도구 플랫폼(model·service·controller·dto) + 카테고리별 구현체 33개
+│       │   ├── pdf/  image/  codegen/  security/  util/
+│       │   └── generator/  formatter/  converter/  text/  network/  devops/
+│       ├── job/                 # Job 엔티티·Worker·스케줄러·배치 (entity·repository·service·controller·dto)
+│       ├── comment/
+│       ├── stats/
+│       ├── suggestion/
+│       └── admin/
 ├── front/                       # Vue 3 프론트엔드
 └── docker-compose.yml           # MySQL 로컬 환경
 ```
@@ -217,7 +208,7 @@ pnpm install && pnpm dev
 
 ## 환경변수
 
-**로컬 (`application-local.yml`):**  
+**로컬 (`application-local.yaml`):**  
 MySQL은 `docker compose up -d`로 실행. 관리자 계정은 yml에 직접 작성한다.
 
 ```yaml
@@ -225,7 +216,7 @@ spring:
   security:
     user:
       name: admin
-      password: devpassword
+      password: 1234
 ```
 
 **운영 (`application-prod.yaml`):**  

@@ -173,3 +173,12 @@ global/       exception(4), storage(2), config(3), response(1)      (10)
 - `module/`의 구현체는 `tool/model/`의 인터페이스만 의존한다. `job/`이나 `global/storage/`를 직접 참조하지 않는다.
 - 레이어 내 파일이 10개를 초과하면 세분화를 검토한다.
 - `module/{category}/`에 공유 유틸이 생기면 `module/{category}/support/`로 분리한다.
+
+## 실제 구현과의 차이 (2026-07)
+
+핵심 결정(기능별 최상위 분리 + 기능 내 `entity/repository/service/controller/dto` 레이어 분리)은 그대로 적용됐으나, 두 지점이 계획과 다르다:
+
+1. **모듈 구현체 위치** — 계획은 최상위 `module/{category}/`였으나, 실제로는 도구 플랫폼과 같은 패키지 아래 `tool/{category}/`(예: `tool/pdf/`, `tool/util/`)에 배치됐다. `tool/`은 `model/·service/·controller/·dto/`(플랫폼)와 `{category}/`(구현체)를 함께 담는다.
+2. **추가 기능 패키지** — 11·12단계에서 `comment/`, `stats/`, `suggestion/`, `admin/`이 같은 기능별-레이어 패턴으로 추가됐다(`admin/`은 컨트롤러 1개라 평면).
+
+`global/`에는 `config/·exception/·response/·storage/`에 더해 `util/`(공통 유틸)이 있다.

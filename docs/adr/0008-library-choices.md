@@ -1,7 +1,7 @@
 # ADR-0008 모듈별 라이브러리 선택
 
 ## 상태
-업데이트 (2026-07-05: 모듈 30+로 확장에 따른 라이브러리 추가 / 2026-07-14: 마크다운→PDF 한글 폰트 리소스 추가)
+업데이트 (2026-07-05: 모듈 30+로 확장에 따른 라이브러리 추가 / 2026-07-14: 마크다운→PDF 한글 폰트 리소스 추가 / 2026-07-15: 실제 `build.gradle.kts`와 정합화 — PDFBox 2.x·toml4j·java-otp 반영, GIF·QR/바코드 상태 갱신)
 
 ## 결정
 
@@ -9,11 +9,11 @@
 
 | 모듈 | 라이브러리 | 라이선스 |
 |------|------|------|
-| 이미지→PDF, PDF 병합·분할 | Apache PDFBox 3.x | Apache 2.0 |
+| 이미지→PDF, PDF 병합·분할 | Apache PDFBox 2.0.31 (openhtmltopdf 1.0.10이 pdfbox 2.x를 요구) | Apache 2.0 |
 | 이미지 리사이즈·포맷 변환 | Thumbnailator | MIT |
 | 마크다운→PDF | flexmark-all + openhtmltopdf | BSD / LGPL 2.1 |
 | 마크다운→PDF 한글 렌더링 | `Pretendard-Regular.ttf`(`back/src/main/resources/fonts/`, 프론트 npm 패키지에서 복사) — openhtmltopdf는 시스템 폰트를 쓰지 않아 `PdfRendererBuilder.useFont(...)`로 명시 등록 필요 | OFL-1.1 |
-| GIF 생성 (조건부) | 구현 시 JDK 25 호환 확인 후 결정 | — |
+| GIF 생성 (Heavy) | JDK ImageIO(내장, 애니메이션 GIF 메타데이터) + Thumbnailator — 구현 완료 | — |
 | ZIP·TAR 아카이브 | java.util.zip (내장) / Apache Commons Compress | — / Apache 2.0 |
 
 ### Heavy 모듈 (코드 생성)
@@ -30,17 +30,20 @@
 | SQL 포맷터 | JSQLParser | Apache 2.0 |
 | XML 포맷터/미니파이어 | JDK javax.xml (내장) | — |
 | HTML Entity 인코더/디코더 | commons-text | Apache 2.0 |
-| JSON→YAML, TOML 변환 | jackson-dataformat-yaml, jackson-dataformat-toml | Apache 2.0 |
+| JSON→YAML / XML / TOML 변환 | jackson-dataformat-yaml, jackson-dataformat-xml, toml4j(com.moandjiezana) | Apache 2.0 |
 | CSV 파싱·변환 | commons-csv | Apache 2.0 |
 
 ### Light 모듈 (보안/암호화)
 
 | 모듈 | 라이브러리 | 라이선스 |
 |------|------|------|
-| RSA/AES 암호화 | Bouncy Castle (bcprov-jdk18on) | MIT |
+| RSA 키 생성 | JDK KeyPairGenerator + Bouncy Castle (bcprov-jdk18on) | MIT |
+| AES 암호화/복호화 | JDK javax.crypto (내장) | — |
+| HMAC 생성 | JDK javax.crypto (내장) | — |
 | 비밀번호 해시 (BCrypt) | spring-security-crypto | Apache 2.0 |
-| JWT 디코더 | jjwt 또는 java-jwt | Apache 2.0 |
-| 해시 생성 (MD5·SHA) | JDK MessageDigest (내장) | — |
+| TOTP 코드 생성 | java-otp (com.eatthepath) | Apache 2.0 |
+| 다중 해시 (MD5·SHA·SHA3·BLAKE2b) | JDK MessageDigest(내장) + Bouncy Castle | — |
+| JWT 디코더 | 백엔드 라이브러리 미도입(백엔드 모듈 없음) | — |
 
 ### Light 모듈 (개발 유틸)
 
@@ -51,7 +54,7 @@
 | Regex 테스터 | JDK java.util.regex (내장) | — |
 | UUID·난수 생성 | JDK java.util.UUID (내장) | — |
 
-### Heavy 모듈 (QR/바코드)
+### Light 모듈 (QR/바코드)
 
 | 모듈 | 라이브러리 | 라이선스 |
 |------|------|------|
