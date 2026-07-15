@@ -1,6 +1,7 @@
 package com.back.tool.controller;
 
 import com.back.global.exception.GlobalExceptionHandler;
+import com.back.global.ratelimit.RateLimiter;
 import com.back.job.repository.JobRepository;
 import com.back.job.service.AdmissionControl;
 import com.back.job.service.JobService;
@@ -41,8 +42,12 @@ class ToolControllerAdmissionTest {
         AdmissionControl admissionControl =
                 new AdmissionControl(jobRepository, "build/test-uploads-admission", -1L, 200, 10);
 
+        // 한도를 넉넉히 둬 이 테스트의 관심사(admission)와 rate limit이 섞이지 않게 한다.
+        RateLimiter rateLimiter = new RateLimiter(1000, 60);
+
         ToolController controller = new ToolController(
-                toolService, jobService, mock(ToolStatsService.class), admissionControl, "build/test-uploads-admission");
+                toolService, jobService, mock(ToolStatsService.class), admissionControl, rateLimiter,
+                "build/test-uploads-admission");
 
         MockMvc mockMvc = MockMvcBuilders.standaloneSetup(controller)
                 .setControllerAdvice(new GlobalExceptionHandler())

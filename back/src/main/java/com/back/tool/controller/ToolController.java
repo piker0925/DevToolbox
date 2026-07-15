@@ -2,6 +2,8 @@ package com.back.tool.controller;
 
 import com.back.global.exception.AppException;
 import com.back.global.exception.ErrorCode;
+import com.back.global.ratelimit.ClientIpResolver;
+import com.back.global.ratelimit.RateLimiter;
 import com.back.job.dto.BatchCreateResponse;
 import com.back.job.dto.JobCreateResponse;
 import com.back.job.entity.Job;
@@ -38,16 +40,19 @@ public class ToolController {
     private final JobService jobService;
     private final ToolStatsService toolStatsService;
     private final AdmissionControl admissionControl;
+    private final RateLimiter rateLimiter;
     private final Path uploadDir;
 
     public ToolController(ToolService toolService, JobService jobService,
                           ToolStatsService toolStatsService,
                           AdmissionControl admissionControl,
+                          RateLimiter rateLimiter,
                           @Value("${storage.upload-dir:uploads}") String uploadDir) {
         this.toolService = toolService;
         this.jobService = jobService;
         this.toolStatsService = toolStatsService;
         this.admissionControl = admissionControl;
+        this.rateLimiter = rateLimiter;
         this.uploadDir = Path.of(uploadDir);
     }
 
@@ -83,6 +88,9 @@ public class ToolController {
         // 익명 식별자: 프론트가 localStorage에서 관리해 헤더로 보낸다 (ADR-0019). 없으면 null → 쿼터 생략.
         String ownerToken = request.getHeader("X-Client-Id");
         Lane lane = module.getLane();
+
+        // IP당 요청 빈도 앞단 거부(040): 배치든 단건이든 루프 전에 한 번만 검사한다.
+        rateLimiter.assertNotLimited(ClientIpResolver.resolve(request));
 
         // 용량 기반 앞단 거부(036): 배치든 단건이든 루프 전에 한 번만 검사해 부분 생성을 막는다.
         admissionControl.assertCapacityAvailable(lane);
