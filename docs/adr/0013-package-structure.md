@@ -180,5 +180,6 @@ global/       exception(4), storage(2), config(3), response(1)      (10)
 
 1. **모듈 구현체 위치** — 계획은 최상위 `module/{category}/`였으나, 실제로는 도구 플랫폼과 같은 패키지 아래 `tool/{category}/`(예: `tool/pdf/`, `tool/util/`)에 배치됐다. `tool/`은 `model/·service/·controller/·dto/`(플랫폼)와 `{category}/`(구현체)를 함께 담는다.
 2. **추가 기능 패키지** — 11·12단계에서 `comment/`, `stats/`, `suggestion/`, `admin/`이 같은 기능별-레이어 패턴으로 추가됐다(`admin/`은 컨트롤러 1개라 평면).
+3. **`text/` 카테고리 소멸** — 계획 예시에 있던 `tool/text/`(CaseConverter·Diff·Regex)는 전부 프론트로 이전되어 백엔드에 남아있지 않다(ADR-0020).
 
 `global/`에는 `config/·exception/·response/·storage/`에 더해 `util/`(공통 유틸)이 있다.
