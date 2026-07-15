@@ -43,7 +43,7 @@
 | 비밀번호 해시 (BCrypt) | spring-security-crypto | Apache 2.0 |
 | TOTP 코드 생성 | java-otp (com.eatthepath) | Apache 2.0 |
 | 다중 해시 (MD5·SHA·SHA3·BLAKE2b) | JDK MessageDigest(내장) + Bouncy Castle | — |
-| JWT 디코더 | 백엔드 라이브러리 미도입(백엔드 모듈 없음) | — |
+| JWT 디코더 | 프론트 로컬 처리(base64 디코드, `front/src/utils/jwtAnalysis.ts`) — 백엔드 라이브러리 불요 | — |
 
 ### Light 모듈 (개발 유틸)
 
