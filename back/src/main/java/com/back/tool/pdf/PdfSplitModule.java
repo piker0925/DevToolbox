@@ -1,5 +1,6 @@
 package com.back.tool.pdf;
 
+import com.back.global.util.FilenameSanitizer;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolModule;
 import com.back.tool.model.ToolParams;
@@ -42,14 +43,15 @@ public class PdfSplitModule implements ToolModule {
     public ToolResult process(ToolInput input) {
         ToolParams params = ToolParams.of(input);
         String pageRangeSpec = params.getString("pageRange", "");
-        String groupMode = params.getString("groupMode", "page");
-        if (!groupMode.equals("page") && !groupMode.equals("range")) {
+        String groupMode = params.getString("groupMode", "낱장");
+        if (!groupMode.equals("낱장") && !groupMode.equals("구간")) {
             throw new ToolProcessingException(
-                    "분할 방식은 page(페이지별 1파일) 또는 range(범위별 1파일)여야 합니다. (입력값: " + groupMode + ")");
+                    "분할 방식은 낱장(페이지별 1파일) 또는 구간(범위별 1파일)이어야 합니다. (입력값: " + groupMode + ")");
         }
 
         try {
             Path inputPdf = input.files().get(0);
+            String baseName = baseNameOf(inputPdf);
             Path output = Files.createTempFile("pdfsplit-", ".zip");
 
             try (PDDocument doc = PDDocument.load(inputPdf.toFile())) {
@@ -60,10 +62,10 @@ public class PdfSplitModule implements ToolModule {
 
                 try (OutputStream fos = Files.newOutputStream(output);
                      ZipOutputStream zip = new ZipOutputStream(fos)) {
-                    if (groupMode.equals("page")) {
-                        writePerPage(doc, ranges, zip);
+                    if (groupMode.equals("낱장")) {
+                        writePerPage(doc, ranges, zip, baseName);
                     } else {
-                        writePerRange(doc, ranges, zip);
+                        writePerRange(doc, ranges, zip, baseName);
                     }
                 }
             }
@@ -73,24 +75,37 @@ public class PdfSplitModule implements ToolModule {
         }
     }
 
-    /** 페이지별 1파일: page-004.pdf 처럼 원본 페이지 번호로 이름 지정 (중복 페이지는 1회만) */
-    private void writePerPage(PDDocument doc, List<PageRange> ranges, ZipOutputStream zip) throws IOException {
+    /**
+     * 원본 업로드 파일명을 zip 엔트리 이름의 접두어로 쓴다. {@link FilenameSanitizer}로 Zip Slip 등
+     * 위험 문자를 제거하는 것은 {@link com.back.job.service.ZipEntryNamer}와 동일한 기존 관례를 따른다.
+     */
+    static String baseNameOf(Path inputPdf) {
+        String sanitized = FilenameSanitizer.sanitize(inputPdf.getFileName().toString());
+        int dot = sanitized.lastIndexOf('.');
+        String base = dot > 0 ? sanitized.substring(0, dot) : sanitized;
+        return base.isEmpty() ? "split" : base;
+    }
+
+    /** 페이지별 1파일: {원본이름}-004.pdf 처럼 원본 페이지 번호를 이어붙인다 (중복 페이지는 1회만) */
+    private void writePerPage(PDDocument doc, List<PageRange> ranges, ZipOutputStream zip, String baseName)
+            throws IOException {
         Set<Integer> pages = new LinkedHashSet<>();
         for (PageRange range : ranges) {
             for (int p = range.start(); p <= range.end(); p++) pages.add(p);
         }
         for (int p : pages) {
-            writePages(doc, p, p, zip, String.format("page-%03d.pdf", p));
+            writePages(doc, p, p, zip, String.format("%s-%03d.pdf", baseName, p));
         }
     }
 
-    /** 범위별 1파일: pages-001-003.pdf (단일 페이지 범위는 page-005.pdf) */
-    private void writePerRange(PDDocument doc, List<PageRange> ranges, ZipOutputStream zip) throws IOException {
+    /** 범위별 1파일: {원본이름}-001-003.pdf (단일 페이지 범위는 {원본이름}-005.pdf) */
+    private void writePerRange(PDDocument doc, List<PageRange> ranges, ZipOutputStream zip, String baseName)
+            throws IOException {
         Set<String> usedNames = new LinkedHashSet<>();
         for (PageRange range : ranges) {
             String name = range.start() == range.end()
-                    ? String.format("page-%03d.pdf", range.start())
-                    : String.format("pages-%03d-%03d.pdf", range.start(), range.end());
+                    ? String.format("%s-%03d.pdf", baseName, range.start())
+                    : String.format("%s-%03d-%03d.pdf", baseName, range.start(), range.end());
             if (!usedNames.add(name)) continue; // 동일 범위 중복 입력은 1회만
             writePages(doc, range.start(), range.end(), zip, name);
         }

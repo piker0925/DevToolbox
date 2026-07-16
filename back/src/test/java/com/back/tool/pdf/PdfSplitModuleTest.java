@@ -30,7 +30,11 @@ class PdfSplitModuleTest {
     private final PdfSplitModule module = new PdfSplitModule();
 
     private Path createPdf(String... pageLabels) throws Exception {
-        Path path = tempDir.resolve("input.pdf");
+        return createNamedPdf("input.pdf", pageLabels);
+    }
+
+    private Path createNamedPdf(String fileName, String... pageLabels) throws Exception {
+        Path path = tempDir.resolve(fileName);
         try (PDDocument doc = new PDDocument()) {
             for (String label : pageLabels) {
                 PDPage page = new PDPage();
@@ -78,9 +82,9 @@ class PdfSplitModuleTest {
         assertThat(result.outputFile().toString()).endsWith(".zip");
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
             assertThat(zip.size()).isEqualTo(3);
-            assertEntryPdf(zip, "page-001.pdf", 1, "P1");
-            assertEntryPdf(zip, "page-002.pdf", 1, "P2");
-            assertEntryPdf(zip, "page-003.pdf", 1, "P3");
+            assertEntryPdf(zip, "input-001.pdf", 1, "P1");
+            assertEntryPdf(zip, "input-002.pdf", 1, "P2");
+            assertEntryPdf(zip, "input-003.pdf", 1, "P3");
         }
     }
 
@@ -94,10 +98,10 @@ class PdfSplitModuleTest {
 
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
             assertThat(entryNames(zip)).containsExactlyInAnyOrder(
-                    "page-001.pdf", "page-002.pdf", "page-004.pdf");
-            assertEntryPdf(zip, "page-001.pdf", 1, "P1");
-            assertEntryPdf(zip, "page-002.pdf", 1, "P2");
-            assertEntryPdf(zip, "page-004.pdf", 1, "P4");
+                    "input-001.pdf", "input-002.pdf", "input-004.pdf");
+            assertEntryPdf(zip, "input-001.pdf", 1, "P1");
+            assertEntryPdf(zip, "input-002.pdf", 1, "P2");
+            assertEntryPdf(zip, "input-004.pdf", 1, "P4");
             // 제외 페이지의 내용이 어떤 엔트리에도 섞여 들어가지 않아야 한다
             for (String name : entryNames(zip)) {
                 try (InputStream in = zip.getInputStream(zip.getEntry(name));
@@ -111,17 +115,17 @@ class PdfSplitModuleTest {
 
     @Test
     void groupModeRangeProducesOneFilePerRange() throws Exception {
-        // 패턴 B: 동일한 범위 입력에서 groupMode=range 는 page 모드와 다른 결과를 내야 한다.
+        // 패턴 B: 동일한 범위 입력에서 groupMode=구간 은 낱장 모드와 다른 결과를 내야 한다.
         Path pdf = createPdf("P1", "P2", "P3", "P4", "P5");
 
         ToolResult result = module.process(new ToolInput(List.of(pdf),
-                Map.of("pageRange", "1-2,4", "groupMode", "range")));
+                Map.of("pageRange", "1-2,4", "groupMode", "구간")));
 
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
             assertThat(entryNames(zip)).containsExactlyInAnyOrder(
-                    "pages-001-002.pdf", "page-004.pdf");
-            assertEntryPdf(zip, "pages-001-002.pdf", 2, "P1", "P2");
-            assertEntryPdf(zip, "page-004.pdf", 1, "P4");
+                    "input-001-002.pdf", "input-004.pdf");
+            assertEntryPdf(zip, "input-001-002.pdf", 2, "P1", "P2");
+            assertEntryPdf(zip, "input-004.pdf", 1, "P4");
         }
     }
 
@@ -132,9 +136,9 @@ class PdfSplitModuleTest {
         ToolResult result = module.process(new ToolInput(List.of(pdf), Map.of("pageRange", "4-")));
 
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
-            assertThat(entryNames(zip)).containsExactlyInAnyOrder("page-004.pdf", "page-005.pdf");
-            assertEntryPdf(zip, "page-004.pdf", 1, "P4");
-            assertEntryPdf(zip, "page-005.pdf", 1, "P5");
+            assertThat(entryNames(zip)).containsExactlyInAnyOrder("input-004.pdf", "input-005.pdf");
+            assertEntryPdf(zip, "input-004.pdf", 1, "P4");
+            assertEntryPdf(zip, "input-005.pdf", 1, "P5");
         }
     }
 
@@ -143,11 +147,11 @@ class PdfSplitModuleTest {
         Path pdf = createPdf("P1", "P2", "P3");
 
         ToolResult result = module.process(new ToolInput(List.of(pdf),
-                Map.of("pageRange", "2-100", "groupMode", "range")));
+                Map.of("pageRange", "2-100", "groupMode", "구간")));
 
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
-            assertThat(entryNames(zip)).containsExactly("pages-002-003.pdf");
-            assertEntryPdf(zip, "pages-002-003.pdf", 2, "P2", "P3");
+            assertThat(entryNames(zip)).containsExactly("input-002-003.pdf");
+            assertEntryPdf(zip, "input-002-003.pdf", 2, "P2", "P3");
         }
     }
 
@@ -159,7 +163,7 @@ class PdfSplitModuleTest {
 
         try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
             assertThat(entryNames(zip)).containsExactlyInAnyOrder(
-                    "page-001.pdf", "page-002.pdf", "page-003.pdf");
+                    "input-001.pdf", "input-002.pdf", "input-003.pdf");
         }
     }
 
@@ -211,7 +215,26 @@ class PdfSplitModuleTest {
 
         assertThatThrownBy(() -> module.process(new ToolInput(List.of(pdf), Map.of("groupMode", "chunk"))))
                 .isInstanceOf(ToolProcessingException.class)
-                .hasMessageContaining("분할 방식은 page");
+                .hasMessageContaining("분할 방식은 낱장");
+    }
+
+    @Test
+    void entryNamesUseOriginalUploadFileNameAsPrefix() throws Exception {
+        Path pdf = createNamedPdf("report.pdf", "P1", "P2");
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf), Map.of()));
+
+        try (ZipFile zip = new ZipFile(result.outputFile().toFile())) {
+            assertThat(entryNames(zip)).containsExactlyInAnyOrder("report-001.pdf", "report-002.pdf");
+        }
+    }
+
+    @Test
+    void baseNameOfStripsExtensionAndSanitizesUnsafeCharacters() {
+        assertThat(PdfSplitModule.baseNameOf(Path.of("My Report.PDF"))).isEqualTo("My Report");
+        assertThat(PdfSplitModule.baseNameOf(Path.of("weird:name*.pdf"))).isEqualTo("weird_name_");
+        // 정화 후 이름이 비면(예: 상위 디렉터리 참조) "split"로 폴백한다
+        assertThat(PdfSplitModule.baseNameOf(Path.of(".."))).isEqualTo("split");
     }
 
     @Test

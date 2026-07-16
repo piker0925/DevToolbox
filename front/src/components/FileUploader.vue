@@ -22,6 +22,9 @@
           class="flex items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5 py-1.5 text-[12px] text-foreground"
       >
         <span class="flex-1 truncate font-mono">{{ f.name }}</span>
+        <span v-if="pageCounts.get(f)" class="shrink-0 text-[11px] text-muted-foreground">
+          {{ pageCounts.get(f) }}페이지
+        </span>
         <button
             v-if="reorderable"
             :data-testid="`move-up-${i}`" :disabled="i === 0"
@@ -47,6 +50,11 @@
         </button>
       </li>
     </ul>
+    <div v-if="splitPreview" class="flex flex-col gap-1 rounded-md border border-border bg-muted/30 p-2.5">
+      <span class="text-[11px] text-muted-foreground">생성될 파일 ({{ splitPreview.length }}개)</span>
+      <p class="break-all font-mono text-[11px] text-foreground/80">{{ splitPreview.join(', ') }}</p>
+    </div>
+
     <Button class="h-7 text-[12px]" data-testid="confirm-upload" @click="upload(staged)">
       {{ staged.length >= 2 ? `${staged.length}개 파일 실행` : '실행' }}
     </Button>
@@ -54,12 +62,13 @@
 </template>
 
 <script lang="ts" setup>
-import {ref} from 'vue'
+import {computed, ref} from 'vue'
 import {ChevronDown, ChevronUp, X} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import type {UploadResult} from '../types'
 import {moveItem} from '../utils/fileOrder'
 import {uploadErrorMessage} from '../utils/uploadError'
+import {previewSplitFileNames} from '../utils/pdfSplitPreview'
 import {Button} from '@/components/ui/button'
 
 const props = withDefaults(defineProps<{
@@ -80,6 +89,34 @@ const emit = defineEmits<{
 const dragging = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const staged = ref<File[]>([])
+const pageCounts = ref(new Map<File, number>())
+
+// 총 페이지 수를 알아야 "몇 페이지부터 몇 페이지까지" 같은 범위 입력이 가능하므로
+// PDF가 스테이징되는 즉시 pdf.js로 페이지 수를 읽어 표시한다. 실패해도 핵심 기능은
+// 아니므로 조용히 무시한다.
+async function loadPageCount(file: File) {
+  if (!file.name.toLowerCase().endsWith('.pdf')) return
+  try {
+    const pdfjs = await import('pdfjs-dist')
+    pdfjs.GlobalWorkerOptions.workerSrc =
+        (await import('pdfjs-dist/build/pdf.worker.min.mjs?url')).default
+    const data = await file.arrayBuffer()
+    const doc = await pdfjs.getDocument({data}).promise
+    pageCounts.value.set(file, doc.numPages)
+  } catch {
+    // 페이지 수 표시는 보조 정보이므로 실패 시 그냥 표시하지 않는다.
+  }
+}
+
+// pdf-split 전용: 범위/분할방식 입력 즉시 실제 생성될 파일명을 보여준다(설명 문구 대신 결과 시연).
+const splitPreview = computed(() => {
+  if (props.moduleId !== 'pdf-split' || staged.value.length !== 1) return null
+  const totalPages = pageCounts.value.get(staged.value[0])
+  if (!totalPages) return null
+  const pageRange = props.params?.pageRange ?? ''
+  const groupMode = props.params?.groupMode ?? '낱장'
+  return previewSplitFileNames(pageRange, groupMode, totalPages, staged.value[0].name)
+})
 
 async function upload(files: File[]) {
   const form = new FormData()
@@ -106,6 +143,7 @@ function handleFiles(files: File[]) {
   const selected = props.multiple ? files : files.slice(0, 1)
   // multiple이면 여러 번 나눠 담을 수 있게 누적, 단일 모듈이면 새 선택으로 교체한다.
   staged.value = props.multiple ? [...staged.value, ...selected] : selected
+  selected.forEach(loadPageCount)
 }
 
 function onDrop(e: DragEvent) {
