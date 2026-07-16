@@ -9,9 +9,12 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.graphics.image.LosslessFactory;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Component;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,9 +44,9 @@ public class ImageToPdfModule implements ToolModule {
     @Override
     public ToolResult process(ToolInput input) {
         ToolParams params = ToolParams.of(input);
-        String paperSize = params.getString("paperSize", "A4");
+        String paperSize = params.getString("paperSize", "원본");
         String orientation = params.getString("orientation", "portrait");
-        int marginMm = params.getInt("margin", 10, 0, 100);
+        int marginMm = params.getInt("margin", 0, 0, 100);
         float marginPt = marginMm * MM_TO_PT;
 
         PDRectangle base = resolvePaperSize(paperSize);
@@ -53,7 +56,7 @@ public class ImageToPdfModule implements ToolModule {
             Path output = Files.createTempFile("img2pdf-", ".pdf");
             try (PDDocument doc = new PDDocument()) {
                 for (Path imagePath : input.files()) {
-                    PDImageXObject image = PDImageXObject.createFromFile(imagePath.toString(), doc);
+                    PDImageXObject image = loadImage(doc, imagePath);
                     if (base == null) {
                         addOriginalSizePage(doc, image, marginPt);
                     } else {
@@ -66,6 +69,17 @@ public class ImageToPdfModule implements ToolModule {
         } catch (IOException e) {
             throw new ToolProcessingException("이미지 → PDF 변환 실패: " + e.getMessage(), e);
         }
+    }
+
+    /** EXIF Orientation이 있으면 보정 후 임베딩, 없으면 원본 바이트를 그대로 임베딩(무손실·빠름) */
+    private PDImageXObject loadImage(PDDocument doc, Path imagePath) throws IOException {
+        int orientation = ExifOrientationSupport.readOrientation(imagePath);
+        if (orientation == 1) {
+            return PDImageXObject.createFromFile(imagePath.toString(), doc);
+        }
+        BufferedImage original = ImageIO.read(imagePath.toFile());
+        BufferedImage corrected = ExifOrientationSupport.applyOrientation(original, orientation);
+        return LosslessFactory.createFromImage(doc, corrected);
     }
 
     /** 원본 크기: 페이지 = 이미지 크기 + 양쪽 여백, 이미지는 원본 크기 그대로 배치 */
@@ -90,7 +104,7 @@ public class ImageToPdfModule implements ToolModule {
             throw new ToolProcessingException(
                     "여백이 너무 커서 이미지를 배치할 공간이 없습니다. (여백: " + Math.round(marginPt / MM_TO_PT) + "mm)");
         }
-        float scale = Math.min(availW / image.getWidth(), availH / image.getHeight());
+        float scale = Math.min(1f, Math.min(availW / image.getWidth(), availH / image.getHeight()));
         float w = image.getWidth() * scale;
         float h = image.getHeight() * scale;
         float x = (rect.getWidth() - w) / 2;

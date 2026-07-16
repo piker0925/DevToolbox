@@ -49,21 +49,41 @@ class ImageToPdfModuleTest {
     }
 
     @Test
-    void defaultParamsProduceA4PortraitWithCenteredImage() throws Exception {
-        Path img = createBlueImage("a.png", 100, 100);
+    void defaultParamsProduceOriginalSizeWithNoMargin() throws Exception {
+        Path img = createBlueImage("a.png", 100, 60);
 
         ToolResult result = module.process(new ToolInput(List.of(img), Map.of()));
 
         try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
             assertThat(doc.getNumberOfPages()).isEqualTo(1);
             PDRectangle box = doc.getPage(0).getMediaBox();
-            assertThat(box.getWidth()).isCloseTo(PDRectangle.A4.getWidth(), within(0.5f));
-            assertThat(box.getHeight()).isCloseTo(PDRectangle.A4.getHeight(), within(0.5f));
+            // 기본값(파라미터 없음)은 용지=원본, 여백=0 → 페이지가 이미지 크기와 정확히 일치
+            assertThat(box.getWidth()).isCloseTo(100f, within(0.1f));
+            assertThat(box.getHeight()).isCloseTo(60f, within(0.1f));
 
+            // 여백이 없으므로 모서리까지 이미지 색상이 채워진다
             BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
-            // 이미지가 가운데 배치되어 중앙은 파란색, 여백 영역(모서리)은 흰색
-            assertThat(isBlue(rendered.getRGB(rendered.getWidth() / 2, rendered.getHeight() / 2))).isTrue();
-            assertThat(isWhite(rendered.getRGB(3, 3))).isTrue();
+            assertThat(isBlue(rendered.getRGB(2, 2))).isTrue();
+        }
+    }
+
+    @Test
+    void smallImageOnFixedPaperSizeIsNotUpscaledBeyondOriginal() throws Exception {
+        Path img = createBlueImage("i.png", 50, 50);
+
+        ToolResult result = module.process(new ToolInput(List.of(img),
+                Map.of("paperSize", "A4", "margin", "0")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImageWithDPI(0, 72);
+            int y = rendered.getHeight() / 2;
+            int blueWidth = 0;
+            for (int x = 0; x < rendered.getWidth(); x++) {
+                if (isBlue(rendered.getRGB(x, y))) blueWidth++;
+            }
+            // scale이 1로 캡되므로 그려진 이미지 폭은 원본(50pt ≈ 50px @72dpi)을 크게 못 넘는다.
+            // 캡이 없다면 A4 폭(595pt)에 가깝게 확대되어 이 assertion이 실패한다.
+            assertThat(blueWidth).isLessThanOrEqualTo(55);
         }
     }
 

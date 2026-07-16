@@ -40,6 +40,7 @@ dependencies {
 
 	// Image
 	implementation("net.coobird:thumbnailator:0.4.20")
+	implementation("com.drewnoakes:metadata-extractor:2.19.0")
 
 	// QR / Barcode
 	implementation("com.google.zxing:core:3.5.3")
