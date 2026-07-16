@@ -95,7 +95,7 @@ public class JobWorker {
         LinkedHashMap<String, Deque<Job>> byOwner = new LinkedHashMap<>();
         for (Job job : candidates) {
             String owner = job.getOwnerToken() == null ? "" : job.getOwnerToken();
-            byOwner.computeIfAbsent(owner, k -> new ArrayDeque<>()).add(job);
+            byOwner.computeIfAbsent(owner, _ -> new ArrayDeque<>()).add(job);
         }
         List<Job> chosen = new ArrayList<>(limit);
         while (chosen.size() < limit) {

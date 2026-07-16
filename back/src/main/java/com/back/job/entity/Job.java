@@ -61,7 +61,7 @@ public class Job {
     private Map<String, String> params;
 
     @Setter
-    @Column(length = 255)
+    @Column
     private String resultKey;
 
     @Setter

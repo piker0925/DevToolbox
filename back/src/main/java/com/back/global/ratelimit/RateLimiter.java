@@ -47,7 +47,7 @@ public class RateLimiter {
     /** clientKey(IP)의 이번 윈도우 카운트가 한도를 넘으면 RATE_LIMITED(429). */
     public void assertNotLimited(String clientKey) {
         WindowCounter counter = counters.asMap()
-                .compute(clientKey, (key, existing) -> nextWindow(existing, clock.millis(), windowMillis));
+                .compute(clientKey, (_, existing) -> nextWindow(existing, clock.millis(), windowMillis));
         checkLimit(counter.count(), limit);
     }
 
