@@ -1,7 +1,6 @@
 package com.back.tool.image;
 
 import com.back.tool.model.ToolInput;
-import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -16,12 +15,10 @@ import java.awt.image.BufferedImage;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class GifModuleTest {
 
@@ -138,7 +135,7 @@ class GifModuleTest {
     }
 
     @Test
-    void defaultDisposalIsRestoreToBackground() throws Exception {
+    void disposalIsAlwaysRestoreToBackground() throws Exception {
         ToolResult result = module.process(new ToolInput(threeFrames(), Map.of("delay", "50")));
 
         IIOMetadataNode gce = childNode(firstFrameMetadata(result.outputFile()), "GraphicControlExtension");
@@ -146,26 +143,7 @@ class GifModuleTest {
     }
 
     @Test
-    void keepDisposalWritesDoNotDispose() throws Exception {
-        ToolResult result = module.process(new ToolInput(threeFrames(),
-                Map.of("delay", "50", "disposal", "keep")));
-
-        IIOMetadataNode gce = childNode(firstFrameMetadata(result.outputFile()), "GraphicControlExtension");
-        assertThat(gce.getAttribute("disposalMethod")).isEqualTo("doNotDispose");
-    }
-
-    @Test
-    void invalidDisposalRejected() throws Exception {
-        List<Path> frames = threeFrames();
-
-        assertThatThrownBy(() -> module.process(new ToolInput(frames,
-                Map.of("delay", "50", "disposal", "vanish"))))
-                .isInstanceOf(ToolProcessingException.class)
-                .hasMessageContaining("disposal");
-    }
-
-    @Test
-    void frameSizeParamsScaleFramesKeepingAspectRatio() throws Exception {
+    void frameSizeParamsContainPadFillsExactTargetSizeWithoutCropping() throws Exception {
         List<Path> frames = List.of(
                 createFrame("wide1.png", Color.RED, 200, 100),
                 createFrame("wide2.png", Color.BLUE, 200, 100));
@@ -173,35 +151,137 @@ class GifModuleTest {
         ToolResult result = module.process(new ToolInput(frames,
                 Map.of("delay", "100", "frameWidth", "100", "frameHeight", "100")));
 
+        BufferedImage first = readGifFrame(result.outputFile(), 0);
+        // contain은 잘라내지 않고 200x100 → 100x50으로 축소해 세로 중앙(y=25~75)에 배치한다.
+        assertThat(first.getWidth()).isEqualTo(100);
+        assertThat(first.getHeight()).isEqualTo(100);
+        assertThat(new Color(first.getRGB(50, 50))).isEqualTo(Color.RED);   // 내용 영역
+        assertThat(new Color(first.getRGB(50, 10))).isEqualTo(Color.WHITE); // 위쪽 여백
+        assertThat(new Color(first.getRGB(50, 90))).isEqualTo(Color.WHITE); // 아래쪽 여백
+    }
+
+    private Path createBandedFrame(String name, int w, int h, boolean vertical) throws Exception {
+        Path p = tempDir.resolve(name);
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = img.createGraphics();
+        Color[] bands = {Color.RED, Color.GREEN, Color.BLUE, Color.YELLOW};
+        for (int i = 0; i < 4; i++) {
+            g.setColor(bands[i]);
+            if (vertical) {
+                g.fillRect(i * (w / 4), 0, w / 4, h);
+            } else {
+                g.fillRect(0, i * (h / 4), w, h / 4);
+            }
+        }
+        g.dispose();
+        ImageIO.write(img, "png", p.toFile());
+        return p;
+    }
+
+    @Test
+    void containPadOnWideSourceKeepsAllFourBandsAndAddsTopBottomBars() throws Exception {
+        // 200x100, 세로 밴드 4개(빨/초/파/노) x 50px. 100x100으로 contain-pad하면
+        // 스케일=0.5(가로 기준)라 4개 밴드 전부(각 25px폭) 살아남고, 위/아래에 흰 여백이 생겨야 한다.
+        // crop 방식이었다면 빨강/노랑이 잘려나가 이 assertion이 깨진다.
+        // stretch(무패딩 늘리기) 버그였다면 여백 없이 가장자리까지 색이 채워져 이 assertion이 깨진다.
+        List<Path> frames = List.of(createBandedFrame("banded-wide.png", 200, 100, true));
+
+        ToolResult result = module.process(new ToolInput(frames,
+                Map.of("delay", "100", "frameWidth", "100", "frameHeight", "100")));
+
+        BufferedImage out = readGifFrame(result.outputFile(), 0);
+        assertThat(out.getWidth()).isEqualTo(100);
+        assertThat(out.getHeight()).isEqualTo(100);
+        // 내용 영역(y=50)에 4개 밴드가 비율대로(각 25px) 전부 존재 — crop이 아님을 증명
+        assertThat(new Color(out.getRGB(12, 50))).isEqualTo(Color.RED);
+        assertThat(new Color(out.getRGB(37, 50))).isEqualTo(Color.GREEN);
+        assertThat(new Color(out.getRGB(62, 50))).isEqualTo(Color.BLUE);
+        assertThat(new Color(out.getRGB(87, 50))).isEqualTo(Color.YELLOW);
+        // 위/아래 여백 — stretch가 아님을 증명
+        assertThat(new Color(out.getRGB(50, 10))).isEqualTo(Color.WHITE);
+        assertThat(new Color(out.getRGB(50, 90))).isEqualTo(Color.WHITE);
+    }
+
+    @Test
+    void containPadOnTallSourceKeepsAllFourBandsAndAddsLeftRightBars() throws Exception {
+        // 100x200, 가로 밴드 4개(빨/초/파/노) x 50px. 100x100으로 contain-pad하면
+        // 스케일=0.5(세로 기준)라 4개 밴드 전부(각 25px높이) 살아남고, 좌/우에 흰 여백이 생겨야 한다.
+        // 가로축만 검증하면 세로축 크롭/스트레치 버그를 놓치므로 별도로 검증한다.
+        List<Path> frames = List.of(createBandedFrame("banded-tall.png", 100, 200, false));
+
+        ToolResult result = module.process(new ToolInput(frames,
+                Map.of("delay", "100", "frameWidth", "100", "frameHeight", "100")));
+
+        BufferedImage out = readGifFrame(result.outputFile(), 0);
+        assertThat(out.getWidth()).isEqualTo(100);
+        assertThat(out.getHeight()).isEqualTo(100);
+        assertThat(new Color(out.getRGB(50, 12))).isEqualTo(Color.RED);
+        assertThat(new Color(out.getRGB(50, 37))).isEqualTo(Color.GREEN);
+        assertThat(new Color(out.getRGB(50, 62))).isEqualTo(Color.BLUE);
+        assertThat(new Color(out.getRGB(50, 87))).isEqualTo(Color.YELLOW);
+        assertThat(new Color(out.getRGB(10, 50))).isEqualTo(Color.WHITE);
+        assertThat(new Color(out.getRGB(90, 50))).isEqualTo(Color.WHITE);
+    }
+
+    private BufferedImage readGifFrame(Path gif, int index) throws Exception {
         ImageReader reader = ImageIO.getImageReadersByFormatName("gif").next();
-        try (ImageInputStream iis = ImageIO.createImageInputStream(result.outputFile().toFile())) {
+        try (ImageInputStream iis = ImageIO.createImageInputStream(gif.toFile())) {
             reader.setInput(iis);
-            assertThat(reader.getNumImages(true)).isEqualTo(2);
-            BufferedImage first = reader.read(0);
-            assertThat(first.getWidth()).isEqualTo(100); // 200x100 → 100x100 박스 → 100x50
-            assertThat(first.getHeight()).isEqualTo(50);
+            return reader.read(index);
         } finally {
             reader.dispose();
         }
     }
 
     @Test
-    void withoutFrameSizeParamsKeepsOriginalDimensions() throws Exception {
+    void withoutFrameSizeParamsKeepsOriginalDimensionsWhenAllFramesMatch() throws Exception {
         List<Path> frames = List.of(
                 createFrame("orig1.png", Color.RED, 200, 100),
                 createFrame("orig2.png", Color.BLUE, 200, 100));
 
         ToolResult result = module.process(new ToolInput(frames, Map.of("delay", "100")));
 
-        ImageReader reader = ImageIO.getImageReadersByFormatName("gif").next();
-        try (ImageInputStream iis = ImageIO.createImageInputStream(result.outputFile().toFile())) {
-            reader.setInput(iis);
-            BufferedImage first = reader.read(0);
-            assertThat(first.getWidth()).isEqualTo(200);
-            assertThat(first.getHeight()).isEqualTo(100);
-        } finally {
-            reader.dispose();
-        }
+        BufferedImage first = readGifFrame(result.outputFile(), 0);
+        assertThat(first.getWidth()).isEqualTo(200);
+        assertThat(first.getHeight()).isEqualTo(100);
+    }
+
+    @Test
+    void mismatchedAspectRatioFramesAreNormalizedToMaxCanvasWithoutCropping() throws Exception {
+        // 실사용 버그 재현: frameWidth/frameHeight를 안 정했는데 프레임마다 원본 비율이 다르면
+        // 캔버스가 안 맞아 잘리거나 여백이 생기던 문제. 캔버스는 전체 프레임 중 가로·세로 최댓값
+        // (200x200)이 되어야 하고, 각 프레임은 잘리지 않고 그 안에 전부 보여야 한다.
+        List<Path> frames = List.of(
+                createFrame("wide.png", Color.RED, 200, 100),
+                createFrame("tall.png", Color.BLUE, 100, 200));
+
+        ToolResult result = module.process(new ToolInput(frames, Map.of("delay", "100")));
+
+        BufferedImage first = readGifFrame(result.outputFile(), 0);
+        BufferedImage second = readGifFrame(result.outputFile(), 1);
+
+        assertThat(first.getWidth()).isEqualTo(200);
+        assertThat(first.getHeight()).isEqualTo(200);
+        assertThat(second.getWidth()).isEqualTo(200);
+        assertThat(second.getHeight()).isEqualTo(200);
+
+        // wide(200x100)는 세로 중앙(y=50~150)에 그대로 들어가고 위/아래에 여백이 생긴다 — 잘림 없음
+        assertThat(new Color(first.getRGB(100, 100))).isEqualTo(Color.RED);
+        assertThat(new Color(first.getRGB(100, 10))).isEqualTo(Color.WHITE);
+        assertThat(new Color(first.getRGB(100, 190))).isEqualTo(Color.WHITE);
+
+        // tall(100x200)은 가로 중앙(x=50~150)에 그대로 들어가고 좌/우에 여백이 생긴다 — 잘림 없음
+        assertThat(new Color(second.getRGB(100, 100))).isEqualTo(Color.BLUE);
+        assertThat(new Color(second.getRGB(10, 100))).isEqualTo(Color.WHITE);
+        assertThat(new Color(second.getRGB(190, 100))).isEqualTo(Color.WHITE);
+    }
+
+    @Test
+    void defaultDelayIsFiveHundredMillis() throws Exception {
+        ToolResult result = module.process(new ToolInput(threeFrames(), Map.of()));
+
+        IIOMetadataNode gce = childNode(firstFrameMetadata(result.outputFile()), "GraphicControlExtension");
+        assertThat(gce.getAttribute("delayTime")).isEqualTo("50"); // 500ms = 50cs
     }
 
     @Test

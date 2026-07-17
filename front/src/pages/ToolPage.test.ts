@@ -158,14 +158,14 @@ describe('ToolPage 파라미터 필드 (024)', () => {
         expect(rounds?.value).toBe('10')
     })
 
-    it('gif-create 모듈에 delay 입력 필드가 기본값 100과 함께 렌더링된다', async () => {
+    it('gif-create 모듈에 delay 입력 필드가 기본값 500과 함께 렌더링된다', async () => {
         const wrapper = await mountAt('gif-create', [
             {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true},
         ])
 
         const delay = inputForLabel(wrapper, '프레임 간격 (ms)')
 
-        expect(delay?.value).toBe('100')
+        expect(delay?.value).toBe('500')
     })
 })
 
