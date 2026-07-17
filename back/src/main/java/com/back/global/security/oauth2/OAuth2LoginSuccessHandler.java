@@ -7,6 +7,7 @@ import com.back.user.service.RefreshTokenService;
 import com.back.user.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
 
@@ -34,16 +36,24 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                          Authentication authentication) throws IOException {
-        OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
-        OAuth2User oauth2User = oauthToken.getPrincipal();
+        try {
+            OAuth2AuthenticationToken oauthToken = (OAuth2AuthenticationToken) authentication;
+            OAuth2User oauth2User = oauthToken.getPrincipal();
 
-        OAuth2UserAttributes attrs = OAuth2UserAttributes.from(
-                oauthToken.getAuthorizedClientRegistrationId(), oauth2User.getAttributes());
-        User user = userService.upsertFromSocialLogin(attrs);
+            OAuth2UserAttributes attrs = OAuth2UserAttributes.from(
+                    oauthToken.getAuthorizedClientRegistrationId(), oauth2User.getAttributes());
+            User user = userService.upsertFromSocialLogin(attrs);
 
-        TokenPair tokens = refreshTokenService.issue(user.getId());
+            TokenPair tokens = refreshTokenService.issue(user.getId());
 
-        response.sendRedirect(frontendUrl + "/auth/callback#access=" + tokens.accessToken()
-                + "&refresh=" + tokens.refreshToken());
+            response.sendRedirect(frontendUrl + "/auth/callback#access=" + tokens.accessToken()
+                    + "&refresh=" + tokens.refreshToken());
+        } catch (Exception e) {
+            // 사용자 upsert·토큰 발급 중 무엇이 실패하든(예상치 못한 provider 응답 형태, DB 문제 등)
+            // 스프링 시큐리티 필터체인 안에서 던지면 GlobalExceptionHandler가 못 잡고 500 에러 페이지가
+            // 뜬다 — 실패 핸들러와 동일한 프론트 콜백으로 보내 사용자가 최소한 랜딩으로는 돌아가게 한다.
+            log.error("소셜 로그인 성공 처리 중 실패", e);
+            response.sendRedirect(frontendUrl + "/auth/callback#error=login_failed");
+        }
     }
 }

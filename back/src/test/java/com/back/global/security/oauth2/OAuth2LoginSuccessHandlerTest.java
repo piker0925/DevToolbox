@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doThrow;
 
 @ExtendWith(MockitoExtension.class)
 class OAuth2LoginSuccessHandlerTest {
@@ -86,5 +87,20 @@ class OAuth2LoginSuccessHandlerTest {
         handler.onAuthenticationSuccess(request, response, authentication);
 
         verify(response).sendRedirect("http://localhost:5173/auth/callback#access=access-kakao&refresh=refresh-kakao");
+    }
+
+    @Test
+    void 처리_중_예외가_발생해도_500_대신_프론트_에러_콜백으로_리다이렉트한다() throws Exception {
+        Map<String, Object> claims = Map.of("sub", "google-2", "email", "b@test.com", "name", "김철수");
+        OidcIdToken idToken = new OidcIdToken("id-token-value", Instant.now(), Instant.now().plusSeconds(3600), claims);
+        OidcUser oidcUser = new DefaultOidcUser(List.of(new SimpleGrantedAuthority("ROLE_USER")), idToken);
+        OAuth2AuthenticationToken authentication =
+                new OAuth2AuthenticationToken(oidcUser, oidcUser.getAuthorities(), "google");
+
+        doThrow(new RuntimeException("DB down")).when(userService).upsertFromSocialLogin(any(OAuth2UserAttributes.class));
+
+        handler.onAuthenticationSuccess(request, response, authentication);
+
+        verify(response).sendRedirect("http://localhost:5173/auth/callback#error=login_failed");
     }
 }
