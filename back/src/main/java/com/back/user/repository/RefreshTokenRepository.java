@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
@@ -27,4 +28,7 @@ public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long
     // 지울 수 있다(같은 트랜잭션이라 자기 자신의 락과 충돌하지 않는다).
     @Transactional
     void deleteAllByUserId(Long userId);
+
+    @Transactional
+    void deleteAllByExpiresAtBefore(LocalDateTime dateTime);
 }

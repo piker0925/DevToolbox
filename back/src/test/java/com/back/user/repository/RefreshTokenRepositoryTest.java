@@ -69,4 +69,16 @@ class RefreshTokenRepositoryTest extends AbstractMySQLIntegrationTest {
         assertThat(refreshTokenRepository.findByTokenHash("hash-a")).isEmpty();
         assertThat(refreshTokenRepository.findByTokenHash("hash-b")).isPresent();
     }
+
+    @Test
+    void deleteAllByExpiresAtBefore_만료된_토큰만_지우고_아직_유효한_토큰은_남긴다() {
+        User user = userRepository.save(new User(AuthProvider.GOOGLE, "c", null, "C"));
+        refreshTokenRepository.save(new RefreshToken(user.getId(), "hash-expired", LocalDateTime.now().minusDays(1)));
+        refreshTokenRepository.save(new RefreshToken(user.getId(), "hash-valid", LocalDateTime.now().plusDays(14)));
+
+        refreshTokenRepository.deleteAllByExpiresAtBefore(LocalDateTime.now());
+
+        assertThat(refreshTokenRepository.findByTokenHash("hash-expired")).isEmpty();
+        assertThat(refreshTokenRepository.findByTokenHash("hash-valid")).isPresent();
+    }
 }
