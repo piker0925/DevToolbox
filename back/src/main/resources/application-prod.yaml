@@ -1,3 +1,9 @@
+# nginx가 TLS를 종료하고 백엔드로는 평문 HTTP로 프록시한다(X-Forwarded-Proto: https로만 알려줌).
+# 이 설정이 없으면 Spring이 그 헤더를 무시해 OAuth2 redirect_uri를 http://로 잘못 구성하는데,
+# 구글·카카오 콘솔에는 https://로 등록돼 있어 redirect_uri_mismatch로 소셜 로그인이 전부 실패한다.
+server:
+  forward-headers-strategy: framework
+
 spring:
   datasource:
     url: ${DB_URL}
