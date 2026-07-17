@@ -1,7 +1,7 @@
 # ADR-0008 모듈별 라이브러리 선택
 
 ## 상태
-업데이트 (2026-07-05: 모듈 30+로 확장에 따른 라이브러리 추가 / 2026-07-14: 마크다운→PDF 한글 폰트 리소스 추가 / 2026-07-15: 실제 `build.gradle.kts`와 정합화 — PDFBox 2.x·toml4j·java-otp 반영, GIF·QR/바코드 상태 갱신 / 2026-07-15: HMAC·AES·TOTP·Cron·Diff·Regex를 프론트로 이전하고 백엔드 모듈·의존성(java-otp·cron-utils·java-diff-utils) 제거 — ADR-0020)
+업데이트 (2026-07-05: 모듈 30+로 확장에 따른 라이브러리 추가 / 2026-07-14: 마크다운→PDF 한글 폰트 리소스 추가 / 2026-07-15: 실제 `build.gradle.kts`와 정합화 — PDFBox 2.x·toml4j·java-otp 반영, GIF·QR/바코드 상태 갱신 / 2026-07-15: HMAC·AES·TOTP·Cron·Diff·Regex를 프론트로 이전하고 백엔드 모듈·의존성(java-otp·cron-utils·java-diff-utils) 제거 — ADR-0020 / 2026-07-17: TwelveMonkeys ImageIO 플러그인(WebP 읽기·TIFF 읽기/쓰기·JPEG 대체 리더) 추가, 아래 WebP 제외 항목 갱신 — ADR-0022)
 
 ## 결정
 
@@ -10,7 +10,7 @@
 | 모듈                 | 라이브러리                                                                                                                                                   | 라이선스           |
 |--------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|
 | 이미지→PDF, PDF 병합·분할 | Apache PDFBox 2.0.31 (openhtmltopdf 1.0.10이 pdfbox 2.x를 요구)                                                                                             | Apache 2.0     |
-| 이미지 리사이즈·포맷 변환     | Thumbnailator                                                                                                                                           | MIT            |
+| 이미지 리사이즈·포맷 변환     | Thumbnailator + TwelveMonkeys ImageIO(`imageio-webp`·`imageio-tiff`·`imageio-jpeg`, 읽기 확장용. ADR-0022)                                                       | MIT / BSD 3-Clause |
 | 마크다운→PDF           | flexmark-all + openhtmltopdf                                                                                                                            | BSD / LGPL 2.1 |
 | 마크다운→PDF 한글 렌더링    | `Pretendard-Regular.ttf`(`back/src/main/resources/fonts/`, 프론트 npm 패키지에서 복사) — openhtmltopdf는 시스템 폰트를 쓰지 않아 `PdfRendererBuilder.useFont(...)`로 명시 등록 필요 | OFL-1.1        |
 | GIF 생성 (Heavy)     | JDK ImageIO(내장, 애니메이션 GIF 메타데이터) + Thumbnailator — 구현 완료                                                                                                | —              |
@@ -73,7 +73,7 @@
 
 **GIF (AnimatedGifEncoder)**: 2005년대 코드, 유지보수 없음. JDK 25 호환성 불확실. 구현 시점에 재검토.
 
-**WebP (webp-imageio)**: JNI 네이티브 바인딩(libwebp) 사용. Oracle Cloud 배포 환경(ARM64 Linux)에서 `UnsatisfiedLinkError` 발생 가능.
+**WebP 쓰기, AVIF, HEIC**: 자유 라이선스의 순수 JVM 구현이 없다. `webp-imageio`(JNI, libwebp) 같은 네이티브 바인딩이나 `cwebp`/`avifenc`/`heif-convert` CLI shellout은 가능하지만 Docker·로컬 개발·CI 전부에 시스템 바이너리 설치가 필요해 비용이 크고, Oracle Cloud 배포 환경(ARM64 Linux)에서 `UnsatisfiedLinkError` 위험도 있다. JDeli 같은 순수 JVM 상용 라이브러리는 유료라 제외. WebP **읽기**는 TwelveMonkeys(순수 JVM)로 별도 확보함 — 상세 결정은 ADR-0022.
 
 **Apache Commons Compress (ZIP 전용)**: java.util.zip 내장으로 충분. TAR 지원 필요 시에만 추가.
 

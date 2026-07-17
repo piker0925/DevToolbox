@@ -44,8 +44,9 @@ public class ImageFormatModule implements ToolModule {
         ToolParams params = ToolParams.of(input);
         String targetFormat = params.getString("targetFormat", "png").toLowerCase();
         if (targetFormat.equals("jpg")) targetFormat = "jpeg";
-        if (!targetFormat.equals("png") && !targetFormat.equals("jpeg")) {
-            throw new ToolProcessingException("파라미터 'targetFormat'은 png 또는 jpg여야 합니다. (입력값: " + targetFormat + ")");
+        if (targetFormat.equals("tif")) targetFormat = "tiff";
+        if (!targetFormat.equals("png") && !targetFormat.equals("jpeg") && !targetFormat.equals("tiff")) {
+            throw new ToolProcessingException("파라미터 'targetFormat'은 png, jpg, tiff 중 하나여야 합니다. (입력값: " + targetFormat + ")");
         }
         int quality = params.getInt("quality", 85, 1, 100);
         boolean progressive = params.getBool("progressive", false);

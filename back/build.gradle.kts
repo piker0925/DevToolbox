@@ -41,6 +41,12 @@ dependencies {
 	// Image
 	implementation("net.coobird:thumbnailator:0.4.20")
 	implementation("com.drewnoakes:metadata-extractor:2.19.0")
+	// ImageIO 플러그인 확장 — javax.imageio.* 서비스 등록 방식이라 ImageIO.read/write를 쓰는
+	// 기존 코드는 수정 없이 새 포맷을 인식한다. WebP는 읽기만 가능(TwelveMonkeys 자체가 쓰기 미지원),
+	// TIFF는 읽기·쓰기 모두 가능. JPEG 플러그인은 JDK 기본 리더보다 다양한 변형(CMYK 등)을 더 안정적으로 읽는다.
+	implementation("com.twelvemonkeys.imageio:imageio-webp:3.14.0")
+	implementation("com.twelvemonkeys.imageio:imageio-tiff:3.14.0")
+	implementation("com.twelvemonkeys.imageio:imageio-jpeg:3.14.0")
 
 	// QR / Barcode
 	implementation("com.google.zxing:core:3.5.3")

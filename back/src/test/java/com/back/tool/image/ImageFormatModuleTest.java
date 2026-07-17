@@ -107,6 +107,11 @@ class ImageFormatModuleTest {
         return c.getRed() > 200 && c.getGreen() < 100 && c.getBlue() < 100;
     }
 
+    private static boolean isGreen(int rgb) {
+        Color c = new Color(rgb);
+        return c.getGreen() > 200 && c.getRed() < 100 && c.getBlue() < 100;
+    }
+
     /** EXIF Orientation 태그 하나만 담은 최소 APP1 세그먼트 (TIFF 빅엔디안, IFD0에 엔트리 1개). */
     private byte[] buildExifOrientationApp1(int orientation) throws Exception {
         ByteArrayOutputStream tiff = new ByteArrayOutputStream();
@@ -336,6 +341,47 @@ class ImageFormatModuleTest {
         assertThat(center.getRed()).isGreaterThanOrEqualTo(240);
         assertThat(center.getGreen()).isGreaterThanOrEqualTo(240);
         assertThat(center.getBlue()).isGreaterThanOrEqualTo(240);
+    }
+
+    @Test
+    void webpToPngConvertsSuccessfully() throws Exception {
+        // TwelveMonkeys imageio-webp는 읽기 전용이라 이 모듈이 WebP를 "읽을 수" 있는지가 관건.
+        // 픽셀 내용(윗절반 빨강/아랫절반 초록)까지 확인해 단순 디코드 성공이 아니라 색이 실제로 맞는지 본다.
+        Path src = Path.of("src/test/resources/samples/test.webp");
+
+        ToolResult result = module.process(new ToolInput(List.of(src), Map.of("targetFormat", "png")));
+
+        assertThat(detectFormat(result.outputFile())).containsIgnoringCase("png");
+        BufferedImage out = ImageIO.read(result.outputFile().toFile());
+        assertThat(out.getWidth()).isEqualTo(40);
+        assertThat(out.getHeight()).isEqualTo(40);
+        assertThat(isRed(out.getRGB(20, 5))).isTrue();
+        assertThat(isGreen(out.getRGB(20, 35))).isTrue();
+    }
+
+    @Test
+    void pngToTiffConvertsSuccessfully() throws Exception {
+        Path src = tempDir.resolve("input.png");
+        ImageIO.write(asymmetricImage(40, 30), "png", src.toFile());
+
+        ToolResult result = module.process(new ToolInput(List.of(src), Map.of("targetFormat", "tiff")));
+
+        assertThat(result.outputFile().toString()).endsWith(".tiff");
+        assertThat(detectFormat(result.outputFile())).containsIgnoringCase("tif"); // TwelveMonkeys 리더는 "tif"로 보고
+        BufferedImage out = ImageIO.read(result.outputFile().toFile());
+        assertThat(out.getWidth()).isEqualTo(40);
+        assertThat(out.getHeight()).isEqualTo(30);
+        assertThat(isRed(out.getRGB(2, 2))).isTrue();
+        assertThat(isRed(out.getRGB(30, 20))).isFalse();
+    }
+
+    @Test
+    void invalidTargetFormatThrows() {
+        Path src = tempDir.resolve("input.png");
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                module.process(new ToolInput(List.of(src), Map.of("targetFormat", "avif"))))
+                .isInstanceOf(com.back.tool.model.ToolProcessingException.class);
     }
 
     @Test

@@ -49,9 +49,10 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
                 default: '85',
             },
         ],
-        fileAccept: '.jpg,.jpeg,.png,.gif,.bmp',
+        fileAccept: '.jpg,.jpeg,.png,.gif,.bmp,.webp,.tiff,.tif',
         // 다중 파일 → 파일당 별도 Job(배치) → ZIP. 배치 진행률 UI로 소비한다.
         // preventUpscale=false로 확대를 허용하면 백엔드가 결과에 경고 advisory를 함께 반환한다.
+        // WebP는 TwelveMonkeys가 읽기만 지원해 결과는 원본 확장자 대신 png로 나온다(백엔드에서 자동 처리).
     },
     'image-format': {
         params: [
@@ -59,7 +60,7 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
                 key: 'targetFormat',
                 label: '출력 포맷',
                 type: 'select',
-                options: ['png', 'jpg'],
+                options: ['png', 'jpg', 'tiff'],
                 default: 'png',
             },
             {
@@ -84,7 +85,7 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
                 default: 'false',
             },
         ],
-        fileAccept: '.jpg,.jpeg,.png,.gif,.bmp',
+        fileAccept: '.jpg,.jpeg,.png,.gif,.bmp,.webp,.tiff,.tif',
     },
     'gif-create': {
         params: [
@@ -118,7 +119,7 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
                 placeholder: '최대 크기 자동',
             },
         ],
-        fileAccept: '.jpg,.jpeg,.png,.bmp',
+        fileAccept: '.jpg,.jpeg,.png,.bmp,.webp,.tiff,.tif',
         fileMultiple: true,
         reorderable: true,
     },

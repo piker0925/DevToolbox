@@ -100,9 +100,14 @@ public class ImageResizeModule implements ToolModule {
         return advisory;
     }
 
+    /**
+     * 원본 확장자를 결과 포맷으로 그대로 쓰되, 쓰기 가능한 ImageIO 라이터가 없는 확장자
+     * (예: WebP는 TwelveMonkeys에서 읽기만 지원)라면 무손실인 png로 대체한다.
+     */
     private String extension(Path path) {
         String name = path.getFileName().toString();
         int dot = name.lastIndexOf('.');
-        return dot >= 0 ? name.substring(dot + 1).toLowerCase() : "png";
+        String ext = dot >= 0 ? name.substring(dot + 1).toLowerCase() : "png";
+        return ImageIO.getImageWritersBySuffix(ext).hasNext() ? ext : "png";
     }
 }

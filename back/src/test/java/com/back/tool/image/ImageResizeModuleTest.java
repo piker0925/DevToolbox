@@ -191,6 +191,27 @@ class ImageResizeModuleTest {
     }
 
     @Test
+    void webpInputFallsBackToPngOutputSinceWebpWritingIsUnsupported() throws Exception {
+        // TwelveMonkeys의 WebP 플러그인은 읽기 전용이라, 원본 확장자를 그대로 쓰면(.webp)
+        // 쓰기 가능한 라이터가 없어 실패한다 — png로 대체되는지, 리사이즈 자체는 정상 동작하는지 확인.
+        // 픽셀도 함께 확인해 디코딩 자체가 실제로 맞게 됐는지 본다(윗절반 빨강/아랫절반 초록, 40x40).
+        Path src = Path.of("src/test/resources/samples/test.webp");
+
+        ToolResult result = module.process(new ToolInput(List.of(src), Map.of("width", "20", "height", "20")));
+
+        assertThat(result.outputFile().toString()).endsWith(".png");
+        BufferedImage out = ImageIO.read(result.outputFile().toFile());
+        assertThat(out.getWidth()).isEqualTo(20);
+        assertThat(out.getHeight()).isEqualTo(20);
+        java.awt.Color top = new java.awt.Color(out.getRGB(10, 2));
+        java.awt.Color bottom = new java.awt.Color(out.getRGB(10, 18));
+        assertThat(top.getRed()).isGreaterThan(200);
+        assertThat(top.getGreen()).isLessThan(100);
+        assertThat(bottom.getGreen()).isGreaterThan(200);
+        assertThat(bottom.getRed()).isLessThan(100);
+    }
+
+    @Test
     void moduleMetadata() {
         assertThat(module.getId()).isEqualTo("image-resize");
         assertThat(module.isHeavy()).isTrue();
