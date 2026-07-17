@@ -241,3 +241,11 @@ spring:
 | `ADMIN_PASSWORD`   | 관리자 HTTP Basic Auth 비밀번호   |
 | `CORS_ORIGIN`      | 허용할 프론트엔드 도메인 (Vercel URL) |
 | `STORAGE_BASE_URL` | 파일 다운로드 링크 생성용 백엔드 공개 URL  |
+
+**프론트엔드 (Vercel → Settings → Environment Variables):**
+
+| 변수                  | 설명                                                             |
+|---------------------|----------------------------------------------------------------|
+| `VITE_API_BASE_URL` | 백엔드 API 공개 URL                                                 |
+| `VITE_GA_ID`        | GA4 측정 ID (`G-XXXX`). Production만 설정 — 미설정 빌드는 gtag 요청 자체가 없음   |
+| `VITE_SITE_URL`     | sitemap.xml/robots.txt에 쓸 사이트 공개 URL. 미설정 시 임시 플레이스홀더로 생성       |
