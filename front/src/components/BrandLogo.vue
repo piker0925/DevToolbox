@@ -12,7 +12,7 @@
     </svg>
     
     <!-- 워드마크 -->
-    <span class="font-mono text-[20px] sm:text-[22px] font-bold tracking-tight">
+    <span v-if="!iconOnly" class="font-mono text-[20px] sm:text-[22px] font-bold tracking-tight">
       <span class="text-primary">{{ WORDMARK_PREFIX }}</span><span class="text-foreground">{{ WORDMARK_REST }}</span>
     </span>
   </div>
@@ -20,4 +20,6 @@
 
 <script setup lang="ts">
 import { WORDMARK_PREFIX, WORDMARK_REST } from '../config/brand'
+
+defineProps<{ iconOnly?: boolean }>()
 </script>

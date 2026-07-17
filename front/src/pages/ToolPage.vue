@@ -7,24 +7,6 @@
   <div v-else-if="!mod" class="p-6 text-sm text-muted-foreground">모듈을 찾을 수 없습니다.</div>
 
   <template v-else>
-    <!-- Breadcrumb -->
-    <div
-        class="sticky top-0 z-10 flex h-11 items-center gap-3 border-b border-border bg-background/90 px-4 backdrop-blur sm:px-6">
-      <nav class="flex min-w-0 items-center gap-1.5 text-[13px] text-muted-foreground">
-        <router-link class="shrink-0 transition-colors hover:text-foreground" to="/">홈</router-link>
-        <ChevronRight class="size-3.5 shrink-0"/>
-        <router-link class="shrink-0 transition-colors hover:text-foreground" :to="zoneHomeRoute">
-          {{ zoneName }}
-        </router-link>
-        <ChevronRight class="size-3.5 shrink-0"/>
-        <router-link
-            class="shrink-0 transition-colors hover:text-foreground"
-            :to="{path: zoneHomeRoute, query: {category: mod.category}}"
-        >{{ mod.category }}</router-link>
-        <ChevronRight class="size-3.5 shrink-0"/>
-        <span class="truncate font-medium text-foreground">{{ mod.name }}</span>
-      </nav>
-    </div>
 
     <div class="mx-auto w-full max-w-[1440px] px-4 pb-10 sm:px-6">
 
@@ -41,6 +23,15 @@
             <BarChart2 class="size-3.5"/>
             사용 <span class="font-mono">{{ stats?.useCount ?? 0 }}</span>회
           </span>
+          <button
+              :class="isFav ? 'border-amber-300 text-amber-500 bg-amber-500/10' : 'border-border hover:border-amber-300 hover:text-amber-500 hover:bg-amber-500/5'"
+              :title="isFav ? '즐겨찾기 해제' : '즐겨찾기 추가'"
+              class="flex items-center gap-1.5 rounded-full border px-3 py-0.5 font-mono text-[12px] transition-colors"
+              @click="toggleFav"
+          >
+            <Star :class="isFav ? 'fill-amber-500 text-amber-500' : ''" class="size-3.5"/>
+            즐겨찾기
+          </button>
           <button
               :class="liked ? 'border-rose-300 text-rose-500' : 'border-border hover:border-rose-300 hover:text-rose-500'"
               :disabled="likePending"
@@ -578,6 +569,7 @@ import {
   ChevronRight,
   Copy,
   Heart,
+  Star,
   Loader2,
   Lock,
   LockOpen,
@@ -600,6 +592,7 @@ import {HEAVY_CONFIGS, MODULE_CONFIGS} from '../config/toolConfigs'
 import {FRONTEND_TOOL_COMPONENTS} from '../config/frontendToolRegistry'
 import {useRecentTools} from '../composables/useRecentTools'
 import {useLikes} from '../composables/useLikes'
+import {useFavorites} from '../composables/useFavorites'
 import {zoneOf} from '../config/zones'
 import {parseStructuredResult} from '../utils/structuredResult'
 import StructuredResultView from '../components/StructuredResultView.vue'
@@ -642,6 +635,11 @@ const showComments = ref(true)
 const commentCount = ref<number | null>(null)
 
 const {record: recordRecent} = useRecentTools()
+const {isFavorite, toggle: toggleFavorite} = useFavorites()
+const isFav = computed(() => mod.value ? isFavorite(mod.value.id) : false)
+function toggleFav() {
+  if (mod.value) toggleFavorite(mod.value.id)
+}
 
 const moduleConfig = computed(() => mod.value ? MODULE_CONFIGS[mod.value.id] ?? null : null)
 const heavyConfig = computed(() => mod.value ? HEAVY_CONFIGS[mod.value.id] ?? null : null)

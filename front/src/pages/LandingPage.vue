@@ -7,9 +7,10 @@
       <div class="absolute inset-0 hidden dark:block bg-[radial-gradient(#64748b_1px,transparent_1px)] [background-size:24px_24px] opacity-60"></div>
       <!-- 페이드 아웃 마스크 -->
       <div class="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/80 to-slate-50 dark:via-background/50 dark:to-background"></div>
-      <!-- 살아 숨쉬는 동적 Aurora 글로우 (라이트는 매우 넓게 퍼지는 앰비언트 빛, 다크는 또렷한 딥블루) -->
-      <div class="absolute top-[-10%] left-[10%] h-[400px] w-[600px] rounded-full bg-indigo-300/30 blur-[150px] dark:bg-primary/15 dark:blur-[100px] animate-blob mix-blend-multiply dark:mix-blend-screen"></div>
-      <div class="absolute top-[5%] right-[10%] h-[400px] w-[600px] rounded-full bg-sky-300/30 blur-[150px] dark:bg-blue-400/10 dark:blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen"></div>
+      <!-- 살아 숨쉬는 동적 Aurora 글로우 (유유히 떠다니는 3개의 빛 무리) -->
+      <div class="absolute top-[-10%] left-[-10%] h-[500px] w-[500px] rounded-full bg-indigo-300/15 blur-[120px] dark:bg-primary/15 dark:blur-[100px] animate-blob mix-blend-multiply dark:mix-blend-screen"></div>
+      <div class="absolute top-[20%] right-[-10%] h-[400px] w-[600px] rounded-full bg-sky-300/15 blur-[120px] dark:bg-blue-400/10 dark:blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen"></div>
+      <div class="absolute bottom-[-20%] left-[20%] h-[600px] w-[600px] rounded-full bg-purple-300/15 blur-[150px] dark:bg-indigo-500/10 dark:blur-[120px] animate-blob animation-delay-4000 mix-blend-multiply dark:mix-blend-screen"></div>
     </div>
 
     <!-- 상단 바: 워드마크 + 로그인 + 테마 토글 -->
@@ -38,7 +39,7 @@
         <!-- 명령줄 스타일 검색 트리거 (Apple 스타일 초강력 블러 Glassmorphism) -->
         <button
             data-testid="landing-search-trigger"
-            class="mt-8 flex w-full max-w-[640px] items-center gap-3.5 rounded-2xl border border-white/40 dark:border-border/50 bg-white/40 dark:bg-background/50 backdrop-blur-2xl px-5 py-3 text-left shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-lg transition-all hover:border-primary/40 hover:bg-white/60 dark:hover:bg-background/80 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] hover:-translate-y-0.5 cursor-pointer"
+            class="mt-8 flex w-full max-w-[640px] items-center gap-3.5 rounded-2xl border border-white/70 dark:border-white/10 bg-white/40 dark:bg-background/50 backdrop-blur-2xl px-5 py-3 text-left shadow-[0_10px_40px_-10px_rgba(0,0,0,0.08)] dark:shadow-none transition-all hover:border-primary/40 hover:bg-white/60 dark:hover:bg-background/80 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 cursor-pointer"
             @click="paletteRef?.open()"
         >
           <span class="font-mono text-lg font-bold text-primary" aria-hidden="true">&gt;</span>
@@ -72,7 +73,7 @@
               v-for="zone in ZONES"
               :key="zone.id"
               :class="ZONE_BORDER_CLASS[zone.id]"
-              class="group flex flex-col gap-2 rounded-2xl border border-white/60 dark:border-border bg-white/40 dark:bg-card/80 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:hover:shadow-md"
+              class="group flex flex-col gap-2 rounded-2xl border border-white/70 dark:border-white/10 bg-white/40 dark:bg-[#0a0a0a]/80 backdrop-blur-xl p-5 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.04)] dark:shadow-none transition-all hover:-translate-y-1 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] dark:hover:border-primary/50"
               :to="zone.route"
           >
             <div class="flex items-start justify-between mb-4">
@@ -214,10 +215,10 @@ onUnmounted(() => {
     transform: translate(0px, 0px) scale(1);
   }
   33% {
-    transform: translate(150px, -150px) scale(1.2);
+    transform: translate(20vw, 15vh) scale(1.1);
   }
   66% {
-    transform: translate(-100px, 100px) scale(0.85);
+    transform: translate(-10vw, 25vh) scale(0.9);
   }
   100% {
     transform: translate(0px, 0px) scale(1);
@@ -225,10 +226,14 @@ onUnmounted(() => {
 }
 
 .animate-blob {
-  animation: blob 10s infinite alternate ease-in-out;
+  animation: blob 25s infinite alternate ease-in-out;
 }
 
 .animation-delay-2000 {
   animation-delay: 2s;
+}
+
+.animation-delay-4000 {
+  animation-delay: 4s;
 }
 </style>
