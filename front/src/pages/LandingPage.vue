@@ -1,15 +1,19 @@
 <template>
-  <div class="min-h-screen bg-background relative overflow-hidden">
+  <div class="min-h-screen flex flex-col bg-slate-50 dark:bg-background relative overflow-hidden transition-colors duration-500">
 
-    <!-- 히어로 배경 그라데이션 (대문 한정 허용) -->
-    <div class="pointer-events-none absolute inset-0 flex justify-center z-0">
-      <div class="absolute -top-[15%] left-[10%] h-[500px] w-[500px] rounded-full bg-blue-500/15 blur-[100px] dark:bg-blue-500/20"></div>
-      <div class="absolute -top-[10%] right-[10%] h-[400px] w-[400px] rounded-full bg-purple-500/15 blur-[100px] dark:bg-purple-500/20"></div>
-      <div class="absolute top-[20%] left-[30%] h-[300px] w-[300px] rounded-full bg-teal-500/15 blur-[80px] dark:bg-teal-500/20"></div>
+    <!-- 애플 스타일(라이트) & Vercel 스타일(다크) 융합 배경 -->
+    <div class="pointer-events-none absolute inset-0 flex justify-center z-0 overflow-hidden">
+      <!-- 배경 도트 패턴 (다크 모드 전용으로 제한하여 라이트 모드는 순백/실버의 깔끔함 강조) -->
+      <div class="absolute inset-0 hidden dark:block bg-[radial-gradient(#64748b_1px,transparent_1px)] [background-size:24px_24px] opacity-60"></div>
+      <!-- 페이드 아웃 마스크 -->
+      <div class="absolute inset-0 bg-gradient-to-b from-transparent via-slate-50/80 to-slate-50 dark:via-background/50 dark:to-background"></div>
+      <!-- 살아 숨쉬는 동적 Aurora 글로우 (라이트는 매우 넓게 퍼지는 앰비언트 빛, 다크는 또렷한 딥블루) -->
+      <div class="absolute top-[-10%] left-[10%] h-[400px] w-[600px] rounded-full bg-indigo-300/30 blur-[150px] dark:bg-primary/15 dark:blur-[100px] animate-blob mix-blend-multiply dark:mix-blend-screen"></div>
+      <div class="absolute top-[5%] right-[10%] h-[400px] w-[600px] rounded-full bg-sky-300/30 blur-[150px] dark:bg-blue-400/10 dark:blur-[100px] animate-blob animation-delay-2000 mix-blend-multiply dark:mix-blend-screen"></div>
     </div>
 
     <!-- 상단 바: 워드마크 + 로그인 + 테마 토글 -->
-    <header class="flex items-center justify-between px-4 py-4 sm:px-8 relative z-10">
+    <header class="flex items-center justify-between px-4 py-4 sm:px-8 relative z-10 shrink-0">
       <BrandLogo />
       <div class="flex items-center gap-3">
         <UserProfileButton />
@@ -17,82 +21,87 @@
       </div>
     </header>
 
-    <!-- 히어로 -->
-    <section 
-      v-motion
-      :initial="{ opacity: 0, y: 15 }"
-      :enter="{ opacity: 1, y: 0, transition: { duration: 500, type: 'spring', bounce: 0.1 } }"
-      class="relative z-10 mx-auto flex max-w-[720px] flex-col items-center px-4 pb-8 pt-12 text-center sm:pt-20"
-    >
-      <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl drop-shadow-sm">
-        {{ BRAND.slogan }}<span class="hero-cursor text-primary" aria-hidden="true">_</span>
-      </h1>
-      <p class="mt-3 text-base text-muted-foreground max-w-[480px]">모든 필수 도구를 설치 없이 브라우저에서 바로 사용하세요.</p>
-
-      <!-- 명령줄 스타일 검색 트리거 (Glassmorphism 적용) -->
-      <button
-          data-testid="landing-search-trigger"
-          class="mt-6 flex w-full max-w-[500px] items-center gap-3 rounded-2xl border border-border/50 bg-background/50 backdrop-blur-xl px-4 py-3 text-left shadow-md transition-all hover:border-primary/50 hover:bg-background/80 hover:shadow-primary/10 hover:-translate-y-0.5"
-          @click="paletteRef?.open()"
-      >
-        <span class="font-mono text-lg text-primary" aria-hidden="true">&gt;</span>
-        <span class="flex-1 font-mono text-[15px] text-muted-foreground">필요한 도구를 검색하세요...</span>
-        <kbd class="shrink-0 rounded bg-muted px-2 py-1 font-mono text-[11px] font-medium text-muted-foreground">{{ shortcutKey }}</kbd>
-      </button>
-
-      <!-- 최근 사용 바로가기 (재방문자 동선) -->
-      <div v-if="recentModules.length > 0" class="mt-8 flex flex-wrap items-center justify-center gap-2">
-        <span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground mr-2">최근 사용:</span>
-        <router-link
-            v-for="mod in recentModules"
-            :key="mod.id"
-            class="rounded-full border border-border/50 bg-card/50 backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground transition-colors hover:border-primary/40 hover:bg-card"
-            :to="`/tools/${mod.id}`"
-        >
-          {{ mod.name }}
-        </router-link>
-      </div>
-    </section>
-
-    <!-- 구역 카드 4장 -->
-    <section class="relative z-10 mx-auto max-w-[900px] px-4 pb-12 sm:px-8">
-      <div 
+    <!-- 수직 중앙 정렬을 위한 래퍼 -->
+    <main class="flex-1 flex flex-col justify-center pb-12 sm:pb-24 relative z-10">
+      <!-- 히어로 -->
+      <section 
         v-motion
-        :initial="{ opacity: 0, y: 20 }"
-        :enter="{ opacity: 1, y: 0, transition: { delay: 100, duration: 600, type: 'spring', bounce: 0.1 } }"
-        class="grid grid-cols-2 gap-4 sm:grid-cols-4"
+        :initial="{ opacity: 0, y: 15 }"
+        :enter="{ opacity: 1, y: 0, transition: { duration: 500, type: 'spring', bounce: 0.1 } }"
+        class="mx-auto flex w-full max-w-[800px] flex-col items-center px-4 pb-4 text-center"
       >
-        <router-link
-            v-for="zone in ZONES"
-            :key="zone.id"
-            :class="ZONE_BORDER_CLASS[zone.id]"
-            class="group flex flex-col gap-2 rounded-2xl border bg-card/80 backdrop-blur-sm p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-md"
-            :to="zone.route"
+        <h1 class="text-4xl font-extrabold tracking-tight text-foreground sm:text-5xl drop-shadow-sm">
+          {{ BRAND.slogan }}<span class="hero-cursor text-primary opacity-90" aria-hidden="true">_</span>
+        </h1>
+        <p class="mt-4 text-[17px] font-medium text-muted-foreground/90 max-w-[480px]">모든 필수 도구를 설치 없이 브라우저에서 바로 사용하세요.</p>
+
+        <!-- 명령줄 스타일 검색 트리거 (Apple 스타일 초강력 블러 Glassmorphism) -->
+        <button
+            data-testid="landing-search-trigger"
+            class="mt-8 flex w-full max-w-[640px] items-center gap-3.5 rounded-2xl border border-white/40 dark:border-border/50 bg-white/40 dark:bg-background/50 backdrop-blur-2xl px-5 py-3 text-left shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:shadow-lg transition-all hover:border-primary/40 hover:bg-white/60 dark:hover:bg-background/80 hover:shadow-[0_8px_40px_rgba(59,130,246,0.15)] hover:-translate-y-0.5 cursor-pointer"
+            @click="paletteRef?.open()"
         >
-          <div class="flex items-center justify-between mb-1">
-            <span :class="[ZONE_TEXT_CLASS[zone.id], ZONE_BG_CLASS[zone.id]]" class="font-mono text-[11px] px-2 py-0.5 rounded-full bg-opacity-10">cd {{ zone.route }}</span>
-          </div>
-          <h2 class="text-lg font-bold text-foreground">{{ zone.name }}</h2>
-          <p class="text-[13px] text-muted-foreground leading-snug line-clamp-2">{{ zone.description }}</p>
-          <div class="mt-auto pt-3 flex items-center justify-between">
-            <span class="font-mono text-[11px] text-muted-foreground">
-              {{ zoneModuleCounts[zone.id] > 0 ? `${zoneModuleCounts[zone.id]} Tools` : 'Soon' }}
-            </span>
-            <span class="text-sm opacity-0 transition-opacity group-hover:opacity-100" :class="ZONE_TEXT_CLASS[zone.id]">→</span>
-          </div>
-        </router-link>
-      </div>
-    </section>
+          <span class="font-mono text-lg font-bold text-primary" aria-hidden="true">&gt;</span>
+          <span class="flex-1 text-[15px] text-muted-foreground font-medium">필요한 도구를 검색하세요...</span>
+          <kbd class="shrink-0 rounded-md border border-black/5 dark:border-border/50 bg-black/5 dark:bg-muted/50 px-2 py-1 font-mono text-[11px] font-semibold text-muted-foreground">{{ shortcutKey }}</kbd>
+        </button>
+
+        <!-- 최근 사용 바로가기 (재방문자 동선) -->
+        <div v-if="recentModules.length > 0" class="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <span class="font-mono text-[11px] uppercase tracking-wider text-muted-foreground mr-2">최근 사용:</span>
+          <router-link
+              v-for="mod in recentModules"
+              :key="mod.id"
+              class="rounded-full border border-border/50 bg-card/50 backdrop-blur-sm px-3 py-1.5 text-[12px] text-foreground transition-colors hover:border-primary/40 hover:bg-card"
+              :to="`/tools/${mod.id}`"
+          >
+            {{ mod.name }}
+          </router-link>
+        </div>
+      </section>
+
+      <!-- 구역 카드 4장 -->
+      <section class="mx-auto w-full max-w-[800px] px-4 pt-8">
+        <div 
+          v-motion
+          :initial="{ opacity: 0, y: 20 }"
+          :enter="{ opacity: 1, y: 0, transition: { delay: 100, duration: 600, type: 'spring', bounce: 0.1 } }"
+          class="grid grid-cols-2 gap-4 sm:grid-cols-4 sm:gap-6"
+        >
+          <router-link
+              v-for="zone in ZONES"
+              :key="zone.id"
+              :class="ZONE_BORDER_CLASS[zone.id]"
+              class="group flex flex-col gap-2 rounded-2xl border border-white/60 dark:border-border bg-white/40 dark:bg-card/80 backdrop-blur-xl p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-sm transition-all hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] dark:hover:shadow-md"
+              :to="zone.route"
+          >
+            <div class="flex items-start justify-between mb-4">
+              <div :class="[ZONE_BG_CLASS[zone.id], ZONE_TEXT_CLASS[zone.id]]" class="flex size-10 items-center justify-center rounded-xl shadow-sm">
+                <component :is="ZONE_ICONS[zone.id]" class="size-5" />
+              </div>
+              <span :class="[ZONE_TEXT_CLASS[zone.id], ZONE_BG_CLASS[zone.id]]" class="font-mono text-[11px] px-2.5 py-1 rounded-full">cd {{ zone.route }}</span>
+            </div>
+            <h2 class="text-xl font-bold text-foreground">{{ zone.name }}</h2>
+            <p class="text-[13px] text-muted-foreground leading-snug line-clamp-2">{{ zone.description }}</p>
+            <div class="mt-auto pt-3 flex items-center justify-between">
+              <span class="font-mono text-[11px] text-muted-foreground">
+                {{ zoneModuleCounts[zone.id] > 0 ? `${zoneModuleCounts[zone.id]} Tools` : 'Soon' }}
+              </span>
+              <span class="text-sm opacity-0 transition-opacity group-hover:opacity-100" :class="ZONE_TEXT_CLASS[zone.id]">→</span>
+            </div>
+          </router-link>
+        </div>
+      </section>
+    </main>
 
     <!-- 푸터 -->
-    <footer class="relative z-10 border-t border-border/50 bg-background/50 backdrop-blur-sm px-4 py-8 sm:px-8">
-      <nav class="mx-auto flex max-w-[1000px] flex-wrap items-center justify-center gap-6 text-[14px] text-muted-foreground">
-        <router-link class="transition-colors hover:text-foreground" to="/suggestions">건의하기</router-link>
-        <router-link class="transition-colors hover:text-foreground" to="/privacy">개인정보처리방침</router-link>
-        <router-link class="transition-colors hover:text-foreground" to="/admin">관리자</router-link>
-      </nav>
-      <div class="mt-4 text-center text-[12px] text-muted-foreground/60 font-mono">
-        © 2026 OnTool. 모든 권리 보유.
+    <footer class="absolute bottom-4 left-0 right-0 z-10 px-4 sm:px-8">
+      <div class="mx-auto max-w-7xl flex flex-row items-center justify-between">
+        <p class="font-mono text-[11px] text-muted-foreground/60">&copy; 2026 OnTool. <a href="https://opensource.org/licenses/MIT" target="_blank" class="hover:underline hover:text-foreground transition-colors">MIT License</a></p>
+        <div class="flex gap-4 text-[11px] font-medium text-muted-foreground/80">
+          <router-link to="/suggestions" class="hover:text-foreground transition-colors">건의하기</router-link>
+          <router-link to="/privacy" class="hover:text-foreground transition-colors">개인정보처리방침</router-link>
+        </div>
       </div>
     </footer>
 
@@ -113,6 +122,15 @@ import BrandLogo from '../components/BrandLogo.vue'
 import CommandPalette from '../components/CommandPalette.vue'
 import ThemeToggleButton from '../components/ThemeToggleButton.vue'
 import UserProfileButton from '../components/UserProfileButton.vue'
+
+import {Terminal, FileText, Coffee, Gamepad2} from 'lucide-vue-next'
+
+const ZONE_ICONS: Record<ZoneId, any> = {
+  dev: Terminal,
+  files: FileText,
+  life: Coffee,
+  fun: Gamepad2,
+}
 
 // Tailwind Oxide는 소스에 리터럴로 등장하는 클래스만 스캔한다 — 동적 템플릿 문자열 금지
 const ZONE_TEXT_CLASS: Record<ZoneId, string> = {
@@ -137,7 +155,7 @@ const ZONE_BORDER_CLASS: Record<ZoneId, string> = {
 const {recentIds} = useRecentTools()
 const modules = ref<Module[]>([])
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null)
-const shortcutKey = navigator.userAgent.includes('Mac') ? '⌘K 또는 /' : 'Ctrl K 또는 /'
+const shortcutKey = navigator.userAgent.includes('Mac') ? '⌘K' : 'Ctrl K'
 
 const recentModules = computed(() =>
     recentIds.value
@@ -189,5 +207,28 @@ onUnmounted(() => {
   50% {
     opacity: 0;
   }
+}
+
+@keyframes blob {
+  0% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(150px, -150px) scale(1.2);
+  }
+  66% {
+    transform: translate(-100px, 100px) scale(0.85);
+  }
+  100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+}
+
+.animate-blob {
+  animation: blob 10s infinite alternate ease-in-out;
+}
+
+.animation-delay-2000 {
+  animation-delay: 2s;
 }
 </style>
