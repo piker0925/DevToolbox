@@ -1,10 +1,18 @@
 import {createRouter, createWebHistory} from 'vue-router'
-import HomePage from '../pages/HomePage.vue'
+import {BRAND} from '../config/brand'
+import {ZONES} from '../config/zones'
+import {MOCK_MODULES} from '../api/mock'
+import {trackPageView} from '../config/analytics'
 
 export const router = createRouter({
     history: createWebHistory(),
     routes: [
-        {path: '/', component: HomePage},
+        // 랜딩(045)이 아직 없어 임시로 기본 구역(dev)으로 리다이렉트 — 045에서 랜딩 페이지로 교체
+        {path: '/', redirect: '/dev'},
+        {path: '/dev', component: () => import('../pages/ZoneHomePage.vue'), props: {zoneId: 'dev'}},
+        {path: '/files', component: () => import('../pages/ZoneHomePage.vue'), props: {zoneId: 'files'}},
+        {path: '/life', component: () => import('../pages/ZoneHomePage.vue'), props: {zoneId: 'life'}},
+        {path: '/fun', component: () => import('../pages/ZoneHomePage.vue'), props: {zoneId: 'fun'}},
 
         // 통합 도구로 흡수된 구 URL 리다이렉트
         {path: '/tools/sha256', redirect: '/tools/multi-hash'},
@@ -25,5 +33,38 @@ export const router = createRouter({
         {path: '/tools/:moduleId', component: () => import('../pages/ToolPage.vue')},
         {path: '/suggestions', component: () => import('../pages/SuggestionPage.vue')},
         {path: '/admin', component: () => import('../pages/AdminPage.vue')},
+        {path: '/privacy', component: () => import('../pages/PrivacyPage.vue')},
     ],
+})
+
+function setPageMeta(title: string, description: string) {
+    document.title = `${title} · ${BRAND.siteName}`
+    let meta = document.querySelector('meta[name="description"]')
+    if (!meta) {
+        meta = document.createElement('meta')
+        meta.setAttribute('name', 'description')
+        document.head.appendChild(meta)
+    }
+    meta.setAttribute('content', description)
+}
+
+router.afterEach(to => {
+    trackPageView(to.path)
+
+    const zone = ZONES.find(z => z.route === to.path)
+    if (zone) {
+        setPageMeta(zone.name, zone.description)
+        return
+    }
+    const moduleId = to.params.moduleId as string | undefined
+    const mod = moduleId ? MOCK_MODULES.find(m => m.id === moduleId) : undefined
+    if (mod) {
+        setPageMeta(mod.name, mod.description ?? BRAND.slogan)
+        return
+    }
+    if (to.path === '/privacy') {
+        setPageMeta('개인정보처리방침', `${BRAND.siteName}이 수집하는 개인정보 항목과 보유 기간을 안내합니다.`)
+        return
+    }
+    document.title = BRAND.siteName
 })

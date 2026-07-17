@@ -4,19 +4,27 @@
     <!-- Page title -->
     <div class="pb-2 pt-8">
       <h1 class="text-xl font-semibold tracking-tight text-foreground">
-        {{ activeCategory ?? '전체 도구' }}
+        {{ activeCategory ?? zone.name }}
         <span class="ml-1.5 align-middle font-mono text-[13px] font-normal text-muted-foreground">{{
             filteredModules.length
           }}</span>
       </h1>
       <p class="mt-1 text-[13px] text-muted-foreground">
-        {{ activeCategory ? `${activeCategory} 카테고리의 도구입니다.` : '개발에 필요한 도구를 브라우저에서 바로 실행하세요.' }}
+        {{ activeCategory ? `${activeCategory} 카테고리의 도구입니다.` : zone.description }}
       </p>
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="grid grid-cols-1 gap-3 pt-4 sm:grid-cols-2 xl:grid-cols-3">
       <div v-for="n in 18" :key="n" class="h-[68px] animate-pulse rounded-xl bg-muted"/>
+    </div>
+
+    <!-- 빈 구역 안내 (즐겨찾기·최근 사용도 없을 때만) -->
+    <div
+        v-else-if="activeCategory === null && zoneModules.length === 0 && favoriteModules.length === 0 && recentModules.length === 0"
+        class="pt-10 text-center"
+    >
+      <p class="text-[14px] text-muted-foreground">{{ zone.name }} 구역은 준비 중입니다. 곧 도구가 추가됩니다.</p>
     </div>
 
     <template v-else-if="activeCategory === null">
@@ -78,10 +86,15 @@ import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
 import type {Module} from '../types'
 import {CATEGORY_ORDER} from '../utils/categoryConfig'
+import {ZONES, type ZoneId} from '../config/zones'
 import {useToolFilter} from '../composables/useToolFilter'
 import {useFavorites} from '../composables/useFavorites'
 import {useRecentTools} from '../composables/useRecentTools'
 import ToolCard from '../components/ToolCard.vue'
+
+const props = defineProps<{ zoneId: ZoneId }>()
+
+const zone = computed(() => ZONES.find(z => z.id === props.zoneId)!)
 
 const {activeCategory} = useToolFilter()
 const {favoriteIds} = useFavorites()
@@ -100,10 +113,12 @@ onMounted(async () => {
   }
 })
 
+const zoneModules = computed(() => modules.value.filter(m => m.zones.includes(props.zoneId)))
+
 const filteredModules = computed(() =>
     activeCategory.value
-        ? modules.value.filter(m => m.category === activeCategory.value)
-        : modules.value,
+        ? zoneModules.value.filter(m => m.category === activeCategory.value)
+        : zoneModules.value,
 )
 
 const favoriteModules = computed(() =>
@@ -123,7 +138,7 @@ const categorySections = computed(() => {
   let offset = 0
   return CATEGORY_ORDER
       .map(name => {
-        const mods = modules.value.filter(m => m.category === name)
+        const mods = zoneModules.value.filter(m => m.category === name)
         const section = {name, modules: mods, offset}
         offset += mods.length
         return section

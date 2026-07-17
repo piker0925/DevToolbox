@@ -1,4 +1,6 @@
-import type {Module} from '../types'
+// .js 확장자 필수: vite.config.ts → build/sitemap.ts가 MOCK_MODULES를 nodenext 해석 컨텍스트로
+// 끌어들인다(tsconfig.node.json). 확장자를 지우면 그쪽 타입체크가 깨진다 — 의도적인 예외.
+import type {Module} from '../types/index.js'
 
 export const MOCK_MODULES: Module[] = [
     // PDF (Heavy)

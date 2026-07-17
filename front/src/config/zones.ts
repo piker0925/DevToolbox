@@ -15,3 +15,8 @@ export const ZONES: Zone[] = [
     {id: 'life', name: '생활 도구', route: '/life', accent: 'zone-life', description: '일상에서 쓰는 생활형 도구'},
     {id: 'fun', name: '재미·게임', route: '/fun', accent: 'zone-fun', description: '미니게임과 재미 도구'},
 ]
+
+/** zoneId로 Zone을 찾는다. 못 찾으면(모듈에 zones가 비었거나 오타) 기본 구역(ZONES[0])으로 폴백 — 소비처마다 다른 폴백을 쓰지 않도록 단일화 */
+export function zoneOf(zoneId: ZoneId | undefined): Zone {
+    return ZONES.find(z => z.id === zoneId) ?? ZONES[0]
+}

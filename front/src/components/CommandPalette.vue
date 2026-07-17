@@ -4,9 +4,9 @@
     <CommandList class="max-h-[360px]">
       <CommandEmpty>도구를 찾을 수 없습니다.</CommandEmpty>
       <CommandGroup
-          v-for="(group, category) in grouped"
-          :key="category"
-          :heading="String(category)"
+          v-for="(group, groupLabel) in grouped"
+          :key="groupLabel"
+          :heading="String(groupLabel)"
       >
         <CommandItem
             v-for="mod in group"
@@ -17,12 +17,12 @@
         >
           <div class="flex size-6 shrink-0 items-center justify-center rounded bg-secondary text-muted-foreground">
             <component
-                :is="getCategoryConfig(String(category)).icon"
+                :is="getCategoryConfig(mod.category).icon"
                 class="size-3.5"
             />
           </div>
           <span class="flex-1 truncate text-[13px]">{{ mod.name }}</span>
-          <span class="shrink-0 font-mono text-[11px] text-muted-foreground">{{ category }}</span>
+          <span class="shrink-0 font-mono text-[11px] text-muted-foreground">{{ mod.category }}</span>
         </CommandItem>
       </CommandGroup>
     </CommandList>
@@ -39,6 +39,7 @@ import {computed, ref} from 'vue'
 import {useRouter} from 'vue-router'
 import type {Module} from '../types'
 import {getCategoryConfig} from '../utils/categoryConfig'
+import {zoneOf} from '../config/zones'
 import {keywordStrings, resolveAliasQuery} from '../utils/keywordAlias'
 import {
   CommandDialog,
@@ -67,7 +68,9 @@ function onSearchInput(e: Event) {
 
 const grouped = computed(() =>
     props.modules.reduce<Record<string, Module[]>>((acc, mod) => {
-      ;(acc[mod.category] ??= []).push(mod)
+      // zones[0]이 기본 구역 (ADR-0023) — 검색은 구역 무관 전체지만, 그룹 헤딩은 기본 구역으로 표시
+      const groupLabel = `${zoneOf(mod.zones[0]).name} > ${mod.category}`
+      ;(acc[groupLabel] ??= []).push(mod)
       return acc
     }, {}),
 )

@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {ZONES} from './zones'
+import {ZONES, zoneOf} from './zones'
 
 describe('ZONES', () => {
     it('구역은 dev/files/life/fun 4개, 이 순서대로 정의된다', () => {
@@ -37,5 +37,15 @@ describe('ZONES', () => {
         const fun = ZONES.find(z => z.id === 'fun')
         expect(fun?.route).toBe('/fun')
         expect(fun?.name).toBe('재미·게임')
+    })
+})
+
+describe('zoneOf', () => {
+    it('유효한 zoneId가 주어지면 해당 구역을 반환한다', () => {
+        expect(zoneOf('files').id).toBe('files')
+    })
+
+    it('undefined가 주어지면 기본 구역(ZONES[0])을 반환한다', () => {
+        expect(zoneOf(undefined)).toBe(ZONES[0])
     })
 })

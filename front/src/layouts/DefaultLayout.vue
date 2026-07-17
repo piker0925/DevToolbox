@@ -23,6 +23,22 @@
         </span>
       </router-link>
 
+      <!-- 구역 스위처 -->
+      <nav class="flex gap-1 px-3 pb-3" aria-label="구역 전환">
+        <router-link
+            v-for="zone in ZONES"
+            :key="zone.id"
+            :class="currentZoneId === zone.id
+            ? [ZONE_BG_CLASS[zone.id], ZONE_TEXT_CLASS[zone.id]]
+            : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'"
+            :aria-current="currentZoneId === zone.id ? 'page' : undefined"
+            class="flex-1 truncate rounded-lg px-1.5 py-1.5 text-center text-[11px] font-medium transition-colors"
+            :to="zone.route"
+        >
+          {{ zone.name }}
+        </router-link>
+      </nav>
+
       <!-- Search -->
       <div class="px-3 pb-3">
         <button
@@ -56,30 +72,30 @@
           <div class="mx-1 my-2 border-t border-sidebar-border"/>
         </template>
 
-        <!-- 전체 -->
+        <!-- 전체 (현재 구역 스코프) -->
         <router-link
             :class="isAllActive
-            ? 'bg-primary/10 text-primary'
+            ? 'bg-zone-accent/10 text-zone-accent'
             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'"
             class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors"
-            to="/"
+            :to="zoneHomeRoute"
         >
           <LayoutGrid class="size-[16px] shrink-0"/>
           <span class="flex-1 text-[14px] font-medium">전체 도구</span>
-          <span class="shrink-0 font-mono text-[11px] opacity-70">{{ modules.length }}</span>
+          <span class="shrink-0 font-mono text-[11px] opacity-70">{{ zoneModules.length }}</span>
         </router-link>
 
         <div class="mx-1 my-2 border-t border-sidebar-border"/>
 
-        <!-- Categories -->
+        <!-- Categories (현재 구역에 존재하는 카테고리만) -->
         <router-link
-            v-for="cat in CATEGORIES"
+            v-for="cat in zoneCategories"
             :key="cat.name"
             :class="isCategoryActive(cat.name)
-            ? 'bg-primary/10 text-primary'
+            ? 'bg-zone-accent/10 text-zone-accent'
             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'"
             class="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left transition-colors"
-            :to="{path: '/', query: {category: cat.name}}"
+            :to="{path: zoneHomeRoute, query: {category: cat.name}}"
         >
           <component :is="cat.icon" class="size-[16px] shrink-0"/>
           <span class="flex-1 text-[14px]">{{ cat.name }}</span>
@@ -170,6 +186,7 @@ import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
 import {BRAND} from '../config/brand'
+import {ZONES, zoneOf, type ZoneId} from '../config/zones'
 import type {Module} from '../types'
 import {CATEGORY_CONFIG, CATEGORY_ORDER} from '../utils/categoryConfig'
 import {useToolFilter} from '../composables/useToolFilter'
@@ -196,6 +213,48 @@ const {activeCategory} = useToolFilter()
 const {favoriteIds} = useFavorites()
 const {preference, setTheme} = useTheme()
 
+// Tailwind Oxide는 소스에 리터럴로 등장하는 클래스만 스캔한다 — 동적 템플릿 문자열 금지
+const ZONE_BG_CLASS: Record<ZoneId, string> = {
+  dev: 'bg-zone-accent-dev/10',
+  files: 'bg-zone-accent-files/10',
+  life: 'bg-zone-accent-life/10',
+  fun: 'bg-zone-accent-fun/10',
+}
+const ZONE_TEXT_CLASS: Record<ZoneId, string> = {
+  dev: 'text-zone-accent-dev',
+  files: 'text-zone-accent-files',
+  life: 'text-zone-accent-life',
+  fun: 'text-zone-accent-fun',
+}
+
+const currentZoneId = computed<ZoneId | null>(() => {
+  const byPath = ZONES.find(z => route.path === z.route)
+  if (byPath) return byPath.id
+  const moduleId = route.params.moduleId as string | undefined
+  if (moduleId) {
+    const mod = modules.value.find(m => m.id === moduleId)
+    if (mod) return mod.zones[0] ?? null
+  }
+  return null
+})
+
+const zoneHomeRoute = computed(() => zoneOf(currentZoneId.value ?? undefined).route)
+
+const zoneModules = computed(() =>
+    currentZoneId.value
+        ? modules.value.filter(m => m.zones.includes(currentZoneId.value!))
+        : modules.value,
+)
+
+// 현재 구역을 document.documentElement의 data-zone 속성으로 반영 (style.css가 --zone-accent를 이 속성으로 전환)
+watch(currentZoneId, zoneId => {
+  if (zoneId) {
+    document.documentElement.dataset.zone = zoneId
+  } else {
+    delete document.documentElement.dataset.zone
+  }
+}, {immediate: true})
+
 const shortcutKey = navigator.userAgent.includes('Mac') ? '⌘K' : 'Ctrl K'
 
 const THEME_LABEL = {light: '라이트 테마', dark: '다크 테마', system: '시스템 테마'} as const
@@ -217,19 +276,25 @@ const CATEGORIES = CATEGORY_ORDER.map(name => ({
   icon: CATEGORY_CONFIG[name]?.icon,
 }))
 
+// 현재 구역에 실제로 도구가 있는 카테고리만 노출
+const zoneCategories = computed(() => {
+  const namesInZone = new Set(zoneModules.value.map(m => m.category))
+  return CATEGORIES.filter(cat => namesInZone.has(cat.name))
+})
+
 const categoryCounts = computed(() =>
-    modules.value.reduce<Record<string, number>>((acc, mod) => {
+    zoneModules.value.reduce<Record<string, number>>((acc, mod) => {
       acc[mod.category] = (acc[mod.category] ?? 0) + 1
       return acc
     }, {}),
 )
 
 const isAllActive = computed(() =>
-    route.path === '/' && activeCategory.value === null,
+    route.path === zoneHomeRoute.value && activeCategory.value === null,
 )
 
 function isCategoryActive(catName: string) {
-  if (route.path === '/') return activeCategory.value === catName
+  if (route.path === zoneHomeRoute.value) return activeCategory.value === catName
   const moduleId = route.params.moduleId as string | undefined
   if (!moduleId) return false
   return modules.value.find(m => m.id === moduleId)?.category === catName
