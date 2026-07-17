@@ -99,6 +99,17 @@ isHeavy() = false → 즉시 처리 → 바로 응답
 
 ## 서비스 기능
 
+**소셜 로그인 (구글 · 카카오)**  
+익명 기본 + 로그인은 부가 가치인 구조다 — 로그인 없이도 모든 도구를 지금처럼 쓸 수 있고, 로그인은 닉네임 표시·개인화 동기화 같은 혜택만 얹는다.
+
+- **로그인 시작**: 프론트가 `GET /oauth2/authorization/{google|kakao}`로 브라우저를 통째로 이동시킨다(fetch/axios 아님 — OAuth 인가 코드 흐름은 top-level navigation이 필요). Spring Security OAuth2 Client가 구글은 OIDC 프리셋으로, 카카오는 커스텀 provider(`authorization-uri`/`token-uri`/`user-info-uri`를 직접 등록)로 처리한다.
+- **로그인 성공 처리**: `OAuth2LoginSuccessHandler`가 구글(`sub`/`email`/`name`)과 카카오(`id`, 중첩된 `kakao_account.email`/`kakao_account.profile.nickname`)의 서로 다른 속성 구조를 통일된 `OAuth2UserAttributes`로 매핑하고, `(provider, providerId)` 기준으로 `User`를 upsert한다. **첫 로그인일 때만** 소셜 프로필명을 닉네임 기본값으로 쓰고(20자 초과 시 절단), 이미 있는 유저면 기존 닉네임을 그대로 둔다 — 재로그인마다 소셜 프로필명으로 덮어쓰지 않는다. 카카오는 이메일 동의항목을 안 쓰므로 `email`이 항상 `null`이며 스키마도 이를 반영해 nullable이다.
+- **토큰 발급 및 콜백**: 성공 즉시 JWT access(30분)와 opaque 랜덤 refresh(14일, DB에 SHA-256 해시로만 저장)를 발급해 `{FRONTEND_URL}/auth/callback#access=…&refresh=…`로 리다이렉트한다. 서버 로그·Referer에 남지 않도록 쿼리스트링이 아니라 URL fragment를 쓴다. 실패 시(동의 거부 등)는 `#error=login_failed`.
+- **Refresh 회전 + 멀티탭 유예**: `/api/v1/auth/refresh`는 매 호출마다 refresh를 새 값으로 교체(rotation)한다. 탭 두 개가 동시에 재발급을 시도하면 하나는 "이미 회전된 토큰"을 보게 되는데, 이를 즉시 탈취로 간주해 로그아웃시키는 대신 직전 회전 후 30초 유예를 두어 그 안의 재사용은 방금 발급된 최신 토큰쌍을 그대로 돌려준다. 유예를 넘겨서 재사용되면 그때는 진짜 탈취로 보고 해당 유저의 refresh 토큰을 전부 폐기한다.
+- **로그아웃**: `POST /api/v1/auth/logout`(Authorization 필수)은 지정한 refresh 토큰을 삭제할 뿐 아니라, 요청에 쓰인 access 토큰 자체도 해시로 블랙리스트(`revoked_access_token`)에 올려 자연 만료(최대 30분) 전이라도 그 즉시 무효화한다 — JWT는 원래 상태 없이(stateless) 서명·만료만 검증하므로, 이 블랙리스트 조회가 없으면 로그아웃한 토큰이 남은 수명 동안 계속 인증에 성공해버린다.
+- **인증 필터**: `JwtAuthenticationFilter`는 `Authorization: Bearer` 헤더가 없거나 유효하지 않아도 요청을 그냥 통과시킨다(익명 기본 원칙) — `/api/v1/users/me`, `/api/v1/auth/logout`처럼 로그인이 실제로 필요한 엔드포인트만 `SecurityConfig`에서 별도로 `authenticated()`를 걸어 401을 강제한다. `X-Client-Id`(익명 쿼터 식별자)는 로그인 여부와 무관하게 그대로 병행 전송된다.
+- **내 정보**: `GET`/`PATCH /api/v1/users/me` — 닉네임은 트림 후 2~20자만 허용.
+
 **댓글**  
 각 도구 페이지에 익명으로 피드백을 남길 수 있다. 로그인 불필요. 관리자는 `/admin/comments/{id}`로 삭제 가능.
 
@@ -141,6 +152,14 @@ Heavy 도구의 처리 단위인 `Job` 테이블이 큐의 핵심이다.
 | `result_text` | TEXT         | 텍스트 결과 (해시값, CVE 목록 등). `result_key`와 둘 중 하나만 사용 |
 | `created_at`  | DATETIME     | 생성 시각                                            |
 | `expires_at`  | DATETIME     | TTL 만료 시각. 만료 시 파일 자동 삭제                         |
+
+소셜 로그인(구글·카카오) 관련 테이블 3개:
+
+| 테이블                  | 핵심 컬럼                                                  | 설명                                                    |
+|------------------------|-------------------------------------------------------|---------------------------------------------------------|
+| `app_user`             | `provider`, `provider_id`, `email`(nullable), `nickname` | `UNIQUE(provider, provider_id)`. 테이블명이 `user`가 아닌 이유는 MySQL 예약어라서 |
+| `refresh_token`        | `token_hash`, `rotated_at`, `grace_token`, `expires_at`  | refresh는 원문이 아니라 SHA-256 해시로만 저장. `rotated_at`/`grace_token`으로 회전 + 30초 유예를 구현 |
+| `revoked_access_token` | `token_hash`(PK), `expires_at`                          | 로그아웃된 access 토큰 블랙리스트. 자연 만료 전까지 즉시 무효화하기 위함           |
 
 ---
 
@@ -223,10 +242,22 @@ spring:
       password: 1234
 ```
 
+소셜 로그인을 로컬에서 실제로 테스트하려면 `back/.env.example`을 `back/.env`로 복사해 구글·카카오 자격증명을 채운다.
+`back/.env`는 `.gitignore` 대상이라 커밋되지 않으며, `./gradlew bootRun`이 자동으로 읽어 환경변수로 주입한다(파일이 없으면
+그냥 무시하고 기동 — `application.yaml`의 더미 client-id/secret 기본값 덕분에 소셜 로그인 없이도 앱은 정상 동작한다).
+
+```bash
+cd back
+cp .env.example .env
+# .env를 열어 GOOGLE_CLIENT_ID 등 4개 값을 채운다
+./gradlew bootRun --args='--spring.profiles.active=local'
+```
+
 **운영 (`application-prod.yaml`):**  
 비밀번호를 코드에 하드코딩하지 않고 환경변수로 주입한다. 배포는 `.github/workflows/deploy.yml`이
 아래 **GitHub Secrets**를 읽어 OCI VM에 `.env`를 생성하고 `docker-compose.prod.yml`을 띄운다.
-(로컬·리포지토리에 `.env` 파일을 두지 않으므로 별도 `.env.example`은 관리하지 않는다.)
+(운영 `.env`는 배포 파이프라인이 그때그때 생성하는 것이라 리포지토리에는 두지 않는다 — 로컬 전용
+`back/.env.example`과는 별개다.)
 
 리포지토리 Settings → Secrets and variables → Actions 에 등록:
 
