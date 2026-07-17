@@ -33,7 +33,7 @@
 
     <Dialog v-else>
       <DialogTrigger as-child>
-        <button class="flex h-8 items-center justify-center rounded-full border border-border/50 bg-background px-4 text-[13px] font-medium transition-colors hover:bg-accent hover:text-accent-foreground">
+        <button class="flex h-8 items-center justify-center rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary/20 hover:-translate-y-0.5">
           로그인
         </button>
       </DialogTrigger>

@@ -3,9 +3,9 @@
 
     <!-- 히어로 배경 그라데이션 (대문 한정 허용) -->
     <div class="pointer-events-none absolute inset-0 flex justify-center -z-10">
-      <div class="absolute -top-[15%] left-[10%] h-[500px] w-[500px] rounded-full bg-zone-accent-dev/20 blur-[100px] mix-blend-screen dark:bg-zone-accent-dev/10"></div>
-      <div class="absolute -top-[10%] right-[10%] h-[400px] w-[400px] rounded-full bg-zone-accent-fun/20 blur-[100px] mix-blend-screen dark:bg-zone-accent-fun/10"></div>
-      <div class="absolute top-[20%] left-[30%] h-[300px] w-[300px] rounded-full bg-zone-accent-files/20 blur-[80px] mix-blend-screen dark:bg-zone-accent-files/10"></div>
+      <div class="absolute -top-[15%] left-[10%] h-[500px] w-[500px] rounded-full bg-zone-accent-dev/10 blur-[100px] dark:bg-zone-accent-dev/15"></div>
+      <div class="absolute -top-[10%] right-[10%] h-[400px] w-[400px] rounded-full bg-zone-accent-fun/10 blur-[100px] dark:bg-zone-accent-fun/15"></div>
+      <div class="absolute top-[20%] left-[30%] h-[300px] w-[300px] rounded-full bg-zone-accent-files/10 blur-[80px] dark:bg-zone-accent-files/15"></div>
     </div>
 
     <!-- 상단 바: 워드마크 + 로그인 + 테마 토글 -->
@@ -24,9 +24,6 @@
       :enter="{ opacity: 1, y: 0, transition: { duration: 500, type: 'spring', bounce: 0.1 } }"
       class="relative z-10 mx-auto flex max-w-[720px] flex-col items-center px-4 pb-8 pt-12 text-center sm:pt-20"
     >
-      <div class="inline-flex items-center rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-xs font-medium text-primary mb-5 backdrop-blur-md">
-        ✨ v2 포털 개편 베타
-      </div>
       <h1 class="text-4xl font-bold tracking-tight text-foreground sm:text-5xl drop-shadow-sm">
         {{ BRAND.slogan }}<span class="hero-cursor text-primary" aria-hidden="true">_</span>
       </h1>
