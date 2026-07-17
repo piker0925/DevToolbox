@@ -5,9 +5,10 @@
 
 > 백엔드 데브코스 10기 12회차 — 데브코스 프로덕트 챌린지 프로젝트
 
-> **v2 개편 진행 중 (2026-07)**: 개발자 도구를 넘어 파일·문서 / 생활 도구 / 재미·게임까지 아우르는 **종합 도구 포털**로 전환하고 있다. 랜딩 대문(`/`)과 4구역(`/dev` 개발자 도구 · `/files` 파일·문서 · `/life` 생활 도구 · `/fun` 재미·게임) 구조, Flyway 기반 스키마 관리는 구현이 완료됐다. 소셜 로그인(구글·카카오, JWT)을 비롯한 회원 기능은 아직 구현 전이다. 설계는 `CONTEXT.md`의 "v2 포털 개편" 섹션과 ADR-0023~0026 참조.
+> **v2 개편 진행 중 (2026-07)**: 개발자 도구를 넘어 파일·문서 / 생활 도구 / 재미·게임까지 아우르는 **종합 도구 포털**로 전환하고 있다. 랜딩 대문(`/`)과 4구역(`/dev` 개발자 도구 · `/files` 파일·문서 · `/life` 생활 도구 · `/fun` 재미·게임) 구조, Flyway 기반 스키마 관리는 구현이 완료됐다. 소셜 로그인(구글·카카오, JWT) 및 마이페이지 기능이 구현 중이다. 설계는 `CONTEXT.md`의 "v2 포털 개편" 섹션 참조.
 
 ![OnTool 미리보기](docs/preview.png)
+*(v2 랜딩 페이지 스크린샷으로 업데이트 예정. 사용자님, 새로운 랜딩 페이지 스크린샷을 찍어 `docs/preview.png`에 덮어씌워 주세요!)*
 
 ---
 
@@ -229,18 +230,33 @@ spring:
 
 리포지토리 Settings → Secrets and variables → Actions 에 등록:
 
-| Secret             | 설명                         |
-|--------------------|----------------------------|
-| `OCI_HOST`         | 배포 대상 VM 호스트/IP            |
-| `OCI_SSH_KEY`      | VM 접속용 SSH 개인키             |
-| `GHCR_TOKEN`       | GHCR 이미지 pull용 토큰          |
-| `DB_USERNAME`      | MySQL 사용자명                 |
-| `DB_PASSWORD`      | MySQL 사용자 비밀번호             |
-| `DB_ROOT_PASSWORD` | MySQL root 비밀번호            |
-| `ADMIN_USERNAME`   | 관리자 HTTP Basic Auth 사용자명   |
-| `ADMIN_PASSWORD`   | 관리자 HTTP Basic Auth 비밀번호   |
-| `CORS_ORIGIN`      | 허용할 프론트엔드 도메인 (Vercel URL) |
-| `STORAGE_BASE_URL` | 파일 다운로드 링크 생성용 백엔드 공개 URL  |
+| Secret                 | 설명                                                   |
+|------------------------|------------------------------------------------------|
+| `OCI_HOST`             | 배포 대상 VM 호스트/IP                                      |
+| `OCI_SSH_KEY`          | VM 접속용 SSH 개인키                                       |
+| `GHCR_TOKEN`           | GHCR 이미지 pull용 토큰                                    |
+| `DB_USERNAME`          | MySQL 사용자명                                           |
+| `DB_PASSWORD`          | MySQL 사용자 비밀번호                                       |
+| `DB_ROOT_PASSWORD`     | MySQL root 비밀번호                                      |
+| `ADMIN_USERNAME`       | 관리자 HTTP Basic Auth 사용자명                             |
+| `ADMIN_PASSWORD`       | 관리자 HTTP Basic Auth 비밀번호                             |
+| `CORS_ORIGIN`          | 허용할 프론트엔드 도메인 (Vercel URL)                           |
+| `STORAGE_BASE_URL`     | 파일 다운로드 링크 생성용 백엔드 공개 URL                            |
+| `GOOGLE_CLIENT_ID`     | 구글 OAuth 웹 클라이언트 ID                                 |
+| `GOOGLE_CLIENT_SECRET` | 구글 OAuth 웹 클라이언트 보안 비밀                               |
+| `KAKAO_CLIENT_ID`      | 카카오 OAuth 앱 REST API 키                               |
+| `KAKAO_CLIENT_SECRET`  | 카카오 OAuth 앱 Client Secret                            |
+| `JWT_SECRET`           | JWT 서명용 무작위 암호화 키                                   |
+| `FRONTEND_URL`         | 로그인 완료 후 리다이렉트할 프론트엔드 주소 (Vercel 도메인)               |
+
+> **⚠️ 소셜 로그인 (OAuth2) 설정 가이드**  
+> 백엔드 인증 연동을 위해 구글 클라우드 콘솔 및 카카오 디벨로퍼스에서 앱을 생성하고, **반드시 아래의 승인된 리디렉션 URI를 콘솔에 등록**해야 합니다.
+> - **구글 (Google)**
+>   - 로컬: `http://localhost:8080/login/oauth2/code/google`
+>   - 운영: `https://140-245-69-204.sslip.io/login/oauth2/code/google`
+> - **카카오 (Kakao)**
+>   - 로컬: `http://localhost:8080/login/oauth2/code/kakao`
+>   - 운영: `https://140-245-69-204.sslip.io/login/oauth2/code/kakao`
 
 **프론트엔드 (Vercel → Settings → Environment Variables):**
 
