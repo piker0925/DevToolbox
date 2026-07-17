@@ -3,6 +3,7 @@ package com.back.admin;
 import com.back.AbstractMySQLIntegrationTest;
 import com.back.comment.entity.Comment;
 import com.back.comment.repository.CommentRepository;
+import com.back.global.security.jwt.JwtProvider;
 import com.back.stats.entity.ToolStats;
 import com.back.stats.repository.ToolStatsRepository;
 import com.back.suggestion.entity.Suggestion;
@@ -41,6 +42,8 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
     ToolStatsRepository toolStatsRepository;
     @Autowired
     SuggestionRepository suggestionRepository;
+    @Autowired
+    JwtProvider jwtProvider;
 
     MockMvc mockMvc;
 
@@ -99,5 +102,14 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
     void publicApi_withoutAuth_returns200() throws Exception {
         mockMvc.perform(get("/api/v1/modules"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    void getStats_일반_소셜로그인_유저의_JWT로는_거부된다() throws Exception {
+        String normalUserToken = jwtProvider.issueAccessToken(1L);
+
+        mockMvc.perform(get("/admin/stats")
+                        .header("Authorization", "Bearer " + normalUserToken))
+                .andExpect(status().isForbidden());
     }
 }

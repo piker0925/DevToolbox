@@ -39,7 +39,9 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/admin/**").authenticated()
+                // hasRole: JWT 인증 유저는 권한이 비어있어(JwtAuthenticationFilter) 여기 걸리지 않는다 —
+                // 관리자 계정만 갖는 ROLE_ADMIN(spring.security.user.roles)이 있어야 통과한다.
+                .requestMatchers("/admin/**").hasRole("ADMIN")
                 .requestMatchers("/api/v1/users/me").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                 .anyRequest().permitAll()

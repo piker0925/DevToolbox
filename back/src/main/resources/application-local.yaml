@@ -16,6 +16,7 @@ spring:
     user:
       name: admin
       password: 1234
+      roles: ADMIN
 
 # 로컬 개발 중 폰 등 같은 와이파이의 다른 기기에서 LAN IP로 접속해 테스트할 수 있도록 사설망 대역을 패턴으로 허용한다.
 # (프로덕션은 application-prod.yaml에서 CORS_ORIGIN 환경변수로 별도 관리되므로 영향 없음)
