@@ -121,7 +121,7 @@ describe('ToolPage 업로드 실패 표시 (032)', () => {
 
     it('업로드가 413으로 실패하면 결과 영역에 크기 초과 메시지를 렌더링한다', async () => {
         const wrapper = await mountAt('img-heavy', [
-            {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true},
+            {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true, zones: ['files']},
         ])
         // 프록시가 자른 413(바디 없음)이라도 status만으로 크기 메시지를 보여줘야 한다.
         mockPost.mockRejectedValueOnce({response: {status: 413, data: ''}})
@@ -133,7 +133,7 @@ describe('ToolPage 업로드 실패 표시 (032)', () => {
 
     it('업로드가 429로 실패하면 크기 메시지가 아닌 쿼터 메시지를 렌더링한다', async () => {
         const wrapper = await mountAt('img-heavy', [
-            {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true},
+            {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true, zones: ['files']},
         ])
         mockPost.mockRejectedValueOnce({
             response: {status: 429, data: {message: '동시에 처리 중인 작업이 너무 많습니다. 잠시 후 다시 시도해 주세요.'}},
@@ -150,7 +150,7 @@ describe('ToolPage 업로드 실패 표시 (032)', () => {
 describe('ToolPage 파라미터 필드 (024)', () => {
     it('bcrypt 모듈에 rounds 입력 필드가 기본값 10과 함께 렌더링된다', async () => {
         const wrapper = await mountAt('bcrypt', [
-            {id: 'bcrypt', name: 'Bcrypt 해시', category: '보안·암호화', isHeavy: false},
+            {id: 'bcrypt', name: 'Bcrypt 해시', category: '보안·암호화', isHeavy: false, zones: ['dev']},
         ])
 
         const rounds = inputForLabel(wrapper, 'Rounds (강도)')
@@ -160,7 +160,7 @@ describe('ToolPage 파라미터 필드 (024)', () => {
 
     it('gif-create 모듈에 delay 입력 필드가 기본값 500과 함께 렌더링된다', async () => {
         const wrapper = await mountAt('gif-create', [
-            {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true},
+            {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true, zones: ['files']},
         ])
 
         const delay = inputForLabel(wrapper, '프레임 간격 (ms)')
@@ -170,7 +170,7 @@ describe('ToolPage 파라미터 필드 (024)', () => {
 })
 
 describe('ToolPage 이미지 리사이즈 크기 입력 UI', () => {
-    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true}
+    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, zones: ['files']}
 
     async function setFileDimensions(wrapper: ReturnType<typeof mount>, width: number, height: number) {
         await wrapper.findComponent(FileUploader).vm.$emit('dimensions', {width, height})
@@ -337,8 +337,8 @@ describe('ToolPage 통합 코드 생성기 (code-gen)', () => {
 
     it('qr-code/barcode 백엔드 모듈은 통합 도구로 흡수되어 개별 페이지가 노출되지 않는다', async () => {
         const wrapper = await mountAt('qr-code', [
-            {id: 'qr-code', name: 'QR 코드 생성', category: '생성기', isHeavy: false},
-            {id: 'barcode', name: '바코드 생성', category: '생성기', isHeavy: false},
+            {id: 'qr-code', name: 'QR 코드 생성', category: '생성기', isHeavy: false, zones: ['dev']},
+            {id: 'barcode', name: '바코드 생성', category: '생성기', isHeavy: false, zones: ['dev']},
         ])
 
         expect(wrapper.text()).toContain('모듈을 찾을 수 없습니다')
@@ -359,7 +359,7 @@ describe('ToolPage 통합 코드 생성기 (code-gen)', () => {
 })
 
 describe('ToolPage 배치 (027)', () => {
-    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true}
+    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, zones: ['files']}
 
     it('업로드 응답이 배치면 배치 진행률 뷰(BatchPoller)로 진입한다', async () => {
         const wrapper = await mountAt('image-resize', [imageResize])
@@ -407,7 +407,7 @@ describe('ToolPage 배치 (027)', () => {
 })
 
 describe('ToolPage 단건 SSE 재연결 (042)', () => {
-    const imgHeavy: Module = {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true}
+    const imgHeavy: Module = {id: 'img-heavy', name: '이미지 도구', category: 'PDF', isHeavy: true, zones: ['files']}
 
     it('SSE 에러(native 재연결 중) 시 연결을 닫지 않고 "재연결 중" 상태를 보여준다', async () => {
         const wrapper = await mountAt('img-heavy', [imgHeavy])
@@ -475,7 +475,7 @@ describe('ToolPage 단건 SSE 재연결 (042)', () => {
 })
 
 describe('ToolPage 배치 폴링 실패 (042)', () => {
-    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true}
+    const imageResize: Module = {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, zones: ['files']}
 
     it('BatchPoller가 error를 emit하면 실패 메시지를 보여주고 폴러를 내린다', async () => {
         const wrapper = await mountAt('image-resize', [imageResize])

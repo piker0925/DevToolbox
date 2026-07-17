@@ -1,0 +1,17 @@
+export type ZoneId = 'dev' | 'files' | 'life' | 'fun'
+
+export interface Zone {
+    id: ZoneId
+    name: string
+    route: string
+    /** Tailwind 테마 토큰 이름 — 원시 hex/oklch 직접 사용 금지 (DESIGN.md §2) */
+    accent: string
+    description: string
+}
+
+export const ZONES: Zone[] = [
+    {id: 'dev', name: '개발자 도구', route: '/dev', accent: 'zone-dev', description: '포맷터·변환·보안·네트워크 등 개발 유틸리티'},
+    {id: 'files', name: '파일·문서', route: '/files', accent: 'zone-files', description: '이미지·PDF 등 파일·문서 처리 도구'},
+    {id: 'life', name: '생활 도구', route: '/life', accent: 'zone-life', description: '일상에서 쓰는 생활형 도구'},
+    {id: 'fun', name: '재미·게임', route: '/fun', accent: 'zone-fun', description: '미니게임과 재미 도구'},
+]

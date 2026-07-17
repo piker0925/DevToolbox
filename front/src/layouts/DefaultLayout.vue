@@ -18,10 +18,9 @@
           class="flex items-center gap-2.5 px-4 py-4 transition-opacity hover:opacity-80"
           to="/"
       >
-        <div class="flex size-7 items-center justify-center rounded-lg bg-sidebar-primary">
-          <Zap class="size-4 text-sidebar-primary-foreground"/>
-        </div>
-        <span class="text-[15px] font-semibold text-sidebar-foreground">DevToolbox</span>
+        <span class="font-mono text-[16px] font-semibold tracking-tight">
+          <span class="text-sidebar-primary">{{ wordmarkPrefix }}</span><span class="text-sidebar-foreground">{{ wordmarkRest }}</span>
+        </span>
       </router-link>
 
       <!-- Search -->
@@ -141,10 +140,9 @@
           <Menu class="size-[18px]"/>
         </button>
         <router-link class="flex items-center gap-2 px-1" to="/">
-          <div class="flex size-6 items-center justify-center rounded-md bg-primary">
-            <Zap class="size-3.5 text-primary-foreground"/>
-          </div>
-          <span class="text-[14px] font-semibold text-foreground">DevToolbox</span>
+          <span class="font-mono text-[15px] font-semibold tracking-tight">
+            <span class="text-primary">{{ wordmarkPrefix }}</span><span class="text-foreground">{{ wordmarkRest }}</span>
+          </span>
         </router-link>
         <button
             class="ml-auto flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
@@ -167,10 +165,11 @@
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {LayoutGrid, Menu, MessageSquarePlus, MonitorSmartphone, Moon, Search, Star, Sun, Zap} from 'lucide-vue-next'
+import {LayoutGrid, Menu, MessageSquarePlus, MonitorSmartphone, Moon, Search, Star, Sun} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
+import {BRAND} from '../config/brand'
 import type {Module} from '../types'
 import {CATEGORY_CONFIG, CATEGORY_ORDER} from '../utils/categoryConfig'
 import {useToolFilter} from '../composables/useToolFilter'
@@ -186,6 +185,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 const route = useRoute()
+// DESIGN.md §0: "on"은 primary, "tool"은 foreground — 두 톤으로 나눠 렌더링하기 위한 분리
+const wordmarkPrefix = computed(() => BRAND.wordmark.slice(0, 2))
+const wordmarkRest = computed(() => BRAND.wordmark.slice(2))
 const modules = ref<Module[]>([])
 const paletteRef = ref<InstanceType<typeof CommandPalette> | null>(null)
 const drawerOpen = ref(false)

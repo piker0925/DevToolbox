@@ -94,8 +94,8 @@ describe('rot13', () => {
     })
 
     it('두 번 적용하면 원문이 된다 (한 번 적용한 값은 원본과 다름)', () => {
-        const once = rot13('DevToolbox')
-        expect(once).toBe('QriGbbyobk')
-        expect(rot13(once)).toBe('DevToolbox')
+        const once = rot13('OnTool')
+        expect(once).toBe('BaGbby')
+        expect(rot13(once)).toBe('OnTool')
     })
 })

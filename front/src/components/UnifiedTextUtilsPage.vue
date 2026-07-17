@@ -153,7 +153,7 @@ type TabId = 'case' | 'count' | 'keyboard' | 'whitespace'
 
 const TABS: Array<{ id: TabId; label: string; placeholder: string; sample: string }> = [
   {id: 'case', label: '케이스 변환', placeholder: 'myVariableName', sample: 'myVariableName'},
-  {id: 'count', label: '글자 수', placeholder: '글자 수를 셀 텍스트...', sample: 'DevToolbox는 개발에 필요한 도구를 한곳에 모았습니다.'},
+  {id: 'count', label: '글자 수', placeholder: '글자 수를 셀 텍스트...', sample: 'OnTool는 개발에 필요한 도구를 한곳에 모았습니다.'},
   {id: 'keyboard', label: '한영 변환', placeholder: 'dkssudgktpdy', sample: 'dkssudgktpdy'},
   {
     id: 'whitespace',

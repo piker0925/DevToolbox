@@ -14,6 +14,12 @@ export interface Module {
     description?: string
     /** 검색 별칭 (통합 도구가 흡수한 기존 도구명 등) */
     keywords?: ModuleKeyword[]
+    /** 노출 구역. 소속이 아니라 탐색 컨텍스트 — 복수 허용. zones[0]이 기본 구역 (ADR-0023) */
+    zones: import('../config/zones').ZoneId[]
+    /** 분류 라벨 전용 — 렌더 결정권 없음 (ADR-0026) */
+    kind?: 'tool' | 'game' | 'viewer' | 'studio'
+    /** 지정 시 이 컴포넌트로 렌더, 생략 시 ToolPage */
+    component?: () => Promise<import('vue').Component>
 }
 
 export interface Job {

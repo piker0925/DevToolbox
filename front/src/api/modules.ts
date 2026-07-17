@@ -34,6 +34,9 @@ export function normalizeApiModules(data: Module[]): Module[] {
             category: CATEGORY_MAP[m.category] ?? m.category,
             description: m.description ?? META_BY_ID.get(m.id)?.description,
             keywords: m.keywords ?? META_BY_ID.get(m.id)?.keywords,
+            zones: m.zones ?? META_BY_ID.get(m.id)?.zones ?? [],
+            kind: m.kind ?? META_BY_ID.get(m.id)?.kind,
+            component: m.component ?? META_BY_ID.get(m.id)?.component,
         }))
     const frontendOnly = MOCK_MODULES.filter(m => m.isFrontendOnly)
     return [...backendModules, ...frontendOnly]

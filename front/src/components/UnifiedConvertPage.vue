@@ -137,10 +137,10 @@ const MODULE_BY_PAIR: Record<string, string> = {
 }
 
 const SAMPLES: Partial<Record<Format, string>> = {
-  json: '{"name": "DevToolbox", "tags": ["dev", "tools"], "active": true}',
-  yaml: 'name: DevToolbox\ntags:\n  - dev\n  - tools\nactive: true',
-  toml: 'name = "DevToolbox"\ntags = ["dev", "tools"]\nactive = true',
-  xml: '<root><name>DevToolbox</name><active>true</active></root>',
+  json: '{"name": "OnTool", "tags": ["dev", "tools"], "active": true}',
+  yaml: 'name: OnTool\ntags:\n  - dev\n  - tools\nactive: true',
+  toml: 'name = "OnTool"\ntags = ["dev", "tools"]\nactive = true',
+  xml: '<root><name>OnTool</name><active>true</active></root>',
   csv: 'name,age\nAlice,30\nBob,25',
 }
 
