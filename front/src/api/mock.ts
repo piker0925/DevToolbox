@@ -118,6 +118,20 @@ export const MOCK_MODULES: Module[] = [
         zones: ['dev'],
     },
     {
+        id: 'salary-calculator', name: '급여 계산기', category: '생활', isHeavy: false, isFrontendOnly: true,
+        description: '연봉 실수령액 · 시급↔월급↔연봉 · 퇴직금 · 초과근무수당',
+        keywords: [
+            {keyword: '실수령액', query: 'tab=net-pay'},
+            {keyword: '연봉', query: 'tab=net-pay'},
+            {keyword: '시급', query: 'tab=hourly-monthly'},
+            {keyword: '최저임금', query: 'tab=hourly-monthly'},
+            {keyword: '퇴직금', query: 'tab=severance'},
+            {keyword: '근무시간', query: 'tab=work-hours'},
+            {keyword: '초과근무', query: 'tab=work-hours'},
+        ],
+        zones: ['life'],
+    },
+    {
         id: 'code-gen', name: '코드 생성기', category: '생성기', isHeavy: false, isFrontendOnly: true,
         description: 'QR · 바코드 생성',
         keywords: [

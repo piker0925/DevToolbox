@@ -25,6 +25,7 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'cron': {load: () => import('../components/tools/CronTool.vue'), layout: 'narrow'},
     'hmac': {load: () => import('../components/tools/HmacTool.vue'), layout: 'narrow'},
     'aes': {load: () => import('../components/tools/AesTool.vue'), layout: 'narrow'},
+    'salary-calculator': {load: () => import('../components/SalaryCalculatorPage.vue'), layout: 'narrow'},
 
     'data-convert': {load: () => import('../components/UnifiedConvertPage.vue'), layout: 'wide'},
     'encoder': {load: () => import('../components/UnifiedEncoderPage.vue'), layout: 'wide'},

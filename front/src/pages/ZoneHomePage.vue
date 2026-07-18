@@ -41,35 +41,15 @@
       <div v-for="n in 18" :key="n" class="animate-pulse rounded-xl bg-muted" :class="viewMode === 'list' ? 'h-[52px]' : 'h-[68px]'" />
     </div>
 
-    <!-- 빈 구역 안내 (즐겨찾기·최근 사용도 없을 때만) -->
+    <!-- 빈 구역 안내 -->
     <div
-        v-else-if="activeCategory === null && zoneModules.length === 0 && favoriteModules.length === 0 && recentModules.length === 0"
+        v-else-if="activeCategory === null && zoneModules.length === 0"
         class="pt-10 text-center"
     >
       <p class="text-[14px] text-muted-foreground">{{ zone.name }} 구역은 준비 중입니다. 곧 도구가 추가됩니다.</p>
     </div>
 
     <template v-else-if="activeCategory === null">
-      <!-- 즐겨찾기 -->
-      <section v-if="favoriteModules.length > 0">
-        <h2 class="mb-4 mt-8 flex items-center gap-2 border-b border-border/40 pb-2">
-          <span class="text-sm font-bold uppercase tracking-wider text-foreground">즐겨찾기</span>
-        </h2>
-        <div :class="viewMode === 'list' ? 'flex flex-col gap-2' : 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'">
-          <ToolCard v-for="mod in favoriteModules" :key="mod.id" :mod="mod" :mode="viewMode"/>
-        </div>
-      </section>
-
-      <!-- 최근 사용 -->
-      <section v-if="recentModules.length > 0">
-        <h2 class="mb-4 mt-8 flex items-center gap-2 border-b border-border/40 pb-2">
-          <span class="text-sm font-bold uppercase tracking-wider text-foreground">최근 사용</span>
-        </h2>
-        <div :class="viewMode === 'list' ? 'flex flex-col gap-2' : 'grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3'">
-          <ToolCard v-for="mod in recentModules" :key="mod.id" :mod="mod" :mode="viewMode"/>
-        </div>
-      </section>
-
       <!-- 카테고리별 섹션 -->
       <section v-for="section in categorySections" :key="section.name">
         <h2 class="mb-4 mt-8 flex items-center gap-2 border-b border-border/40 pb-2">
@@ -112,8 +92,6 @@ import type {Module} from '../types'
 import {CATEGORY_ORDER} from '../utils/categoryConfig'
 import {ZONES, type ZoneId} from '../config/zones'
 import {useToolFilter} from '../composables/useToolFilter'
-import {useFavorites} from '../composables/useFavorites'
-import {useRecentTools} from '../composables/useRecentTools'
 import {useViewMode} from '../composables/useViewMode'
 import ToolCard from '../components/ToolCard.vue'
 import {LayoutGrid, List} from 'lucide-vue-next'
@@ -124,8 +102,6 @@ const zone = computed(() => ZONES.find(z => z.id === props.zoneId)!)
 
 const {viewMode} = useViewMode()
 const {activeCategory} = useToolFilter()
-const {favoriteIds} = useFavorites()
-const {recentIds} = useRecentTools()
 const modules = ref<Module[]>([])
 const loading = ref(true)
 
@@ -146,20 +122,6 @@ const filteredModules = computed(() =>
     activeCategory.value
         ? zoneModules.value.filter(m => m.category === activeCategory.value)
         : zoneModules.value,
-)
-
-const favoriteModules = computed(() =>
-    favoriteIds.value
-        .map(id => modules.value.find(m => m.id === id))
-        .filter((m): m is Module => m !== undefined)
-        .sort((a, b) => a.name.localeCompare(b.name)),
-)
-
-const recentModules = computed(() =>
-    recentIds.value
-        .filter(id => !favoriteIds.value.includes(id))
-        .map(id => modules.value.find(m => m.id === id))
-        .filter((m): m is Module => m !== undefined),
 )
 
 const categorySections = computed(() => {

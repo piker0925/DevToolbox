@@ -42,6 +42,15 @@ describe('ZoneHomePage', () => {
         expect(wrapper.text()).not.toContain('PDF 병합')
     })
 
+    it('프론트 전용 모듈은 카테고리가 CATEGORY_ORDER에 없어도(예: 생활) 구역 홈 그리드에 실제로 렌더링된다', async () => {
+        mockGet.mockResolvedValueOnce({data: []})
+
+        const wrapper = mount(ZoneHomePage, {props: {zoneId: 'life'}, global: {plugins: [router]}})
+        await flushPromises()
+
+        expect(wrapper.text()).toContain('급여 계산기')
+    })
+
     it.each(['dev', 'files'] as const)('복수 구역 모듈은 %s 구역 홈에도 노출된다 (양쪽 다 확인)', async (zoneId) => {
         mockGet.mockResolvedValueOnce({
             data: [
@@ -56,23 +65,25 @@ describe('ZoneHomePage', () => {
     })
 
     it('해당 구역에 도구가 없으면 준비 중 안내 문구를 보여준다', async () => {
+        // fun 구역은 3차(§10-7) 착수 전까지 프론트 전용 도구가 없음 — life는 061(급여 계산기)부터 채워지므로 더 이상 빈 구역 예시로 못 씀
         mockGet.mockResolvedValueOnce({
             data: [
                 {id: 'pdf-merge', name: 'PDF 병합', category: 'PDF', isHeavy: true, zones: ['files']},
             ],
         })
 
-        const wrapper = mount(ZoneHomePage, {props: {zoneId: 'life'}, global: {plugins: [router]}})
+        const wrapper = mount(ZoneHomePage, {props: {zoneId: 'fun'}, global: {plugins: [router]}})
         await flushPromises()
 
         expect(wrapper.text()).toContain('준비 중')
         expect(wrapper.text()).not.toContain('PDF 병합')
     })
 
-    it('즐겨찾기는 구역과 무관하게 노출된다', async () => {
+    it('즐겨찾기여도 현재 구역 소속이 아니면 노출되지 않는다 — 구역 홈은 카탈로그이지 개인화 위젯이 아님(사이드바가 즐겨찾기 담당)', async () => {
         mockGet.mockResolvedValueOnce({
             data: [
                 {id: 'pdf-merge', name: 'PDF 병합', category: 'PDF', isHeavy: true, zones: ['files']},
+                {id: 'sql-formatter', name: 'SQL 포맷터', category: '포맷터', isHeavy: false, zones: ['dev']},
             ],
         })
         favoriteIds.value = ['pdf-merge']
@@ -80,6 +91,7 @@ describe('ZoneHomePage', () => {
         const wrapper = mount(ZoneHomePage, {props: {zoneId: 'dev'}, global: {plugins: [router]}})
         await flushPromises()
 
-        expect(wrapper.text()).toContain('PDF 병합')
+        expect(wrapper.text()).not.toContain('PDF 병합')
+        expect(wrapper.text()).toContain('SQL 포맷터')
     })
 })
