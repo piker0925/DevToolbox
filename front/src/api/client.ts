@@ -49,8 +49,11 @@ let refreshPromise: Promise<string | null> | null = null
 apiClient.interceptors.request.use((config) => {
     // vueuse/core useStorage 기본값이 로컬스토리지에 저장됨
     const token = localStorage.getItem('dtk_access')
-    if (token && !config.headers.Authorization) {
-        config.headers.Authorization = `Bearer ${token}`
+    if (token) {
+        // Axios >= 1.2 에서는 config.headers가 AxiosHeaders 객체이므로 메서드를 사용하는 것이 안전함
+        if (!config.headers.has('Authorization')) {
+            config.headers.set('Authorization', `Bearer ${token}`)
+        }
     }
     return config
 })

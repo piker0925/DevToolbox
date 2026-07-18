@@ -66,6 +66,9 @@
       </CardFooter>
     </Card>
     
+    <!-- 작업 이력 섹션 (050) -->
+    <JobHistorySection v-if="user" />
+
     <div v-else-if="isLoading" class="py-12 text-center text-muted-foreground">
       로딩 중...
     </div>
@@ -81,6 +84,7 @@ import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../compone
 import { Button } from '../components/ui/button'
 import { Badge } from '../components/ui/badge'
 import { Input } from '../components/ui/input'
+import JobHistorySection from '../components/JobHistorySection.vue'
 import { Edit2, Check, X, LogOut, Trash2 } from 'lucide-vue-next'
 
 const router = useRouter()
