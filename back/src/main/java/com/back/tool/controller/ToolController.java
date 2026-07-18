@@ -77,9 +77,12 @@ public class ToolController {
 
     @PostMapping("/tools/{moduleId}/upload")
     public ResponseEntity<?> upload(@PathVariable String moduleId,
-                                    @RequestPart("files") List<MultipartFile> files,
+                                    @RequestPart(value = "files", required = false) List<MultipartFile> files,
                                     @RequestParam Map<String, String> params,
                                     HttpServletRequest request) {
+        if (files == null) {
+            files = List.of();
+        }
         ToolModule module = toolService.getModule(moduleId);
         if (!module.isHeavy()) {
             throw new AppException(ErrorCode.INVALID_MODULE_TYPE);
@@ -95,8 +98,8 @@ public class ToolController {
         // 용량 기반 앞단 거부(036): 배치든 단건이든 루프 전에 한 번만 검사해 부분 생성을 막는다.
         admissionControl.assertCapacityAvailable(lane);
 
-        // 단일 파일이거나 모든 파일을 하나의 job으로 처리하는 모듈 (pdf-merge, gif-create)
-        if (files.size() == 1 || module.acceptsMultipleFiles()) {
+        // 파일이 없거나(파일 불필요 모듈, 086) 단일 파일이거나 모든 파일을 하나의 job으로 처리하는 모듈(pdf-merge, gif-create)
+        if (files.isEmpty() || files.size() == 1 || module.acceptsMultipleFiles()) {
             jobService.assertWithinQuota(ownerToken, 1);
             String tempId = UUID.randomUUID().toString();
             List<String> paths = saveFiles(tempId, files);

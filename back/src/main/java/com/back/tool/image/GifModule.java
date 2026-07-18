@@ -46,6 +46,9 @@ public class GifModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
+        if (input.files().isEmpty()) {
+            throw new ToolProcessingException("GIF로 만들 이미지 파일이 없습니다.");
+        }
         ToolParams params = ToolParams.of(input);
         int delayMs = params.getInt("delay", 500, 10, 60000);
         int delayCs = delayMs / 10; // centiseconds
