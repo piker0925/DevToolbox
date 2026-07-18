@@ -18,10 +18,9 @@
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator class="my-1" />
-        <DropdownMenuItem class="cursor-pointer rounded-md px-2 py-2 transition-colors hover:bg-accent" @click="() => {}">
+        <DropdownMenuItem class="cursor-pointer rounded-md px-2 py-2 transition-colors hover:bg-accent" @click="router.push('/mypage')">
           <User class="mr-2 h-4 w-4 text-muted-foreground" />
           <span class="flex-1">마이페이지</span>
-          <span class="ml-auto rounded-md bg-muted px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wider text-muted-foreground">Soon</span>
         </DropdownMenuItem>
         <DropdownMenuSeparator class="my-1" />
         <DropdownMenuItem class="cursor-pointer rounded-md px-2 py-2 text-destructive transition-colors hover:bg-destructive/10 focus:text-destructive" @click="logout">
@@ -61,6 +60,7 @@
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { LogOut, User } from 'lucide-vue-next'
 import {
   DropdownMenu,
@@ -80,6 +80,7 @@ import {
 } from './ui/dialog'
 import { useAuth } from '../composables/useAuth'
 
+const router = useRouter()
 const { user, isLoggedIn, isLoading, fetchUser, logout, loginWithGoogle, loginWithKakao } = useAuth()
 
 onMounted(() => {

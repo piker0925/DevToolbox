@@ -34,6 +34,7 @@ export const router = createRouter({
         {path: '/suggestions', component: () => import('../pages/SuggestionPage.vue')},
         {path: '/admin', component: () => import('../pages/AdminPage.vue')},
         {path: '/privacy', component: () => import('../pages/PrivacyPage.vue')},
+        {path: '/mypage', component: () => import('../pages/MyPage.vue')},
     ],
 })
 
@@ -64,6 +65,10 @@ router.afterEach(to => {
     }
     if (to.path === '/privacy') {
         setPageMeta('개인정보처리방침', `${BRAND.siteName}이 수집하는 개인정보 항목과 보유 기간을 안내합니다.`)
+        return
+    }
+    if (to.path === '/mypage') {
+        setPageMeta('마이페이지', '내 계정 정보와 활동 내역을 관리합니다.')
         return
     }
     document.title = BRAND.siteName

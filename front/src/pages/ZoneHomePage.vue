@@ -122,7 +122,7 @@ const props = defineProps<{ zoneId: ZoneId }>()
 
 const zone = computed(() => ZONES.find(z => z.id === props.zoneId)!)
 
-const {viewMode, toggleViewMode} = useViewMode()
+const {viewMode} = useViewMode()
 const {activeCategory} = useToolFilter()
 const {favoriteIds} = useFavorites()
 const {recentIds} = useRecentTools()

@@ -566,7 +566,6 @@ import {
   BarChart2,
   Check,
   ChevronDown,
-  ChevronRight,
   Copy,
   Heart,
   Star,
@@ -593,7 +592,7 @@ import {FRONTEND_TOOL_COMPONENTS} from '../config/frontendToolRegistry'
 import {useRecentTools} from '../composables/useRecentTools'
 import {useLikes} from '../composables/useLikes'
 import {useFavorites} from '../composables/useFavorites'
-import {zoneOf} from '../config/zones'
+
 import {parseStructuredResult} from '../utils/structuredResult'
 import StructuredResultView from '../components/StructuredResultView.vue'
 import FileUploader from '../components/FileUploader.vue'
@@ -608,10 +607,6 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080'
 
 const route = useRoute()
 const mod = ref<Module | null>(null)
-// 브레드크럼: mod.zones[0]이 기본 구역 (ADR-0023)
-const zone = computed(() => zoneOf(mod.value?.zones[0]))
-const zoneHomeRoute = computed(() => zone.value.route)
-const zoneName = computed(() => zone.value.name)
 const loading = ref(true)
 const jobId = ref<string | null>(null)
 // 단건 작업 진행 가시화 (ADR-0019): 큐 순번·진행률·ETA를 SSE로 받아 표시

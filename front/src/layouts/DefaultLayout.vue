@@ -215,11 +215,11 @@
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, Heart, ChevronsUpDown, Terminal, FileText, Coffee, Gamepad2} from 'lucide-vue-next'
+import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, ChevronsUpDown, Terminal, FileText, Coffee, Gamepad2} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
-import {WORDMARK_PREFIX, WORDMARK_REST} from '../config/brand'
+
 import {ZONES, zoneOf, type ZoneId} from '../config/zones'
 import {
   DropdownMenu,
