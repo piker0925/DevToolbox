@@ -4,6 +4,15 @@ import { apiClient } from '../api/client'
 import { useFavorites } from './useFavorites'
 import { useRecentTools } from './useRecentTools'
 import { useLikes } from './useLikes'
+import { user } from './useAuth'
+
+const mockUser = {
+  id: 1,
+  provider: 'GOOGLE' as const,
+  nickname: '테스터',
+  email: 'tester@example.com',
+  createdAt: '2026-01-01T00:00:00Z'
+}
 
 vi.mock('../api/client', () => ({
   apiClient: {
@@ -31,7 +40,8 @@ describe('usePersonalizationSync', () => {
   beforeEach(() => {
     localStorageMock.clear()
     vi.clearAllMocks()
-    
+    user.value = mockUser
+
     // Set up mock data
     const fav = useFavorites()
     const rec = useRecentTools()
@@ -39,6 +49,10 @@ describe('usePersonalizationSync', () => {
     fav.syncFromServer(['module-a'])
     rec.syncFromServer(['module-b'])
     likes.syncFromServer(['module-c'])
+  })
+
+  afterEach(() => {
+    user.value = null
   })
 
   it('merges local storage on first run and fetches remote data', async () => {
@@ -51,7 +65,7 @@ describe('usePersonalizationSync', () => {
       }
     })
 
-    expect(localStorage.getItem('dtk_merged')).toBeNull()
+    expect(localStorage.getItem(`dtk_merged_${mockUser.id}`)).toBeNull()
 
     await syncPersonalization()
 
@@ -62,8 +76,8 @@ describe('usePersonalizationSync', () => {
       likes: ['module-c']
     })
 
-    // 2. Check if dtk_merged is set
-    expect(localStorage.getItem('dtk_merged')).toBe('true')
+    // 2. Check if the per-user merge flag is set
+    expect(localStorage.getItem(`dtk_merged_${mockUser.id}`)).toBe('true')
 
     // 3. Check if GET was called
     expect(apiClient.get).toHaveBeenCalledWith('/api/v1/users/me/personalization')
@@ -74,8 +88,8 @@ describe('usePersonalizationSync', () => {
   })
 
   it('skips merge POST if already merged, but still fetches remote data', async () => {
-    localStorage.setItem('dtk_merged', 'true')
-    
+    localStorage.setItem(`dtk_merged_${mockUser.id}`, 'true')
+
     vi.mocked(apiClient.get).mockResolvedValueOnce({
       data: {
         favorites: ['module-z'],
@@ -88,7 +102,7 @@ describe('usePersonalizationSync', () => {
 
     expect(apiClient.post).not.toHaveBeenCalled()
     expect(apiClient.get).toHaveBeenCalled()
-    
+
     const fav = useFavorites()
     expect(fav.favoriteIds.value).toEqual(['module-z'])
   })

@@ -24,44 +24,6 @@
         class="fixed inset-y-0 left-0 z-40 flex w-[240px] shrink-0 flex-col border-r border-white/60 dark:border-white/10 bg-white/40 dark:bg-[#0a0a0a]/80 backdrop-blur-[30px] transition-transform duration-200 lg:static lg:translate-x-0 shadow-[4px_0_24px_rgb(0,0,0,0.02)] dark:shadow-none"
     >
 
-      <!-- 사이드바 상단: 워크스페이스 스위처 -->
-      <div class="flex items-center h-[52px] px-3 shrink-0 border-b border-white/60 dark:border-white/10">
-        <DropdownMenu>
-          <DropdownMenuTrigger as-child>
-            <button class="flex w-full items-center justify-between gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sidebar-accent focus:outline-none group">
-              <div class="flex items-center gap-2 min-w-0">
-                <div :class="[ZONE_BG_CLASS[currentZoneId || 'dev'], ZONE_TEXT_CLASS[currentZoneId || 'dev']]" class="flex size-7 shrink-0 items-center justify-center rounded-md shadow-sm transition-colors">
-                  <component :is="ZONE_ICONS[currentZoneId || 'dev']" class="size-4" />
-                </div>
-                <div class="flex flex-col truncate">
-                  <span class="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 leading-none mb-0.5">Workspace</span>
-                  <span class="truncate text-[13px] font-bold text-foreground leading-none">{{ currentZoneName }}</span>
-                </div>
-              </div>
-              <ChevronsUpDown class="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-foreground/80 transition-colors" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" class="w-[240px] p-1.5 rounded-xl shadow-xl">
-            <DropdownMenuLabel class="text-xs font-semibold text-muted-foreground px-2 py-1.5">워크스페이스 전환</DropdownMenuLabel>
-            <DropdownMenuItem 
-                v-for="zone in ZONES" :key="zone.id"
-                as-child 
-                class="rounded-lg cursor-pointer mb-1 last:mb-0 focus:bg-accent"
-            >
-              <router-link :to="zone.route" class="flex items-center gap-3 w-full px-2 py-2">
-                <div :class="[ZONE_BG_CLASS[zone.id], ZONE_TEXT_CLASS[zone.id]]" class="flex size-8 items-center justify-center rounded-lg shadow-sm">
-                  <component :is="ZONE_ICONS[zone.id]" class="size-[16px]" />
-                </div>
-                <div class="flex flex-col">
-                  <span class="text-[13px] font-bold text-foreground">{{ zone.name }}</span>
-                  <span class="text-[11px] text-muted-foreground mt-0.5">{{ zone.description.split(' ')[0] }}...</span>
-                </div>
-              </router-link>
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      </div>
-
       <!-- Nav -->
       <nav class="flex-1 overflow-y-auto px-2 pt-4 pb-3">
 
@@ -134,6 +96,26 @@
 
     <!-- Main -->
     <div class="flex min-w-0 flex-1 flex-col relative z-10">
+      <!-- 구역 스위처: 데스크톱·모바일 공통 헤더 상단에 상시 노출(드로어와 무관) — ADR-0023, 216984b -->
+      <nav
+          class="flex shrink-0 items-stretch gap-1 border-b border-white/60 dark:border-white/10 bg-white/40 dark:bg-background/80 backdrop-blur-[30px] px-2 py-1.5 sm:px-4 sticky top-0 z-20"
+          aria-label="구역 전환"
+      >
+        <router-link
+            v-for="zone in ZONES"
+            :key="zone.id"
+            :class="currentZoneId === zone.id
+            ? [ZONE_BG_CLASS[zone.id], ZONE_TEXT_CLASS[zone.id]]
+            : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
+            :aria-current="currentZoneId === zone.id ? 'page' : undefined"
+            class="flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-center text-[12px] font-medium transition-colors sm:flex-initial sm:px-3"
+            :to="zone.route"
+        >
+          <component :is="ZONE_ICONS[zone.id]" class="size-[13px]" />
+          {{ zone.name }}
+        </router-link>
+      </nav>
+
       <!-- 상단 글로벌 헤더 -->
       <header class="flex h-[52px] shrink-0 justify-center border-b border-white/60 dark:border-white/10 bg-white/40 dark:bg-background/80 backdrop-blur-[30px] sticky top-0 z-20 shadow-[0_4px_24px_rgb(0,0,0,0.02)] dark:shadow-none">
         <div class="flex w-full max-w-[1440px] items-center justify-between px-4 sm:px-6">
@@ -146,7 +128,7 @@
               <Menu class="size-[16px]"/>
             </button>
 
-            <div class="flex items-center gap-2 text-[13px] font-medium text-muted-foreground min-w-0">
+            <div data-testid="breadcrumb" class="flex items-center gap-2 text-[13px] font-medium text-muted-foreground min-w-0">
               <router-link class="flex items-center shrink-0 transition-opacity hover:opacity-80 mr-1" to="/" title="홈으로 가기">
                 <BrandLogo class="scale-[0.75] origin-left" />
               </router-link>
@@ -209,19 +191,12 @@
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, ChevronsUpDown, Terminal, FileText, Coffee, Gamepad2} from 'lucide-vue-next'
+import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, Terminal, FileText, Coffee, Gamepad2} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
 
 import {ZONES, zoneOf, type ZoneId} from '../config/zones'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuTrigger,
-} from '../components/ui/dropdown-menu'
 import type {Module} from '../types'
 import {CATEGORY_CONFIG, CATEGORY_ORDER} from '../utils/categoryConfig'
 import {useToolFilter} from '../composables/useToolFilter'

@@ -881,7 +881,7 @@ async function loadModule(moduleId: string) {
     loading.value = false
     initForm()
     loadStats(moduleId)
-    if (mod.value) recordRecent(mod.value.id)
+    if (mod.value) recordRecent(mod.value.id).catch(() => {})
   }
 }
 

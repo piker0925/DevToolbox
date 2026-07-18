@@ -105,6 +105,6 @@ describe('FinanceCalculatorPage', () => {
         const wrapper = await mountWithQuery('?tab=loan')
         const panel = wrapper.find('[data-testid="tab-panel-loan"]')
         await panel.findAll('input')[0].setValue('1,000')
-        expect(wrapper.find('[data-testid="tab-panel-loan"] input').element.value).toBe('1,000')
+        expect(wrapper.find<HTMLInputElement>('[data-testid="tab-panel-loan"] input').element.value).toBe('1,000')
     })
 })
