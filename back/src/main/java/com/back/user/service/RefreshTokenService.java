@@ -83,6 +83,11 @@ public class RefreshTokenService {
                 .ifPresent(refreshTokenRepository::delete);
     }
 
+    @Transactional
+    public void forceLogout(Long userId) {
+        refreshTokenRepository.deleteAllByUserId(userId);
+    }
+
     private TokenPair rotateFresh(RefreshToken current) {
         Long userId = current.getUserId();
         String newRawToken = generateRawToken();

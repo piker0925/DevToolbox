@@ -1,29 +1,40 @@
 package com.back.admin;
 
 import com.back.comment.service.CommentService;
-import com.back.stats.dto.ToolStatsResponse;
+import com.back.global.response.PageResponse;
+import com.back.job.entity.JobStatus;
+import com.back.job.service.JobService;
 import com.back.stats.service.ToolStatsService;
 import com.back.suggestion.entity.Suggestion;
 import com.back.suggestion.service.SuggestionService;
+import com.back.user.dto.UserResponse;
+import com.back.user.service.RefreshTokenService;
+import com.back.user.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/admin")
 @RequiredArgsConstructor
 public class AdminController {
 
+    private static final Set<JobStatus> DEFAULT_QUEUE_STATUSES = Set.of(JobStatus.PENDING, JobStatus.RUNNING);
+
     private final ToolStatsService toolStatsService;
     private final SuggestionService suggestionService;
     private final CommentService commentService;
+    private final UserService userService;
+    private final RefreshTokenService refreshTokenService;
+    private final JobService jobService;
 
     @GetMapping("/stats")
-    public ResponseEntity<List<ToolStatsResponse>> getStats() {
-        List<ToolStatsResponse> stats = toolStatsService.findAll().stream()
-                .map(ToolStatsResponse::from)
+    public ResponseEntity<List<AdminToolStatsResponse>> getStats() {
+        List<AdminToolStatsResponse> stats = toolStatsService.findAll().stream()
+                .map(s -> AdminToolStatsResponse.from(s, toolStatsService.getFailCount(s.getModuleId())))
                 .toList();
         return ResponseEntity.ok(stats);
     }
@@ -45,5 +56,29 @@ public class AdminController {
     public ResponseEntity<Void> deleteComment(@PathVariable Long id) {
         commentService.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/users")
+    public ResponseEntity<PageResponse<UserResponse>> getUsers(
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        var users = userService.search(search, page, size).map(UserResponse::from);
+        return ResponseEntity.ok(PageResponse.of(users));
+    }
+
+    @PostMapping("/users/{id}/force-logout")
+    public ResponseEntity<Void> forceLogout(@PathVariable Long id) {
+        userService.getExistingById(id);
+        refreshTokenService.forceLogout(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/jobs")
+    public ResponseEntity<List<AdminJobResponse>> getJobs(@RequestParam(required = false) Set<JobStatus> status) {
+        List<AdminJobResponse> jobs = jobService.findByStatusIn(status == null ? DEFAULT_QUEUE_STATUSES : status).stream()
+                .map(AdminJobResponse::from)
+                .toList();
+        return ResponseEntity.ok(jobs);
     }
 }

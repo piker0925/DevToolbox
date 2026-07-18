@@ -106,4 +106,9 @@ public class JobService {
     public BatchStats getBatchStats(String batchId) {
         return jobRepository.getBatchStats(batchId);
     }
+
+    /** 관리자 큐 조회(060) — 지정한 상태의 Job 목록. */
+    public List<Job> findByStatusIn(Set<JobStatus> statuses) {
+        return jobRepository.findAllByStatusIn(statuses);
+    }
 }

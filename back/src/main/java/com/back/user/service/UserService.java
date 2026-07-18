@@ -7,6 +7,10 @@ import com.back.user.entity.User;
 import com.back.user.oauth2.OAuth2UserAttributes;
 import com.back.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,18 @@ public class UserService {
     public User getById(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new AppException(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Transactional(readOnly = true)
+    public User getExistingById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new AppException(ErrorCode.USER_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public Page<User> search(String query, int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        return userRepository.search(query == null ? "" : query, pageable);
     }
 
     @Transactional

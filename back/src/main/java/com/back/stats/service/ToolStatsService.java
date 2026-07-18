@@ -1,5 +1,7 @@
 package com.back.stats.service;
 
+import com.back.job.entity.JobStatus;
+import com.back.job.repository.JobRepository;
 import com.back.stats.entity.ToolStats;
 import com.back.stats.repository.ToolStatsRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,10 +15,16 @@ import java.util.List;
 public class ToolStatsService {
 
     private final ToolStatsRepository toolStatsRepository;
+    private final JobRepository jobRepository;
 
     @Transactional(readOnly = true)
     public List<ToolStats> findAll() {
         return toolStatsRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public long getFailCount(String moduleId) {
+        return jobRepository.countByModuleIdAndStatus(moduleId, JobStatus.FAILED);
     }
 
     @Transactional

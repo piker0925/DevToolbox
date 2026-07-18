@@ -38,9 +38,15 @@ public interface JobRepository extends JpaRepository<Job, String> {
     /** 레인별 상태 개수 — 큐 깊이 게이트(036) 판정용. */
     int countByLaneAndStatus(Lane lane, JobStatus status);
 
+    /** 모듈별 상태 개수 — 관리자 통계의 실패 건수 집계용(060). */
+    int countByModuleIdAndStatus(String moduleId, JobStatus status);
+
     List<Job> findAllByExpiresAtBefore(LocalDateTime now);
 
     List<Job> findAllByBatchId(String batchId);
+
+    /** 관리자 큐 조회(060) — 상태별 현재 Job 목록. */
+    List<Job> findAllByStatusIn(Collection<JobStatus> statuses);
 
     @Query(value = "SELECT COUNT(*) as total, " +
             "COALESCE(SUM(status = 'DONE'), 0) as done_count, " +
