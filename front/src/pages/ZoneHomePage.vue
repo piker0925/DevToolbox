@@ -151,7 +151,8 @@ const filteredModules = computed(() =>
 const favoriteModules = computed(() =>
     favoriteIds.value
         .map(id => modules.value.find(m => m.id === id))
-        .filter((m): m is Module => m !== undefined),
+        .filter((m): m is Module => m !== undefined)
+        .sort((a, b) => a.name.localeCompare(b.name)),
 )
 
 const recentModules = computed(() =>

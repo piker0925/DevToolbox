@@ -2,6 +2,7 @@ import { ref, computed } from 'vue'
 import { useStorage } from '@vueuse/core'
 import { apiClient } from '../api/client'
 import { toast } from 'vue-sonner'
+import { syncPersonalization } from './usePersonalizationSync'
 
 // 토큰 상태 (localStorage 자동 동기화)
 export const accessToken = useStorage<string | null>('dtk_access', null)
@@ -46,6 +47,7 @@ export function useAuth() {
       isLoading.value = true
       const { data } = await apiClient.get<User>('/api/v1/users/me')
       user.value = data
+      await syncPersonalization()
     } catch (e) {
       // 401 처리는 interceptor가 하므로, 여기서는 그냥 초기화
       if (!accessToken.value) {

@@ -20,6 +20,7 @@ function persist() {
 /** 브라우저 단위 좋아요 상태 — 도구당 1회 토글, 새로고침 후에도 유지 */
 export function useLikes() {
     return {
+        likeIds: ids,
         isLiked: (id: string) => idSet.value.has(id),
         markLiked(id: string) {
             if (!idSet.value.has(id)) {
@@ -33,5 +34,9 @@ export function useLikes() {
                 persist()
             }
         },
+        syncFromServer(newIds: string[]) {
+            ids.value = newIds
+            persist()
+        }
     }
 }
