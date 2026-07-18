@@ -44,6 +44,7 @@ public class ImageToPdfModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
+        requireFiles(input);
         ToolParams params = ToolParams.of(input);
         String paperSize = params.getString("paperSize", "원본");
         String orientation = params.getString("orientation", "portrait");

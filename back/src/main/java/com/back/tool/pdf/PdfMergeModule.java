@@ -31,6 +31,7 @@ public class PdfMergeModule implements ToolModule {
 
     @Override
     public ToolResult process(ToolInput input) {
+        requireFiles(input);
         try {
             Path output = Files.createTempFile("pdfmerge-", ".pdf");
             PDFMergerUtility merger = new PDFMergerUtility();
