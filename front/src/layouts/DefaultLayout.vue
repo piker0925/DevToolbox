@@ -25,6 +25,44 @@
         class="fixed inset-y-0 left-0 z-40 flex w-[240px] shrink-0 flex-col border-r border-white/60 dark:border-white/10 bg-white/40 dark:bg-[#0a0a0a]/80 backdrop-blur-[30px] transition-transform duration-200 lg:static lg:translate-x-0 shadow-[4px_0_24px_rgb(0,0,0,0.02)] dark:shadow-none"
     >
 
+      <!-- 사이드바 상단: 워크스페이스 스위처 -->
+      <div class="flex items-center h-[52px] px-3 shrink-0 border-b border-white/60 dark:border-white/10">
+        <DropdownMenu>
+          <DropdownMenuTrigger as-child>
+            <button data-testid="workspace-switcher-trigger" class="flex w-full items-center justify-between gap-1.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-sidebar-accent focus:outline-none group">
+              <div class="flex items-center gap-2 min-w-0">
+                <div :class="[ZONE_BG_CLASS[currentZoneId || 'dev'], ZONE_TEXT_CLASS[currentZoneId || 'dev']]" class="flex size-7 shrink-0 items-center justify-center rounded-md shadow-sm transition-colors">
+                  <component :is="ZONE_ICONS[currentZoneId || 'dev']" class="size-4" />
+                </div>
+                <div class="flex flex-col truncate">
+                  <span class="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 leading-none mb-0.5">Workspace</span>
+                  <span class="truncate text-[13px] font-bold text-foreground leading-none">{{ currentZoneName }}</span>
+                </div>
+              </div>
+              <ChevronsUpDown class="size-3.5 text-muted-foreground/50 shrink-0 group-hover:text-foreground/80 transition-colors" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" class="w-[240px] p-1.5 rounded-xl shadow-xl">
+            <DropdownMenuLabel class="text-xs font-semibold text-muted-foreground px-2 py-1.5">워크스페이스 전환</DropdownMenuLabel>
+            <DropdownMenuItem
+                v-for="zone in ZONES" :key="zone.id"
+                as-child
+                class="rounded-lg cursor-pointer mb-1 last:mb-0 focus:bg-accent"
+            >
+              <router-link :to="zone.route" class="flex items-center gap-3 w-full px-2 py-2">
+                <div :class="[ZONE_BG_CLASS[zone.id], ZONE_TEXT_CLASS[zone.id]]" class="flex size-8 items-center justify-center rounded-lg shadow-sm">
+                  <component :is="ZONE_ICONS[zone.id]" class="size-[16px]" />
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[13px] font-bold text-foreground">{{ zone.name }}</span>
+                  <span class="text-[11px] text-muted-foreground mt-0.5">{{ zone.description.split(' ')[0] }}...</span>
+                </div>
+              </router-link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+
       <!-- Nav -->
       <nav class="flex-1 overflow-y-auto px-2 pt-4 pb-3">
 
@@ -114,34 +152,13 @@
                 <BrandLogo class="scale-[0.75] origin-left" />
               </router-link>
               <span class="text-border">/</span>
-              <!-- 구역 스위처: 브레드크럼 "구역" 자리를 대신하는 pill. 클릭하면 나머지 구역으로 전환 —
-                   드로어를 열 필요 없이 헤더에서 바로 닿으므로 216984b의 "드로어 뒤에 숨지 않음" 요건을 만족한다. -->
-              <DropdownMenu>
-                <DropdownMenuTrigger as-child>
-                  <button
-                      data-testid="zone-switcher-trigger"
-                      type="button"
-                      class="flex shrink-0 items-center gap-1 truncate rounded-md px-1.5 py-0.5 -mx-1.5 transition-colors hover:bg-accent"
-                      :class="ZONE_TEXT_CLASS[currentZoneId || 'dev']"
-                  >
-                    <component :is="ZONE_ICONS[currentZoneId || 'dev']" class="size-[13px] shrink-0" />
-                    <span class="truncate">{{ currentZoneName }}</span>
-                    <ChevronDown class="size-3 shrink-0 opacity-60" />
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" class="w-[200px] p-1.5 rounded-xl shadow-xl">
-                  <DropdownMenuItem
-                      v-for="zone in ZONES" :key="zone.id"
-                      as-child
-                      class="rounded-lg cursor-pointer mb-1 last:mb-0"
-                  >
-                    <router-link :to="zone.route" class="flex items-center gap-2.5 w-full px-1.5 py-1.5">
-                      <component :is="ZONE_ICONS[zone.id]" class="size-[14px] shrink-0" :class="ZONE_TEXT_CLASS[zone.id]" />
-                      <span class="text-[13px] font-medium text-foreground">{{ zone.name }}</span>
-                    </router-link>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <router-link
+                :to="zoneHomeRoute"
+                class="truncate transition-colors hover:underline hover:underline-offset-4"
+                :class="ZONE_TEXT_CLASS[currentZoneId || 'dev']"
+              >
+                {{ currentZoneName }}
+              </router-link>
               <span class="text-border">/</span>
               <router-link
                  v-if="displayCategory !== '전체 도구'"
@@ -193,7 +210,7 @@
 <script lang="ts" setup>
 import {computed, onMounted, onUnmounted, ref, watch} from 'vue'
 import {useRoute} from 'vue-router'
-import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, Terminal, FileText, Coffee, Gamepad2, ChevronDown} from 'lucide-vue-next'
+import {LayoutGrid, Menu, MessageSquarePlus, Search, Star, Terminal, FileText, Coffee, Gamepad2, ChevronsUpDown} from 'lucide-vue-next'
 import {apiClient} from '../api/client'
 import {MOCK_MODULES} from '../api/mock'
 import {normalizeApiModules} from '../api/modules'
@@ -203,6 +220,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuTrigger,
 } from '../components/ui/dropdown-menu'
 import type {Module} from '../types'
@@ -230,6 +248,12 @@ const {activeCategory} = useToolFilter()
 const {favoriteIds} = useFavorites()
 
 // Tailwind Oxide는 소스에 리터럴로 등장하는 클래스만 스캔한다 — 동적 템플릿 문자열 금지
+const ZONE_BG_CLASS: Record<ZoneId, string> = {
+  dev: 'bg-zone-accent-dev/10',
+  files: 'bg-zone-accent-files/10',
+  life: 'bg-zone-accent-life/10',
+  fun: 'bg-zone-accent-fun/10',
+}
 const ZONE_TEXT_CLASS: Record<ZoneId, string> = {
   dev: 'text-zone-accent-dev',
   files: 'text-zone-accent-files',
