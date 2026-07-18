@@ -47,7 +47,7 @@ public class ResumePdfModule implements ToolModule {
             String body = MarkdownToPdfModule.RENDERER.render(document).replace("&nbsp;", " ");
 
             String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/>"
-                    + "<style>@page{size:" + paperSize + ";margin:" + marginMm + "mm}"
+                    + "<style>" + HtmlToPdfRenderer.pageRule(paperSize, marginMm)
                     + "body{font-family:'" + HtmlToPdfRenderer.FONT_FAMILY
                     + "',sans-serif;margin:0;line-height:1.5;color:#1f2937}"
                     + "h1{font-size:22pt;border-bottom:2px solid #111827;padding-bottom:6px;margin:0 0 4px 0}"

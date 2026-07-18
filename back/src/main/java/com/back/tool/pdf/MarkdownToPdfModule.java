@@ -66,7 +66,7 @@ public class MarkdownToPdfModule implements ToolModule {
                 body = injectToc(body);
             }
             String html = "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/>"
-                    + "<style>@page{size:" + paperSize + ";margin:" + marginMm + "mm}"
+                    + "<style>" + HtmlToPdfRenderer.pageRule(paperSize, marginMm)
                     + "body{font-family:'" + HtmlToPdfRenderer.FONT_FAMILY + "',sans-serif;margin:0;line-height:1.6}"
                     + "pre{background:#f4f4f4;padding:12px;border-radius:4px;white-space:pre-wrap;word-break:break-all}"
                     + "code{font-family:'" + HtmlToPdfRenderer.FONT_FAMILY + "',monospace}"

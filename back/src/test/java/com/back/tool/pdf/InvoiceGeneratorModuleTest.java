@@ -4,6 +4,7 @@ import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.within;
 
 class InvoiceGeneratorModuleTest {
 
@@ -139,6 +141,42 @@ class InvoiceGeneratorModuleTest {
         assertThatThrownBy(() -> process(invoiceJson))
                 .isInstanceOf(ToolProcessingException.class)
                 .hasMessageContaining("발행자");
+    }
+
+    @Test
+    void paperSize를_Letter로_지정하면_결과_PDF의_실제_페이지_크기가_Letter로_바뀐다() throws Exception {
+        // 패턴 A+B: 기본(A4)과 Letter 두 시나리오 — 존재 확인이 아니라 실제 MediaBox 크기를 기준값과 비교한다.
+        String invoiceJson = """
+                {"issuer": "A", "recipient": "B", "items": [{"description": "X", "quantity": 1, "unitPrice": 10}]}
+                """;
+
+        ToolResult a4 = process(invoiceJson);
+        ToolResult letter = module.process(new ToolInput(List.of(),
+                Map.of("invoiceJson", invoiceJson, "paperSize", "Letter")));
+
+        try (PDDocument a4Doc = PDDocument.load(a4.outputFile().toFile());
+             PDDocument letterDoc = PDDocument.load(letter.outputFile().toFile())) {
+            PDRectangle a4Box = a4Doc.getPage(0).getMediaBox();
+            assertThat(a4Box.getWidth()).isCloseTo(PDRectangle.A4.getWidth(), within(2f));   // ≈595pt
+            assertThat(a4Box.getHeight()).isCloseTo(PDRectangle.A4.getHeight(), within(2f)); // ≈842pt
+
+            PDRectangle letterBox = letterDoc.getPage(0).getMediaBox();
+            assertThat(letterBox.getWidth()).isCloseTo(PDRectangle.LETTER.getWidth(), within(2f));   // ≈612pt
+            assertThat(letterBox.getHeight()).isCloseTo(PDRectangle.LETTER.getHeight(), within(2f)); // ≈792pt
+        }
+    }
+
+    @Test
+    void 지원하지_않는_용지_크기는_공용_렌더러의_검증_메시지를_그대로_사용한다() {
+        // HtmlToPdfRenderer.pageRule/resolvePaperSize 재사용 여부를 회귀 방지로 검증한다.
+        String invoiceJson = """
+                {"issuer": "A", "recipient": "B", "items": [{"description": "X", "quantity": 1, "unitPrice": 10}]}
+                """;
+
+        assertThatThrownBy(() -> module.process(new ToolInput(List.of(),
+                Map.of("invoiceJson", invoiceJson, "paperSize", "B4"))))
+                .isInstanceOf(ToolProcessingException.class)
+                .hasMessageContaining("용지 크기는 A4, Letter, A5");
     }
 
     @Test

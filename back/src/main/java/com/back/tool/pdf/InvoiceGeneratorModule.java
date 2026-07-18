@@ -41,9 +41,11 @@ public class InvoiceGeneratorModule implements ToolModule {
     public ToolResult process(ToolInput input) {
         ToolParams params = ToolParams.of(input);
         InvoiceData invoice = parseInvoice(params.requireString(PARAM_KEY));
+        String paperSize = HtmlToPdfRenderer.resolvePaperSize(params.getString("paperSize", "A4"));
+        int marginMm = params.getInt("margin", 20, 0, 50);
 
         try {
-            String html = renderHtml(invoice);
+            String html = renderHtml(invoice, paperSize, marginMm);
             Path output = HtmlToPdfRenderer.renderToTempFile(html, "invoice-");
             return ToolResult.ofFile(output);
         } catch (Exception e) {
@@ -84,7 +86,7 @@ public class InvoiceGeneratorModule implements ToolModule {
         return invoice;
     }
 
-    private String renderHtml(InvoiceData invoice) {
+    private String renderHtml(InvoiceData invoice, String paperSize, int marginMm) {
         BigDecimal total = invoice.items().stream()
                 .map(InvoiceItem::lineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
@@ -100,7 +102,7 @@ public class InvoiceGeneratorModule implements ToolModule {
         }
 
         return "<!DOCTYPE html><html><head><meta charset=\"UTF-8\"/>"
-                + "<style>@page{size:A4;margin:20mm}"
+                + "<style>" + HtmlToPdfRenderer.pageRule(paperSize, marginMm)
                 + "body{font-family:'" + HtmlToPdfRenderer.FONT_FAMILY + "',sans-serif;margin:0;color:#111827}"
                 + "h1{font-size:20pt;margin:0 0 4px 0}"
                 + ".meta{color:#4b5563;margin-bottom:4px}"
