@@ -107,38 +107,6 @@ async function uploadAndGetSse(wrapper: ReturnType<typeof mount>, jobId: string)
     return es
 }
 
-describe('ToolPage 브레드크럼 (046 — 구역 인지형)', () => {
-    it('홈 > 구역(zones[0]) > 카테고리 > 도구명 순으로 브레드크럼을 렌더링한다', async () => {
-        const wrapper = await mountAt('image-resize', [
-            {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, zones: ['files']},
-        ])
-
-        const crumbTexts = wrapper.findAll('nav a, nav span').map(el => el.text())
-        expect(crumbTexts).toEqual(['홈', '파일·문서', '이미지', '이미지 리사이즈'])
-    })
-
-    it('구역 링크는 zones[0]의 구역 홈으로 이동한다', async () => {
-        const wrapper = await mountAt('exif-strip', [
-            {id: 'exif-strip', name: 'EXIF 제거', category: '이미지', isHeavy: false, zones: ['files', 'dev']},
-        ])
-
-        const zoneLink = wrapper.findAll('nav a').at(1)
-        expect(zoneLink?.attributes('href')).toBe('/files')
-    })
-
-    it('카테고리 링크는 구역 홈 경로에 category 쿼리를 붙여 이동한다', async () => {
-        const wrapper = await mountAt('sql-formatter', [
-            {id: 'sql-formatter', name: 'SQL 포맷터', category: '포맷터', isHeavy: false, zones: ['dev']},
-        ])
-
-        const categoryLink = wrapper.findAll('nav a').at(2)
-        const href = categoryLink?.attributes('href') ?? ''
-        const url = new URL(href, 'http://localhost')
-        expect(url.pathname).toBe('/dev')
-        expect(url.searchParams.get('category')).toBe('포맷터')
-    })
-})
-
 describe('ToolPage 업로드 실패 표시 (032)', () => {
     // 034: 파일 선택은 스테이징만 하고, '실행' 버튼을 눌러야 업로드된다.
     async function selectFile(wrapper: ReturnType<typeof mount>, name: string) {

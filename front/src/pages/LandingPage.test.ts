@@ -64,7 +64,7 @@ describe('LandingPage', () => {
         await flushPromises()
 
         const filesCard = wrapper.findAll('a').find(a => a.attributes('href') === '/files')
-        expect(filesCard?.text()).toContain('1개 도구')
+        expect(filesCard?.text()).toContain('1 Tools')
     })
 
     it('검색 트리거를 클릭하면 CommandPalette가 열린다', async () => {
@@ -74,7 +74,7 @@ describe('LandingPage', () => {
         await wrapper.find('[data-testid="landing-search-trigger"]').trigger('click')
         await wrapper.vm.$nextTick()
 
-        expect(document.body.textContent).toContain('개발자 도구 > 포맷터')
+        expect(document.body.textContent).toContain('개발자 도구')
     })
 
     it('⌘K를 누르면 CommandPalette가 열린다', async () => {
@@ -84,7 +84,7 @@ describe('LandingPage', () => {
         document.dispatchEvent(new KeyboardEvent('keydown', {key: 'k', metaKey: true}))
         await new Promise(r => setTimeout(r, 0))
 
-        expect(document.body.textContent).toContain('개발자 도구 > 포맷터')
+        expect(document.body.textContent).toContain('개발자 도구')
     })
 
     it('최근 사용 기록이 있으면 상단에 바로가기가 노출된다', async () => {

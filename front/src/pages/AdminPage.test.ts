@@ -33,11 +33,17 @@ async function loginAsAdmin(wrapper: ReturnType<typeof mount>) {
 beforeEach(() => vi.clearAllMocks())
 
 describe('AdminPage 댓글 관리', () => {
-    it('로그인 후 전체 댓글 목록을 불러와 모듈 id와 함께 렌더링한다', async () => {
+    it('운영 탭으로 전환하면 전체 댓글 목록을 불러와 모듈 id와 함께 렌더링한다', async () => {
         mockAdminEndpoints()
 
         const wrapper = mount(AdminPage)
         await loginAsAdmin(wrapper)
+
+        // 댓글 관리는 "운영" 탭 안에 있다 — 관리자 화면이 3탭(통계/유저 관리/운영) 구조로
+        // 리팩터링되면서 탭별 지연 로딩이 됐다(AI_SYNC.md 2026-07-18).
+        const opsTab = wrapper.findAll('button').find(b => b.text().includes('운영'))
+        await opsTab?.trigger('click')
+        await flushPromises()
 
         expect(mockGet).toHaveBeenCalledWith('/admin/comments', expect.anything())
         expect(wrapper.text()).toContain('좋은 도구네요')

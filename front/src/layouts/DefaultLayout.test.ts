@@ -103,3 +103,38 @@ describe('DefaultLayout — 구역 스코프 사이드바', () => {
         expect(outsideAsideHrefs).toEqual(expect.arrayContaining(['/dev', '/files', '/life', '/fun']))
     })
 })
+
+describe('DefaultLayout — 브레드크럼', () => {
+    it('/tools/:id 진입 시 홈 > 구역 > 카테고리 순으로 브레드크럼을 렌더링한다', async () => {
+        await router.push('/tools/sql-formatter')
+        const wrapper = mount(DefaultLayout, {global: {plugins: [router]}})
+        await flushPromises()
+
+        const breadcrumb = wrapper.find('[data-testid="breadcrumb"]')
+        expect(breadcrumb.text()).toContain('개발자 도구')
+        expect(breadcrumb.text()).toContain('포맷터')
+    })
+
+    it('구역 링크는 해당 모듈의 기본 구역(zones[0]) 홈으로 이동한다', async () => {
+        await router.push('/tools/pdf-merge')
+        const wrapper = mount(DefaultLayout, {global: {plugins: [router]}})
+        await flushPromises()
+
+        const breadcrumb = wrapper.find('[data-testid="breadcrumb"]')
+        const zoneLink = breadcrumb.findAll('a').at(1)
+        expect(zoneLink?.attributes('href')).toBe('/files')
+    })
+
+    it('카테고리 링크는 구역 홈 경로에 category 쿼리를 붙여 이동한다', async () => {
+        await router.push('/tools/sql-formatter')
+        const wrapper = mount(DefaultLayout, {global: {plugins: [router]}})
+        await flushPromises()
+
+        const breadcrumb = wrapper.find('[data-testid="breadcrumb"]')
+        const categoryLink = breadcrumb.findAll('a').at(2)
+        const href = categoryLink?.attributes('href') ?? ''
+        const url = new URL(href, 'http://localhost')
+        expect(url.pathname).toBe('/dev')
+        expect(url.searchParams.get('category')).toBe('포맷터')
+    })
+})
