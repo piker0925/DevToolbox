@@ -1,24 +1,40 @@
 package com.back.comment.service;
 
+import com.back.comment.dto.CommentResponse;
 import com.back.comment.entity.Comment;
 import com.back.comment.repository.CommentRepository;
 import com.back.global.exception.AppException;
 import com.back.global.exception.ErrorCode;
+import com.back.user.entity.User;
+import com.back.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class CommentService {
 
     private final CommentRepository commentRepository;
+    private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
     public List<Comment> getComments(String moduleId) {
         return commentRepository.findAllByModuleIdOrderByCreatedAtDesc(moduleId);
+    }
+
+    /** 닉네임까지 붙인 댓글 목록(051) — 현재 닉네임을 조인한다(작성 시점 스냅샷 아님). */
+    @Transactional(readOnly = true)
+    public List<CommentResponse> getCommentResponses(String moduleId) {
+        List<Comment> comments = getComments(moduleId);
+        Map<Long, String> nicknames = nicknamesOf(comments);
+        return comments.stream()
+                .map(comment -> CommentResponse.from(comment, nicknames.get(comment.getUserId())))
+                .toList();
     }
 
     @Transactional(readOnly = true)
@@ -33,6 +49,21 @@ public class CommentService {
         comment.setContent(content);
         comment.setUserId(userId);
         return commentRepository.save(comment);
+    }
+
+    /** 닉네임까지 붙여서 응답하는 댓글 작성(051). */
+    @Transactional
+    public CommentResponse addCommentAndRespond(String moduleId, String content, Long userId) {
+        Comment comment = addComment(moduleId, content, userId);
+        String nickname = userId == null ? null
+                : userRepository.findById(userId).map(User::getNickname).orElse(null);
+        return CommentResponse.from(comment, nickname);
+    }
+
+    private Map<Long, String> nicknamesOf(List<Comment> comments) {
+        List<Long> userIds = comments.stream().map(Comment::getUserId).filter(id -> id != null).distinct().toList();
+        return userRepository.findAllById(userIds).stream()
+                .collect(Collectors.toMap(User::getId, User::getNickname));
     }
 
     @Transactional
