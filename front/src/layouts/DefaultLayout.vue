@@ -149,7 +149,7 @@
 
             <div data-testid="breadcrumb" class="flex items-center gap-2 text-[13px] font-medium text-muted-foreground min-w-0">
               <router-link class="flex items-center shrink-0 transition-opacity hover:opacity-80 mr-1" to="/" title="홈으로 가기">
-                <BrandLogo class="scale-[0.75] origin-left" />
+                <BrandLogo icon-only class="scale-[0.75] origin-left" />
               </router-link>
               <span class="text-border">/</span>
               <router-link

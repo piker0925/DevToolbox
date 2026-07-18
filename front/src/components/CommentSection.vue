@@ -17,10 +17,10 @@
           </span>
           <div class="flex items-center space-x-2">
             <span class="font-mono text-xs text-muted-foreground">{{ formatDate(c.createdAt) }}</span>
-            <button 
-              v-if="isLoggedIn && user?.nickname === c.nickname && c.nickname !== null" 
+            <button
+              v-if="isLoggedIn && user?.nickname === c.nickname && c.nickname !== null"
               @click="deleteComment(c.id)"
-              class="text-xs text-destructive opacity-0 group-hover:opacity-100 transition-opacity hover:underline"
+              class="text-xs text-destructive hover:underline"
               title="댓글 삭제"
             >
               삭제
@@ -36,7 +36,7 @@
       <Textarea
           v-model="newContent"
           class="min-h-[72px] resize-none text-sm"
-          placeholder="댓글을 남겨주세요... (Ctrl + Enter로 등록)"
+          placeholder="댓글을 남겨주세요..."
           @keydown.ctrl.enter.prevent="handleShortcut"
           @keydown.meta.enter.prevent="handleShortcut"
       />
@@ -44,6 +44,7 @@
         <p class="text-[11px]" :class="isLoggedIn ? 'text-foreground font-medium' : 'text-muted-foreground'">
           <template v-if="isLoggedIn">{{ user?.nickname }} (으)로 댓글 작성</template>
           <template v-else>익명 · 로그인 없이 작성</template>
+          <span class="hidden text-muted-foreground/60 sm:inline"> · Ctrl + Enter로 등록</span>
         </p>
         <Button
             :disabled="submitting || !newContent.trim()"

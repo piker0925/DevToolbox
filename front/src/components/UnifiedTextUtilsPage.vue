@@ -1,14 +1,14 @@
 <template>
   <div class="flex flex-col gap-4">
     <!-- 탭 -->
-    <div class="flex flex-wrap gap-1 rounded-lg border border-border bg-card p-1">
+    <div class="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
       <button
           v-for="t in TABS"
           :key="t.id"
           :class="tab === t.id
           ? 'bg-primary text-primary-foreground'
           : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'"
-          class="flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors"
+          class="shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors sm:flex-1"
           @click="tab = t.id"
       >{{ t.label }}
       </button>

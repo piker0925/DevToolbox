@@ -51,7 +51,7 @@
 
     <Dialog v-else>
       <DialogTrigger as-child>
-        <button class="flex h-8 items-center justify-center rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20">
+        <button class="flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-full bg-primary px-5 text-[13px] font-semibold text-primary-foreground shadow-sm transition-all hover:scale-105 hover:bg-primary/90 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary/20">
           로그인
         </button>
       </DialogTrigger>

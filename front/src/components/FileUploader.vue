@@ -28,25 +28,25 @@
         <button
             v-if="reorderable"
             :data-testid="`move-up-${i}`" :disabled="i === 0"
-            class="rounded p-1 text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
+            class="flex size-8 shrink-0 items-center justify-center rounded text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
             title="위로 이동"
             type="button" @click="staged = moveItem(staged, i, -1)"
-        ><ChevronUp class="size-3.5"/>
+        ><ChevronUp class="size-4"/>
         </button>
         <button
             v-if="reorderable"
             :data-testid="`move-down-${i}`" :disabled="i === staged.length - 1"
-            class="rounded p-1 text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
+            class="flex size-8 shrink-0 items-center justify-center rounded text-foreground/70 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-foreground/70"
             title="아래로 이동"
             type="button" @click="staged = moveItem(staged, i, 1)"
-        ><ChevronDown class="size-3.5"/>
+        ><ChevronDown class="size-4"/>
         </button>
         <button
             :data-testid="`remove-${i}`"
-            class="rounded p-1 text-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+            class="ml-1 flex size-8 shrink-0 items-center justify-center rounded text-foreground/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
             title="제거"
             type="button" @click="staged.splice(i, 1)"
-        ><X class="size-3.5"/>
+        ><X class="size-4"/>
         </button>
       </li>
     </ul>

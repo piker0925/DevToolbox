@@ -136,6 +136,15 @@ describe('DefaultLayout — 브레드크럼', () => {
         expect(breadcrumb.text()).toContain('포맷터')
     })
 
+    it('브레드크럼의 홈 링크는 아이콘 전용 로고를 쓴다 — 워드마크 전체를 쓰면 좁은 화면에서 구역·카테고리 텍스트가 밀려 폭 0으로 사라지는 회귀가 있었다', async () => {
+        await router.push('/tools/sql-formatter')
+        const wrapper = mount(DefaultLayout, {global: {plugins: [router]}})
+        await flushPromises()
+
+        const breadcrumb = wrapper.find('[data-testid="breadcrumb"]')
+        expect(breadcrumb.text()).not.toContain('ontool')
+    })
+
     it('구역 링크는 해당 모듈의 기본 구역(zones[0]) 홈으로 이동한다', async () => {
         await router.push('/tools/pdf-merge')
         const wrapper = mount(DefaultLayout, {global: {plugins: [router]}})
