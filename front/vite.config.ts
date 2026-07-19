@@ -31,6 +31,7 @@ export default defineConfig(({mode}) => {
     // loadEnv로 직접 읽고, 실제 셸/CI 환경변수(process.env)가 있으면 그쪽을 우선한다.
     const fileEnv = loadEnv(mode, process.cwd(), 'VITE_')
     const siteUrl = process.env.VITE_SITE_URL || fileEnv.VITE_SITE_URL || DEFAULT_SITE_URL
+    const apiBaseUrl = process.env.VITE_API_BASE_URL || fileEnv.VITE_API_BASE_URL || 'http://localhost:8080'
 
     return {
         plugins: [vue(), tailwindcss(), sitemapPlugin(siteUrl)],
@@ -48,7 +49,16 @@ export default defineConfig(({mode}) => {
             execArgv: ['--no-experimental-webstorage'],
         },
         server: {
-            host: true
+            host: true,
+            // storage.base-url이 local 프로파일에서 일부러 빈 문자열이라(LAN 기기 접속 대비),
+            // Job 결과 URL(/api/v1/files/...)이 상대경로로 내려온다. axios 호출은 apiClient의
+            // baseURL로 절대주소가 되지만, <img src>·다운로드 <a href>는 그 URL을 그대로 써서
+            // 프론트 자신의 오리진(Vite 서버)으로 요청이 가버린다 — 매칭되는 라우트가 없어
+            // Vite가 index.html을 돌려주므로 "결과가 HTML로 나온다"는 증상이 된다.
+            // 이 프록시가 그 간극을 메워 프론트 오리진의 /api/* 요청을 백엔드로 넘겨준다.
+            proxy: {
+                '/api': {target: apiBaseUrl, changeOrigin: true},
+            },
         },
     }
 })

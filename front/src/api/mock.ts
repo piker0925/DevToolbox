@@ -12,7 +12,9 @@ export const MOCK_MODULES: Module[] = [
     // 이미지 (Heavy)
     {id: 'image-resize', name: '이미지 리사이즈', category: '이미지', isHeavy: true, description: '이미지 크기 및 해상도 조정', zones: ['files']},
     {id: 'image-format', name: '이미지 포맷 변환', category: '이미지', isHeavy: true, description: 'PNG, JPG, WebP 등 포맷 변환', zones: ['files']},
-    {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true, description: '이미지 시퀀스를 GIF로 변환', zones: ['files']},
+    {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true, description: '이미지 시퀀스를 GIF로 변환 (자막 옵션 포함)', zones: ['files']},
+    {id: 'exif-remove', name: 'EXIF 제거', category: '이미지', isHeavy: true, description: '이미지의 촬영 위치·기기 등 EXIF 메타데이터를 무손실로 제거', zones: ['files']},
+    {id: 'image-collage', name: '이미지 콜라주', category: '이미지', isHeavy: true, description: '여러 이미지를 격자로 합성', zones: ['files']},
 
     // 생성기
     {id: 'json-schema-to-dto', name: 'JSON Schema → DTO', category: '생성기', isHeavy: true, description: 'JSON Schema로 Java DTO 클래스 생성', zones: ['dev']},
@@ -158,5 +160,25 @@ export const MOCK_MODULES: Module[] = [
             {keyword: 'code128', query: 'format=code128'},
         ],
         zones: ['dev'],
+    },
+    {
+        id: 'pdf-editor', name: 'PDF 편집기', category: 'PDF', isHeavy: false, isFrontendOnly: true,
+        description: '워터마크 삽입 · 비밀번호 설정/해제 · 헤더/푸터/페이지번호',
+        keywords: [
+            {keyword: '워터마크', query: 'mode=watermark'},
+            {keyword: 'watermark', query: 'mode=watermark'},
+            {keyword: '비밀번호', query: 'mode=password'},
+            {keyword: 'password', query: 'mode=password'},
+            {keyword: '헤더', query: 'mode=header-footer'},
+            {keyword: '푸터', query: 'mode=header-footer'},
+            {keyword: '페이지번호', query: 'mode=header-footer'},
+        ],
+        zones: ['files'],
+    },
+    {
+        id: 'document-generator', name: '문서 생성기', category: 'PDF', isHeavy: false, isFrontendOnly: true,
+        description: '인보이스(청구서) PDF 생성',
+        keywords: ['인보이스', 'invoice', '청구서'],
+        zones: ['files'],
     },
 ]

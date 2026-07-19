@@ -58,13 +58,14 @@ describe('LandingPage', () => {
     })
 
     it('구역 카드에 해당 구역의 도구 수를 표시한다', async () => {
-        // dev 구역은 normalizeApiModules가 항상 덧붙이는 실제 카탈로그의 isFrontendOnly 항목(전부 dev)과
-        // 섞이므로, 오염되지 않는 files 구역으로 정확한 개수를 검증한다.
+        // normalizeApiModules는 백엔드 응답과 무관하게 MOCK_MODULES의 isFrontendOnly 항목을 항상
+        // 덧붙인다. files 구역에는 pdf-editor·document-generator(081/082, 합성 프론트 전용 모듈)가
+        // 있으므로, 목(mock) 백엔드 응답의 pdf-merge 1개 + 이 2개 = 3개가 기대값이다.
         const wrapper = mount(LandingPage, {global: {plugins: [router]}})
         await flushPromises()
 
         const filesCard = wrapper.findAll('a').find(a => a.attributes('href') === '/files')
-        expect(filesCard?.text()).toContain('1 Tools')
+        expect(filesCard?.text()).toContain('3 Tools')
     })
 
     it('검색 트리거를 클릭하면 CommandPalette가 열린다', async () => {

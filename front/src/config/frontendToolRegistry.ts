@@ -32,4 +32,6 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'encoder': {load: () => import('../components/UnifiedEncoderPage.vue'), layout: 'wide'},
     'text-utils': {load: () => import('../components/UnifiedTextUtilsPage.vue'), layout: 'wide'},
     'code-gen': {load: () => import('../components/UnifiedCodeGenPage.vue'), layout: 'wide'},
+    'pdf-editor': {load: () => import('../components/PdfEditorPage.vue'), layout: 'wide'},
+    'document-generator': {load: () => import('../components/DocumentGeneratorPage.vue'), layout: 'wide'},
 }
