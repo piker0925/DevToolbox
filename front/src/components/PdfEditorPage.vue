@@ -40,6 +40,25 @@
               placeholder="30"
               type="text"
           />
+          <div class="mt-2 flex gap-3">
+            <div class="flex flex-1 flex-col gap-1.5">
+              <label class="text-[11px] text-muted-foreground">글자 색상</label>
+              <input
+                  v-model="watermarkColor"
+                  class="h-8 w-full rounded-md border border-input bg-background p-0.5"
+                  type="color"
+              />
+            </div>
+            <div class="flex flex-1 flex-col gap-1.5">
+              <label class="text-[11px] text-muted-foreground">글자 크기 (8~300)</label>
+              <input
+                  v-model="watermarkFontSize"
+                  class="rounded-md border border-input bg-background px-3 py-1.5 text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20"
+                  placeholder="24"
+                  type="text"
+              />
+            </div>
+          </div>
           <p class="mt-2 text-[11px] text-muted-foreground/70">
             — 이미지 워터마크를 함께 쓰려면 파일을 <strong>대상 → 워터마크 이미지</strong> 순서로 업로드하세요
             (위/아래 화살표로 순서 조정 가능).
@@ -164,6 +183,8 @@ watch(() => route.query.mode, q => {
 const watermarkText = ref('')
 const watermarkPosition = ref<typeof WATERMARK_POSITIONS[number]>('CENTER')
 const watermarkOpacity = ref('30')
+const watermarkColor = ref('#000000')
+const watermarkFontSize = ref('24')
 
 const passwordMode = ref<'SET' | 'REMOVE'>('SET')
 const password = ref('')
@@ -176,11 +197,16 @@ const pageNumberFormat = ref('')
 // 집합을 채워두고 현재 모드에 해당하지 않는 키는 빈 문자열로 둔다 — 모드별로 다른 형태의 객체를
 // 반환하면 TS가 Record<string, string>으로 통일하지 못한다.
 const EMPTY_PARAMS: Record<string, string> = {
-  text: '', position: '', opacity: '', mode: '', password: '', headerText: '', footerText: '', pageNumberFormat: '',
+  text: '', position: '', opacity: '', color: '', fontSize: '',
+  mode: '', password: '', headerText: '', footerText: '', pageNumberFormat: '',
 }
 const currentParams = computed<Record<string, string>>(() => {
   if (mode.value === 'watermark') {
-    return {...EMPTY_PARAMS, text: watermarkText.value, position: watermarkPosition.value, opacity: watermarkOpacity.value}
+    return {
+      ...EMPTY_PARAMS,
+      text: watermarkText.value, position: watermarkPosition.value, opacity: watermarkOpacity.value,
+      color: watermarkColor.value, fontSize: watermarkFontSize.value,
+    }
   }
   if (mode.value === 'password') {
     return {...EMPTY_PARAMS, mode: passwordMode.value, password: password.value}

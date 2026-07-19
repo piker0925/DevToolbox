@@ -73,21 +73,24 @@ public class PdfWatermarkModule implements ToolModule {
         }
         WatermarkPosition position = params.getEnum("position", WatermarkPosition.class, WatermarkPosition.CENTER);
         float opacity = params.getInt("opacity", 30, 0, 100) / 100f;
+        Color color = params.getColor("color", "#000000");
 
         Path target = input.files().get(0);
         String ext = extension(target);
         if (ext.equals("pdf")) {
-            return watermarkPdf(target, text, watermarkImage, position, opacity);
+            float fontSize = params.getInt("fontSize", (int) PDF_FONT_SIZE, 8, 300);
+            return watermarkPdf(target, text, watermarkImage, position, opacity, color, fontSize);
         }
         if (IMAGE_EXTENSIONS.contains(ext)) {
-            return watermarkImage(target, text, watermarkImage, position, opacity, ext);
+            float fontSize = params.getInt("fontSize", (int) IMAGE_FONT_SIZE, 8, 300);
+            return watermarkImage(target, text, watermarkImage, position, opacity, ext, color, fontSize);
         }
         throw new ToolProcessingException(
                 "워터마크는 PDF 또는 이미지(jpg, png) 파일만 지원합니다. (입력 파일: " + target.getFileName() + ")");
     }
 
     private ToolResult watermarkPdf(Path target, String text, Path watermarkImagePath,
-                                     WatermarkPosition position, float opacity) {
+                                     WatermarkPosition position, float opacity, Color color, float fontSize) {
         try (PDDocument doc = PDDocument.load(target.toFile())) {
             PDFont font = text.isBlank() ? null : KoreanFontSupport.pdType0Font(doc);
             PDImageXObject wmImage = watermarkImagePath != null
@@ -103,13 +106,14 @@ public class PdfWatermarkModule implements ToolModule {
                     cs.setGraphicsStateParameters(gs);
 
                     if (font != null) {
-                        float textWidth = font.getStringWidth(text) / 1000f * PDF_FONT_SIZE;
-                        float textHeight = PDF_FONT_SIZE;
+                        float textWidth = font.getStringWidth(text) / 1000f * fontSize;
+                        float textHeight = fontSize;
                         Point2D.Double offset = position.offset(
                                 box.getWidth(), box.getHeight(), textWidth, textHeight, MARGIN);
                         float pdfY = (float) (box.getHeight() - offset.y - textHeight);
                         cs.beginText();
-                        cs.setFont(font, PDF_FONT_SIZE);
+                        cs.setNonStrokingColor(color);
+                        cs.setFont(font, fontSize);
                         cs.newLineAtOffset((float) offset.x, pdfY);
                         cs.showText(text);
                         cs.endText();
@@ -131,7 +135,8 @@ public class PdfWatermarkModule implements ToolModule {
     }
 
     private ToolResult watermarkImage(Path target, String text, Path watermarkImagePath,
-                                       WatermarkPosition position, float opacity, String ext) {
+                                       WatermarkPosition position, float opacity, String ext,
+                                       Color color, float fontSize) {
         try {
             BufferedImage base = ImageIO.read(target.toFile());
             if (base == null) {
@@ -153,9 +158,9 @@ public class PdfWatermarkModule implements ToolModule {
                         base.getWidth(), base.getHeight(), wm.getWidth(), wm.getHeight(), MARGIN);
                 g.drawImage(wm, (int) Math.round(offset.x), (int) Math.round(offset.y), null);
             } else {
-                Font font = KoreanFontSupport.awtFont(IMAGE_FONT_SIZE);
+                Font font = KoreanFontSupport.awtFont(fontSize);
                 g.setFont(font);
-                g.setColor(Color.RED);
+                g.setColor(color);
                 FontMetrics fm = g.getFontMetrics();
                 double textWidth = fm.stringWidth(text);
                 double textHeight = fm.getHeight();

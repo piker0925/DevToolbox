@@ -58,7 +58,7 @@ describe('PdfEditorPage', () => {
         const wrapper = await mountWithQuery('')
         const params = uploaderProps(wrapper).params
         expect(params).toEqual({
-            text: '', position: 'CENTER', opacity: '30',
+            text: '', position: 'CENTER', opacity: '30', color: '#000000', fontSize: '24',
             mode: '', password: '', headerText: '', footerText: '', pageNumberFormat: '',
         })
         expect(uploaderProps(wrapper).moduleId).toBe('pdf-watermark')
@@ -81,12 +81,20 @@ describe('PdfEditorPage', () => {
         expect(uploaderProps(wrapper).params?.text).toBe('SECRET')
     })
 
+    it('워터마크 색상·글자 크기를 바꾸면 FileUploader에 넘어가는 params가 갱신된다', async () => {
+        const wrapper = await mountWithQuery('')
+        await wrapper.find('input[type="color"]').setValue('#ff0000')
+        await wrapper.find('input[placeholder="24"]').setValue('72')
+        expect(uploaderProps(wrapper).params?.color).toBe('#ff0000')
+        expect(uploaderProps(wrapper).params?.fontSize).toBe('72')
+    })
+
     it('모드를 password로 바꾸면 currentParams가 password 모드 필드로 전환되고 워터마크 필드는 비워진다', async () => {
         const wrapper = await mountWithQuery('')
         await wrapper.find('select').setValue('password')
         const params = uploaderProps(wrapper).params
         expect(params).toEqual({
-            text: '', position: '', opacity: '',
+            text: '', position: '', opacity: '', color: '', fontSize: '',
             mode: 'SET', password: '', headerText: '', footerText: '', pageNumberFormat: '',
         })
     })

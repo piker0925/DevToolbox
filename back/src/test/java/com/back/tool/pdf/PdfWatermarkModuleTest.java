@@ -7,6 +7,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -89,6 +90,93 @@ class PdfWatermarkModuleTest {
         assertThat(result.isFile()).isTrue();
         assertThat(textOfPage(result.outputFile(), 1)).contains("P1").contains("워터마크");
         assertThat(textOfPage(result.outputFile(), 2)).contains("P2").contains("워터마크");
+    }
+
+    @Test
+    void 텍스트_워터마크_색상을_지정하면_PDF_렌더링_결과에_그_색상_픽셀이_나타난다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+        Color blue = new Color(0x00, 0x00, 0xFF);
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("text", "MMMMM", "position", "CENTER", "opacity", "100",
+                        "color", "#0000FF", "fontSize", "72")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColor(rendered, blue, 10))
+                    .as("지정한 색상(#0000FF)의 픽셀이 렌더링 결과에 있어야 한다").isTrue();
+        }
+    }
+
+    @Test
+    void 색상_파라미터를_생략하면_기본값은_검정이다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("text", "MMMMM", "position", "CENTER", "opacity", "100", "fontSize", "72")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColor(rendered, Color.BLACK, 10)).isTrue();
+        }
+    }
+
+    @Test
+    void 텍스트_워터마크_크기를_키우면_실제_렌더링_커버리지가_넓어진다() throws Exception {
+        Path smallPdf = createPdf("small.pdf", "P1");
+        Path bigPdf = createPdf("big.pdf", "P1");
+
+        ToolResult smallResult = module.process(new ToolInput(List.of(smallPdf),
+                Map.of("text", "MMMMM", "position", "CENTER", "opacity", "100",
+                        "color", "#0000FF", "fontSize", "10")));
+        ToolResult bigResult = module.process(new ToolInput(List.of(bigPdf),
+                Map.of("text", "MMMMM", "position", "CENTER", "opacity", "100",
+                        "color", "#0000FF", "fontSize", "80")));
+
+        Color blue = new Color(0x00, 0x00, 0xFF);
+        int smallCoverage;
+        int bigCoverage;
+        try (PDDocument doc = PDDocument.load(smallResult.outputFile().toFile())) {
+            smallCoverage = countColorPixels(new PDFRenderer(doc).renderImage(0), blue, 10);
+        }
+        try (PDDocument doc = PDDocument.load(bigResult.outputFile().toFile())) {
+            bigCoverage = countColorPixels(new PDFRenderer(doc).renderImage(0), blue, 10);
+        }
+        assertThat(bigCoverage).as("fontSize가 클수록 색칠된 픽셀 수가 더 많아야 한다").isGreaterThan(smallCoverage);
+    }
+
+    private boolean containsColor(BufferedImage image, Color target, int tolerance) {
+        return countColorPixels(image, target, tolerance) > 0;
+    }
+
+    private int countColorPixels(BufferedImage image, Color target, int tolerance) {
+        int count = 0;
+        for (int x = 0; x < image.getWidth(); x++) {
+            for (int y = 0; y < image.getHeight(); y++) {
+                Color pixel = new Color(image.getRGB(x, y));
+                if (Math.abs(pixel.getRed() - target.getRed()) <= tolerance
+                        && Math.abs(pixel.getGreen() - target.getGreen()) <= tolerance
+                        && Math.abs(pixel.getBlue() - target.getBlue()) <= tolerance) {
+                    count++;
+                }
+            }
+        }
+        return count;
+    }
+
+    @Test
+    void 이미지_대상_텍스트_워터마크_색상을_지정하면_지정한_색상으로_그려진다() throws Exception {
+        Path image = createSolidImage("base.png", 200, 200, Color.WHITE);
+        Color green = new Color(0x00, 0xFF, 0x00);
+
+        ToolResult result = module.process(new ToolInput(List.of(image),
+                Map.of("text", "MMMMM", "position", "CENTER", "opacity", "100",
+                        "color", "#00FF00", "fontSize", "72")));
+
+        BufferedImage output = ImageIO.read(result.outputFile().toFile());
+        assertThat(containsColor(output, green, 10)).as("지정한 색상(#00FF00) 픽셀이 있어야 한다").isTrue();
+        assertThat(containsColor(output, Color.RED, 10))
+                .as("색상을 지정했으므로 예전 하드코딩 기본값(빨강)으로 그려지면 안 된다").isFalse();
     }
 
     @Test
