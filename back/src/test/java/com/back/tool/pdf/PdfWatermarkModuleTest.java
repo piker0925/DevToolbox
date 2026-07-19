@@ -72,9 +72,15 @@ class PdfWatermarkModuleTest {
 
     /** textElements JSON 파라미터의 원소 하나. page가 null이면 "모든 페이지"를 뜻하는 JSON null을 만든다. */
     private String element(String text, double xPercent, double yPercent, String color, int fontSize, Integer page) {
+        return element(text, xPercent, yPercent, color, fontSize, page, null);
+    }
+
+    private String element(String text, double xPercent, double yPercent, String color, int fontSize, Integer page,
+                            String fontWeight) {
         return String.format(
-                "{\"text\":\"%s\",\"xPercent\":%s,\"yPercent\":%s,\"color\":\"%s\",\"fontSize\":%d,\"page\":%s}",
-                text, xPercent, yPercent, color, fontSize, page == null ? "null" : page);
+                "{\"text\":\"%s\",\"xPercent\":%s,\"yPercent\":%s,\"color\":\"%s\",\"fontSize\":%d,\"page\":%s,\"fontWeight\":%s}",
+                text, xPercent, yPercent, color, fontSize, page == null ? "null" : page,
+                fontWeight == null ? "null" : "\"" + fontWeight + "\"");
     }
 
     private String elementsJson(String... elements) {
@@ -209,6 +215,65 @@ class PdfWatermarkModuleTest {
             bigCoverage = countColorPixels(new PDFRenderer(doc).renderImage(0), blue, 10);
         }
         assertThat(bigCoverage).as("fontSize가 클수록 색칠된 픽셀 수가 더 많아야 한다").isGreaterThan(smallCoverage);
+    }
+
+    @Test
+    void 굵기를_BLACK으로_지정하면_REGULAR보다_렌더링_커버리지가_넓어진다() throws Exception {
+        Path regularPdf = createPdf("regular.pdf", "P1");
+        Path blackPdf = createPdf("black.pdf", "P1");
+        Color blue = new Color(0x00, 0x00, 0xFF);
+
+        ToolResult regularResult = module.process(new ToolInput(List.of(regularPdf),
+                Map.of("textElements", elementsJson(element("MMMMM", 10, 10, "#0000FF", 60, null, "REGULAR")), "opacity", "100")));
+        ToolResult blackResult = module.process(new ToolInput(List.of(blackPdf),
+                Map.of("textElements", elementsJson(element("MMMMM", 10, 10, "#0000FF", 60, null, "BLACK")), "opacity", "100")));
+
+        int regularCoverage;
+        int blackCoverage;
+        try (PDDocument doc = PDDocument.load(regularResult.outputFile().toFile())) {
+            regularCoverage = countColorPixels(new PDFRenderer(doc).renderImage(0), blue, 10);
+        }
+        try (PDDocument doc = PDDocument.load(blackResult.outputFile().toFile())) {
+            blackCoverage = countColorPixels(new PDFRenderer(doc).renderImage(0), blue, 10);
+        }
+        assertThat(blackCoverage).as("BLACK 굵기는 REGULAR보다 획이 굵어 커버리지가 더 넓어야 한다").isGreaterThan(regularCoverage);
+    }
+
+    @Test
+    void 굵기를_생략한_요소의_기본값은_REGULAR다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elementsJson(element("MMMMM", 10, 10, "#0000FF", 60, null)), "opacity", "100")));
+
+        assertThat(result.isFile()).isTrue();
+    }
+
+    @Test
+    void 서로_다른_굵기의_요소_두_개를_같은_문서에_동시에_그릴_수_있다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+        String elements = elementsJson(
+                element("A", 5, 5, "#ff0000", 40, null, "REGULAR"),
+                element("B", 5, 50, "#0000ff", 40, null, "BLACK"));
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elements, "opacity", "100")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColor(rendered, new Color(0xFF, 0x00, 0x00), 10)).isTrue();
+            assertThat(containsColor(rendered, new Color(0x00, 0x00, 0xFF), 10)).isTrue();
+        }
+    }
+
+    @Test
+    void 지원하지_않는_굵기값이면_명확한_에러() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+
+        assertThatThrownBy(() -> module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elementsJson(element("X", 5, 5, "#000000", 24, null, "ITALIC"))))))
+                .isInstanceOf(ToolProcessingException.class)
+                .hasMessageContaining("굵기");
     }
 
     @Test

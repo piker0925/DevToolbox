@@ -26,7 +26,8 @@
                 top: el.yPercent + '%',
                 color: el.color,
                 fontSize: (el.fontSize * renderScale) + 'px',
-                fontFamily: 'Pretendard, sans-serif',
+                fontWeight: CSS_WEIGHT[el.fontWeight],
+                fontFamily: '\'Pretendard Variable\', Pretendard, sans-serif',
               }"
               :data-testid="`wm-element-${el.id}`"
               @pointerdown="startDrag(el, $event)"
@@ -83,6 +84,17 @@
             ><X class="size-4"/>
             </button>
           </div>
+          <div class="flex items-center gap-2">
+            <label class="text-[11px] text-muted-foreground">굵기</label>
+            <select
+                :value="selectedElement.fontWeight"
+                class="rounded-md border border-input bg-background px-2 py-1 text-[12px] text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/20"
+                data-testid="wm-weight-select"
+                @change="patchSelected({fontWeight: ($event.target as HTMLSelectElement).value as FontWeight})"
+            >
+              <option v-for="w in FONT_WEIGHTS" :key="w" :value="w">{{ WEIGHT_LABEL[w] }}</option>
+            </select>
+          </div>
           <label v-if="pageCount > 1" class="flex items-center gap-2 text-[11px] text-muted-foreground">
             <input
                 :checked="selectedElement.page !== null" data-testid="wm-page-scope-toggle" type="checkbox"
@@ -96,9 +108,11 @@
   </div>
 </template>
 
-<script lang="ts" setup>
-import {computed, ref, watch} from 'vue'
-import {ChevronLeft, ChevronRight, X} from 'lucide-vue-next'
+<script lang="ts">
+// <script setup>은 런타임 값을 export할 수 없어(타입 export만 허용), 다른 파일이 가져다 쓰는
+// FONT_WEIGHTS 상수·WatermarkTextElement 타입은 이 일반 <script> 블록에 둔다.
+export const FONT_WEIGHTS = ['REGULAR', 'MEDIUM', 'BOLD', 'BLACK'] as const
+export type FontWeight = typeof FONT_WEIGHTS[number]
 
 export interface WatermarkTextElement {
   id: string
@@ -108,7 +122,16 @@ export interface WatermarkTextElement {
   color: string
   fontSize: number
   page: number | null
+  fontWeight: FontWeight
 }
+</script>
+
+<script lang="ts" setup>
+import {computed, ref, watch} from 'vue'
+import {ChevronLeft, ChevronRight, X} from 'lucide-vue-next'
+
+const CSS_WEIGHT: Record<FontWeight, number> = {REGULAR: 400, MEDIUM: 500, BOLD: 700, BLACK: 900}
+const WEIGHT_LABEL: Record<FontWeight, string> = {REGULAR: '보통', MEDIUM: '중간', BOLD: '굵게', BLACK: '아주 굵게'}
 
 const props = defineProps<{
   file: File | null
@@ -221,6 +244,7 @@ function addElement() {
     color: '#000000',
     fontSize: 24,
     page: null,
+    fontWeight: 'REGULAR',
   }
   emit('update:elements', [...props.elements, el])
   selectedId.value = el.id

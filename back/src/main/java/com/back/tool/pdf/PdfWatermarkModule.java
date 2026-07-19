@@ -28,7 +28,9 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -108,8 +110,19 @@ public class PdfWatermarkModule implements ToolModule {
                 throw new ToolProcessingException(
                         "워터마크 글자 크기는 8~300 사이여야 합니다. (입력값: " + element.fontSize() + ")");
             }
+            parseWeight(element.fontWeight());
         }
         return elements;
+    }
+
+    private KoreanFontSupport.FontWeight parseWeight(String value) {
+        if (value == null || value.isBlank()) return KoreanFontSupport.FontWeight.REGULAR;
+        try {
+            return KoreanFontSupport.FontWeight.valueOf(value.trim().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ToolProcessingException(
+                    "워터마크 글꼴 굵기는 REGULAR/MEDIUM/BOLD/BLACK 중 하나여야 합니다. (입력값: " + value + ")");
+        }
     }
 
     private Color parseColor(String hex) {
@@ -124,7 +137,7 @@ public class PdfWatermarkModule implements ToolModule {
     private ToolResult watermarkPdf(Path target, List<TextElement> elements, Path watermarkImagePath,
                                      WatermarkPosition position, float opacity) {
         try (PDDocument doc = PDDocument.load(target.toFile())) {
-            PDFont font = elements.isEmpty() ? null : KoreanFontSupport.pdType0Font(doc);
+            Map<KoreanFontSupport.FontWeight, PDFont> fontCache = new EnumMap<>(KoreanFontSupport.FontWeight.class);
             PDImageXObject wmImage = watermarkImagePath != null
                     ? PDImageXObject.createFromFile(watermarkImagePath.toString(), doc)
                     : null;
@@ -146,6 +159,8 @@ public class PdfWatermarkModule implements ToolModule {
                         float x = (float) (element.xPercent() / 100.0 * box.getWidth());
                         float topY = (float) (element.yPercent() / 100.0 * box.getHeight());
                         float pdfY = box.getHeight() - topY - fontSize;
+                        KoreanFontSupport.FontWeight weight = parseWeight(element.fontWeight());
+                        PDFont font = fontCache.computeIfAbsent(weight, w -> KoreanFontSupport.pdType0Font(doc, w));
                         cs.beginText();
                         cs.setNonStrokingColor(parseColor(element.color()));
                         cs.setFont(font, fontSize);
@@ -194,7 +209,7 @@ public class PdfWatermarkModule implements ToolModule {
             } else {
                 // 이미지 대상은 "페이지" 개념이 없으므로 page 필드는 무시하고 모든 요소를 그린다.
                 for (TextElement element : elements) {
-                    Font font = KoreanFontSupport.awtFont(element.fontSize());
+                    Font font = KoreanFontSupport.awtFont(element.fontSize(), parseWeight(element.fontWeight()));
                     g.setFont(font);
                     g.setColor(parseColor(element.color()));
                     FontMetrics fm = g.getFontMetrics();
@@ -236,7 +251,9 @@ public class PdfWatermarkModule implements ToolModule {
      * 워터마크 텍스트 한 개. xPercent/yPercent는 페이지(또는 이미지) 좌상단 기준 0~100 퍼센트 좌표 —
      * 실제 페이지 크기와 무관하게 프론트 드래그 편집기의 화면 좌표를 그대로 변환해 담을 수 있다.
      * page가 null이면 모든 페이지, 정수(1-base)면 그 페이지에만 적용한다(이미지 대상에는 의미 없음).
+     * fontWeight는 REGULAR/MEDIUM/BOLD/BLACK(대소문자 무관, 생략 시 REGULAR) — 번들된 Pretendard 굵기.
      */
-    record TextElement(String text, double xPercent, double yPercent, String color, int fontSize, Integer page) {
+    record TextElement(String text, double xPercent, double yPercent, String color, int fontSize, Integer page,
+                        String fontWeight) {
     }
 }

@@ -82,7 +82,7 @@ describe('WatermarkEditorCanvas', () => {
     })
 
     it('선택된 요소의 텍스트·색상·크기를 바꾸면 update:elements가 그 값으로 emit된다', async () => {
-        const el: WatermarkTextElement = {id: 'el-0', text: '초기값', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null}
+        const el: WatermarkTextElement = {id: 'el-0', text: '초기값', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}
         const wrapper = await mountEditor(pdfFile(), [el])
         // 요소를 선택해야 편집 패널이 뜬다.
         await wrapper.find('[data-testid="wm-element-el-0"]').trigger('pointerdown', {pointerId: 1})
@@ -92,8 +92,25 @@ describe('WatermarkEditorCanvas', () => {
         expect(patched[0].text).toBe('바뀐텍스트')
     })
 
+    it('새 요소는 기본 굵기가 REGULAR이다', async () => {
+        const wrapper = await mountEditor(pdfFile())
+        await wrapper.find('[data-testid="wm-add-text"]').trigger('click')
+        const added = wrapper.emitted('update:elements')!.at(-1)![0] as WatermarkTextElement[]
+        expect(added[0].fontWeight).toBe('REGULAR')
+    })
+
+    it('굵기를 바꾸면 update:elements에 반영된다', async () => {
+        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}
+        const wrapper = await mountEditor(pdfFile(), [el])
+        await wrapper.find('[data-testid="wm-element-el-0"]').trigger('pointerdown', {pointerId: 1})
+
+        await wrapper.find('[data-testid="wm-weight-select"]').setValue('BLACK')
+        const patched = wrapper.emitted('update:elements')!.at(-1)![0] as WatermarkTextElement[]
+        expect(patched[0].fontWeight).toBe('BLACK')
+    })
+
     it('삭제 버튼을 누르면 해당 요소가 제거된다', async () => {
-        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null}
+        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}
         const wrapper = await mountEditor(pdfFile(), [el])
         await wrapper.find('[data-testid="wm-element-el-0"]').trigger('pointerdown', {pointerId: 1})
 
@@ -104,7 +121,7 @@ describe('WatermarkEditorCanvas', () => {
 
     it('페이지가 2개 이상일 때만 "이 페이지에만 적용" 토글이 보인다', async () => {
         mockGetDocument.mockReturnValue(fakePdfDoc(1))
-        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null}
+        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}
         const single = await mountEditor(pdfFile(), [el])
         await single.find('[data-testid="wm-element-el-0"]').trigger('pointerdown', {pointerId: 1})
         expect(single.find('[data-testid="wm-page-scope-toggle"]').exists()).toBe(false)
@@ -118,8 +135,8 @@ describe('WatermarkEditorCanvas', () => {
     it('현재 페이지에만 적용되는 요소는 다른 페이지에서 보이지 않는다', async () => {
         mockGetDocument.mockReturnValue(fakePdfDoc(2))
         const elements: WatermarkTextElement[] = [
-            {id: 'all', text: '전체', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null},
-            {id: 'p2only', text: '2페이지전용', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: 2},
+            {id: 'all', text: '전체', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'},
+            {id: 'p2only', text: '2페이지전용', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: 2, fontWeight: 'REGULAR'},
         ]
         const wrapper = await mountEditor(pdfFile(), elements)
 
@@ -135,7 +152,7 @@ describe('WatermarkEditorCanvas', () => {
     })
 
     it('드래그하면 요소의 xPercent/yPercent가 포인터 위치에 맞게 갱신된다', async () => {
-        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null}
+        const el: WatermarkTextElement = {id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}
         const wrapper = await mountEditor(pdfFile(), [el])
         const handle = wrapper.find('[data-testid="wm-element-el-0"]')
         const domEl = handle.element as HTMLElement
