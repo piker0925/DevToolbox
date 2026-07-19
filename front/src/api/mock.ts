@@ -207,4 +207,16 @@ export const MOCK_MODULES: Module[] = [
         keywords: ['팔레트', 'palette', '색상 조합'],
         zones: ['dev', 'fun'],
     },
+    {
+        id: 'wordcloud', name: '워드클라우드', category: '재미', isHeavy: false, isFrontendOnly: true,
+        description: '텍스트 빈도 분석 — 워드클라우드 시각화 · 빈도표',
+        keywords: [
+            {keyword: '워드클라우드', query: 'tab=cloud'},
+            {keyword: 'wordcloud', query: 'tab=cloud'},
+            {keyword: '텍스트 빈도', query: 'tab=table'},
+            {keyword: '단어 빈도', query: 'tab=table'},
+            {keyword: '빈도 분석', query: 'tab=table'},
+        ],
+        zones: ['fun', 'dev'],
+    },
 ]
