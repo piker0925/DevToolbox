@@ -4,6 +4,7 @@ import {createMemoryHistory, createRouter} from 'vue-router'
 import PdfEditorPage from './PdfEditorPage.vue'
 import FileUploader from './FileUploader.vue'
 import HeavyJobStatusPanel from './HeavyJobStatusPanel.vue'
+import WatermarkEditorCanvas from './WatermarkEditorCanvas.vue'
 import {apiClient} from '../api/client'
 
 vi.mock('../api/client', () => ({
@@ -36,7 +37,7 @@ async function mountWithQuery(query: string) {
     })
     router.push('/tools/pdf-editor' + query)
     await router.isReady()
-    return mount(PdfEditorPage, {global: {plugins: [router], stubs: {FileUploader: true}}})
+    return mount(PdfEditorPage, {global: {plugins: [router], stubs: {FileUploader: true, WatermarkEditorCanvas: true}}})
 }
 
 function uploaderProps(wrapper: Awaited<ReturnType<typeof mountWithQuery>>) {
@@ -58,7 +59,7 @@ describe('PdfEditorPage', () => {
         const wrapper = await mountWithQuery('')
         const params = uploaderProps(wrapper).params
         expect(params).toEqual({
-            text: '', position: 'CENTER', opacity: '30', color: '#000000', fontSize: '24',
+            textElements: '[]', position: 'CENTER', opacity: '30',
             mode: '', password: '', headerText: '', footerText: '', pageNumberFormat: '',
         })
         expect(uploaderProps(wrapper).moduleId).toBe('pdf-watermark')
@@ -74,19 +75,38 @@ describe('PdfEditorPage', () => {
         expect(uploaderProps(wrapper).moduleId).toBe('pdf-watermark')
     })
 
-    it('워터마크 텍스트를 입력하면 FileUploader에 넘어가는 params가 갱신된다', async () => {
+    it('워터마크 편집기가 요소를 갱신하면 FileUploader에 textElements JSON으로 전달된다', async () => {
         const wrapper = await mountWithQuery('')
-        const input = wrapper.find('input[placeholder="예: CONFIDENTIAL"]')
-        await input.setValue('SECRET')
-        expect(uploaderProps(wrapper).params?.text).toBe('SECRET')
+        const elements = [
+            {id: 'el-0', text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null},
+        ]
+        await wrapper.findComponent(WatermarkEditorCanvas).vm.$emit('update:elements', elements)
+
+        const params = uploaderProps(wrapper).params
+        // id는 프론트 전용 key라 백엔드로 보내는 JSON에서는 빠진다.
+        expect(JSON.parse(params!.textElements)).toEqual([
+            {text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null},
+        ])
     })
 
-    it('워터마크 색상·글자 크기를 바꾸면 FileUploader에 넘어가는 params가 갱신된다', async () => {
+    it('업로드 전 스테이징된 파일이 바뀌면 워터마크 편집기의 파일 props도 갱신된다', async () => {
         const wrapper = await mountWithQuery('')
-        await wrapper.find('input[type="color"]').setValue('#ff0000')
-        await wrapper.find('input[placeholder="24"]').setValue('72')
-        expect(uploaderProps(wrapper).params?.color).toBe('#ff0000')
-        expect(uploaderProps(wrapper).params?.fontSize).toBe('72')
+        const file = new File(['x'], 'target.pdf', {type: 'application/pdf'})
+        await wrapper.findComponent(FileUploader).vm.$emit('staged', [file])
+
+        expect(wrapper.findComponent(WatermarkEditorCanvas).props('file')).toBe(file)
+    })
+
+    it('스테이징 파일이 바뀌면(교체) 이전에 잡아둔 워터마크 요소가 초기화된다', async () => {
+        const wrapper = await mountWithQuery('')
+        const elements = [{id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null}]
+        await wrapper.findComponent(WatermarkEditorCanvas).vm.$emit('update:elements', elements)
+        expect(JSON.parse(uploaderProps(wrapper).params!.textElements)).toHaveLength(1)
+
+        const file = new File(['x'], 'target.pdf', {type: 'application/pdf'})
+        await wrapper.findComponent(FileUploader).vm.$emit('staged', [file])
+
+        expect(JSON.parse(uploaderProps(wrapper).params!.textElements)).toHaveLength(0)
     })
 
     it('모드를 password로 바꾸면 currentParams가 password 모드 필드로 전환되고 워터마크 필드는 비워진다', async () => {
@@ -94,7 +114,7 @@ describe('PdfEditorPage', () => {
         await wrapper.find('select').setValue('password')
         const params = uploaderProps(wrapper).params
         expect(params).toEqual({
-            text: '', position: '', opacity: '', color: '', fontSize: '',
+            textElements: '', position: '', opacity: '',
             mode: 'SET', password: '', headerText: '', footerText: '', pageNumberFormat: '',
         })
     })

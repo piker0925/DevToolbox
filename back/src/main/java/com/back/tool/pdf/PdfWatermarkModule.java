@@ -5,6 +5,9 @@ import com.back.tool.model.ToolModule;
 import com.back.tool.model.ToolParams;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageContentStream;
@@ -25,23 +28,27 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 /**
- * 텍스트 또는 이미지 워터마크를 삽입한다. 대상이 PDF면 PDFBox로 각 페이지에 오버레이하고,
- * 대상이 이미지(jpg/png)면 ImageIO/Graphics2D로 합성한다.
+ * 텍스트(여러 개, 각자 위치·색상·크기·적용 페이지 지정 가능) 또는 이미지 워터마크를 삽입한다.
+ * 대상이 PDF면 PDFBox로 각 페이지에 오버레이하고, 대상이 이미지(jpg/png)면 ImageIO/Graphics2D로 합성한다.
+ *
+ * <p>텍스트 요소는 {@code textElements} JSON 배열로 받는다 — 프론트의 드래그 편집기가 페이지 썸네일 위
+ * 화면 좌표를 퍼센트(0~100, 페이지 크기에 독립적)로 변환해 보낸다. 각 요소의 {@code page}가 null이면
+ * 모든 페이지에 동일하게, 정수면 그 페이지(1-base)에만 렌더링한다.
  *
  * <p>워터마크 이미지는 두 번째 {@code files} 항목으로 선택적으로 전달된다 — 대상 파일과 워터마크 이미지가
- * 하나의 job으로 함께 도착해야 하므로 {@link #acceptsMultipleFiles()}를 true로 오버라이드한다
- * (프론트가 target, watermark 순서로 업로드한다는 계약. front/ 연동은 이 이슈 범위 밖).
+ * 하나의 job으로 함께 도착해야 하므로 {@link #acceptsMultipleFiles()}를 true로 오버라이드한다.
  */
 @Component
 public class PdfWatermarkModule implements ToolModule {
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png");
-    private static final float PDF_FONT_SIZE = 24f;
-    private static final float IMAGE_FONT_SIZE = 48f;
     private static final float MARGIN = 20f;
+    private static final ObjectMapper JSON = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
     @Override
     public String getId() { return "pdf-watermark"; }
@@ -66,38 +73,66 @@ public class PdfWatermarkModule implements ToolModule {
                             + input.files().size() + ")");
         }
         ToolParams params = ToolParams.of(input);
-        String text = params.getString("text", "");
+        List<TextElement> elements = parseElements(params.getString("textElements", "[]"));
         Path watermarkImage = input.files().size() == 2 ? input.files().get(1) : null;
-        if (text.isBlank() && watermarkImage == null) {
+        if (elements.isEmpty() && watermarkImage == null) {
             throw new ToolProcessingException("텍스트 워터마크 또는 워터마크 이미지 중 하나는 필요합니다.");
         }
         WatermarkPosition position = params.getEnum("position", WatermarkPosition.class, WatermarkPosition.CENTER);
         float opacity = params.getInt("opacity", 30, 0, 100) / 100f;
-        Color color = params.getColor("color", "#000000");
 
         Path target = input.files().get(0);
         String ext = extension(target);
         if (ext.equals("pdf")) {
-            float fontSize = params.getInt("fontSize", (int) PDF_FONT_SIZE, 8, 300);
-            return watermarkPdf(target, text, watermarkImage, position, opacity, color, fontSize);
+            return watermarkPdf(target, elements, watermarkImage, position, opacity);
         }
         if (IMAGE_EXTENSIONS.contains(ext)) {
-            float fontSize = params.getInt("fontSize", (int) IMAGE_FONT_SIZE, 8, 300);
-            return watermarkImage(target, text, watermarkImage, position, opacity, ext, color, fontSize);
+            return watermarkImage(target, elements, watermarkImage, position, opacity, ext);
         }
         throw new ToolProcessingException(
                 "워터마크는 PDF 또는 이미지(jpg, png) 파일만 지원합니다. (입력 파일: " + target.getFileName() + ")");
     }
 
-    private ToolResult watermarkPdf(Path target, String text, Path watermarkImagePath,
-                                     WatermarkPosition position, float opacity, Color color, float fontSize) {
+    private List<TextElement> parseElements(String json) {
+        List<TextElement> elements;
+        try {
+            elements = JSON.readValue(json, new TypeReference<List<TextElement>>() { });
+        } catch (Exception e) {
+            throw new ToolProcessingException("워터마크 텍스트 데이터 형식이 올바르지 않습니다: " + e.getMessage(), e);
+        }
+        for (TextElement element : elements) {
+            if (element.text() == null || element.text().isBlank()) {
+                throw new ToolProcessingException("워터마크 텍스트는 비어 있을 수 없습니다.");
+            }
+            if (element.fontSize() < 8 || element.fontSize() > 300) {
+                throw new ToolProcessingException(
+                        "워터마크 글자 크기는 8~300 사이여야 합니다. (입력값: " + element.fontSize() + ")");
+            }
+        }
+        return elements;
+    }
+
+    private Color parseColor(String hex) {
+        String h = (hex == null || hex.isBlank()) ? "000000" : hex.trim();
+        if (h.startsWith("#")) h = h.substring(1);
+        if (!h.matches("[0-9a-fA-F]{6}")) {
+            throw new ToolProcessingException("워터마크 색상은 #RRGGBB 형식이어야 합니다. (입력값: " + hex + ")");
+        }
+        return new Color(Integer.parseInt(h, 16));
+    }
+
+    private ToolResult watermarkPdf(Path target, List<TextElement> elements, Path watermarkImagePath,
+                                     WatermarkPosition position, float opacity) {
         try (PDDocument doc = PDDocument.load(target.toFile())) {
-            PDFont font = text.isBlank() ? null : KoreanFontSupport.pdType0Font(doc);
+            PDFont font = elements.isEmpty() ? null : KoreanFontSupport.pdType0Font(doc);
             PDImageXObject wmImage = watermarkImagePath != null
                     ? PDImageXObject.createFromFile(watermarkImagePath.toString(), doc)
                     : null;
 
-            for (PDPage page : doc.getPages()) {
+            int totalPages = doc.getNumberOfPages();
+            for (int i = 0; i < totalPages; i++) {
+                int pageNumber = i + 1;
+                PDPage page = doc.getPage(i);
                 PDRectangle box = page.getMediaBox();
                 try (PDPageContentStream cs = new PDPageContentStream(
                         doc, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
@@ -105,17 +140,17 @@ public class PdfWatermarkModule implements ToolModule {
                     gs.setNonStrokingAlphaConstant(opacity);
                     cs.setGraphicsStateParameters(gs);
 
-                    if (font != null) {
-                        float textWidth = font.getStringWidth(text) / 1000f * fontSize;
-                        float textHeight = fontSize;
-                        Point2D.Double offset = position.offset(
-                                box.getWidth(), box.getHeight(), textWidth, textHeight, MARGIN);
-                        float pdfY = (float) (box.getHeight() - offset.y - textHeight);
+                    for (TextElement element : elements) {
+                        if (element.page() != null && element.page() != pageNumber) continue;
+                        float fontSize = element.fontSize();
+                        float x = (float) (element.xPercent() / 100.0 * box.getWidth());
+                        float topY = (float) (element.yPercent() / 100.0 * box.getHeight());
+                        float pdfY = box.getHeight() - topY - fontSize;
                         cs.beginText();
-                        cs.setNonStrokingColor(color);
+                        cs.setNonStrokingColor(parseColor(element.color()));
                         cs.setFont(font, fontSize);
-                        cs.newLineAtOffset((float) offset.x, pdfY);
-                        cs.showText(text);
+                        cs.newLineAtOffset(x, pdfY);
+                        cs.showText(element.text());
                         cs.endText();
                     }
                     if (wmImage != null) {
@@ -134,9 +169,8 @@ public class PdfWatermarkModule implements ToolModule {
         }
     }
 
-    private ToolResult watermarkImage(Path target, String text, Path watermarkImagePath,
-                                       WatermarkPosition position, float opacity, String ext,
-                                       Color color, float fontSize) {
+    private ToolResult watermarkImage(Path target, List<TextElement> elements, Path watermarkImagePath,
+                                       WatermarkPosition position, float opacity, String ext) {
         try {
             BufferedImage base = ImageIO.read(target.toFile());
             if (base == null) {
@@ -147,7 +181,7 @@ public class PdfWatermarkModule implements ToolModule {
             g.drawImage(base, 0, 0, null);
             g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, opacity));
 
-            // 텍스트와 워터마크 이미지가 둘 다 주어지면 이미지가 우선한다 — PDF 분기(둘 다 그림)와 다르지만,
+            // 텍스트 요소와 워터마크 이미지가 둘 다 주어지면 이미지가 우선한다 — PDF 분기(둘 다 그림)와 다르지만,
             // 이슈 설계상 "텍스트 또는 이미지" 중 하나만 쓰는 것이 정상 시나리오라 실사용에서는 갈릴 일이 없다.
             if (watermarkImagePath != null) {
                 BufferedImage wm = ImageIO.read(watermarkImagePath.toFile());
@@ -158,15 +192,16 @@ public class PdfWatermarkModule implements ToolModule {
                         base.getWidth(), base.getHeight(), wm.getWidth(), wm.getHeight(), MARGIN);
                 g.drawImage(wm, (int) Math.round(offset.x), (int) Math.round(offset.y), null);
             } else {
-                Font font = KoreanFontSupport.awtFont(fontSize);
-                g.setFont(font);
-                g.setColor(color);
-                FontMetrics fm = g.getFontMetrics();
-                double textWidth = fm.stringWidth(text);
-                double textHeight = fm.getHeight();
-                Point2D.Double offset = position.offset(
-                        base.getWidth(), base.getHeight(), textWidth, textHeight, MARGIN);
-                g.drawString(text, (float) offset.x, (float) (offset.y + fm.getAscent()));
+                // 이미지 대상은 "페이지" 개념이 없으므로 page 필드는 무시하고 모든 요소를 그린다.
+                for (TextElement element : elements) {
+                    Font font = KoreanFontSupport.awtFont(element.fontSize());
+                    g.setFont(font);
+                    g.setColor(parseColor(element.color()));
+                    FontMetrics fm = g.getFontMetrics();
+                    float x = (float) (element.xPercent() / 100.0 * base.getWidth());
+                    float topY = (float) (element.yPercent() / 100.0 * base.getHeight());
+                    g.drawString(element.text(), x, topY + fm.getAscent());
+                }
             }
             g.dispose();
 
@@ -195,5 +230,13 @@ public class PdfWatermarkModule implements ToolModule {
         String name = path.getFileName().toString();
         int dot = name.lastIndexOf('.');
         return dot >= 0 ? name.substring(dot + 1).toLowerCase() : "";
+    }
+
+    /**
+     * 워터마크 텍스트 한 개. xPercent/yPercent는 페이지(또는 이미지) 좌상단 기준 0~100 퍼센트 좌표 —
+     * 실제 페이지 크기와 무관하게 프론트 드래그 편집기의 화면 좌표를 그대로 변환해 담을 수 있다.
+     * page가 null이면 모든 페이지, 정수(1-base)면 그 페이지에만 적용한다(이미지 대상에는 의미 없음).
+     */
+    record TextElement(String text, double xPercent, double yPercent, String color, int fontSize, Integer page) {
     }
 }
