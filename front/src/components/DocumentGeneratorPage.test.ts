@@ -3,6 +3,7 @@ import {flushPromises, mount} from '@vue/test-utils'
 import DocumentGeneratorPage from './DocumentGeneratorPage.vue'
 import HeavyJobStatusPanel from './HeavyJobStatusPanel.vue'
 import {apiClient} from '../api/client'
+import {todayDateString} from '../utils/todayDateString'
 
 vi.mock('../api/client', () => ({
     apiClient: {get: vi.fn(), post: vi.fn()},
@@ -141,8 +142,7 @@ describe('DocumentGeneratorPage', () => {
 
     it('발행일은 오늘 날짜(YYYY-MM-DD)로 기본 채워진다', () => {
         const wrapper = mountPage()
-        const today = new Date().toISOString().slice(0, 10)
-        expect(inputByPlaceholder(wrapper, '2026-07-18').element.value).toBe(today)
+        expect(inputByPlaceholder(wrapper, '2026-07-18').element.value).toBe(todayDateString())
     })
 
     it('완전한 품목의 수량×단가 합계를 실시간으로 보여주고, 불완전한 품목은 합계에서 제외한다', async () => {

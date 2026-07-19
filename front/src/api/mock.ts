@@ -177,8 +177,8 @@ export const MOCK_MODULES: Module[] = [
     },
     {
         id: 'document-generator', name: '문서 생성기', category: 'PDF', isHeavy: false, isFrontendOnly: true,
-        description: '인보이스(청구서) PDF 생성',
-        keywords: ['인보이스', 'invoice', '청구서'],
+        description: '청구서 PDF 생성',
+        keywords: ['청구서', '인보이스', 'invoice'],
         zones: ['files'],
     },
 ]

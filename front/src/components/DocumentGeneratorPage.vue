@@ -5,7 +5,7 @@
     <!-- Left: 입력 -->
     <div class="flex flex-col overflow-hidden">
       <div class="flex h-10 shrink-0 items-center border-b border-border px-4">
-        <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">인보이스</span>
+        <span class="font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">청구서</span>
       </div>
 
       <div class="flex flex-1 flex-col gap-4 overflow-y-auto p-4">
@@ -27,7 +27,7 @@
             <input v-model="recipientAddress" class="rounded-md border border-input bg-background px-2.5 py-1.5 text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20" type="text"/>
           </div>
           <div class="flex flex-col gap-1.5">
-            <label class="text-[11px] text-muted-foreground">인보이스 번호</label>
+            <label class="text-[11px] text-muted-foreground">청구서 번호</label>
             <input v-model="invoiceNumber" class="rounded-md border border-input bg-background px-2.5 py-1.5 text-[13px] text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/20" type="text"/>
           </div>
           <div class="flex flex-col gap-1.5">
@@ -74,7 +74,7 @@
           </div>
         </div>
 
-        <Button :disabled="!invoiceValid" class="h-8 text-[12px]" @click="generateInvoice">인보이스 PDF 생성</Button>
+        <Button :disabled="!invoiceValid" class="h-8 text-[12px]" @click="generateInvoice">청구서 PDF 생성</Button>
       </div>
     </div>
 
@@ -98,6 +98,7 @@ import HeavyJobStatusPanel from './HeavyJobStatusPanel.vue'
 import {useHeavyJob} from '../composables/useHeavyJob'
 import {apiClient} from '../api/client'
 import {uploadErrorMessage} from '../utils/uploadError'
+import {todayDateString} from '../utils/todayDateString'
 import {isBatchResult, type UploadResult} from '../types'
 
 const PAPER_SIZES = ['A4', 'LETTER', 'A5']
@@ -107,7 +108,7 @@ const issuerAddress = ref('')
 const recipient = ref('')
 const recipientAddress = ref('')
 const invoiceNumber = ref('')
-const issueDate = ref(new Date().toISOString().slice(0, 10))
+const issueDate = ref(todayDateString())
 const items = ref([{description: '', quantity: '', unitPrice: ''}])
 const paperSize = ref<typeof PAPER_SIZES[number]>('A4')
 const margin = ref('20')
