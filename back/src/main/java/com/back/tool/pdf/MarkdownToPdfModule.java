@@ -23,9 +23,8 @@ import java.util.regex.Pattern;
 @Component
 public class MarkdownToPdfModule implements ToolModule {
 
-    // package-private: ResumePdfModule도 같은 flexmark 파싱 설정을 재사용한다.
-    static final Parser PARSER;
-    static final HtmlRenderer RENDERER;
+    private static final Parser PARSER;
+    private static final HtmlRenderer RENDERER;
     private static final Pattern HEADING = Pattern.compile("<h([1-6])>(.*?)</h\\1>", Pattern.DOTALL);
     private static final Pattern TAG = Pattern.compile("<[^>]+>");
 
