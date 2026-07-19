@@ -134,15 +134,13 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
             {
                 key: 'captionColor',
                 label: '자막 글자 색상',
-                type: 'text',
-                placeholder: '#FFFFFF',
+                type: 'color',
                 default: '#FFFFFF',
             },
             {
                 key: 'captionBackground',
                 label: '자막 배경 색상 (가독성용 박스)',
-                type: 'text',
-                placeholder: '#000000',
+                type: 'color',
                 default: '#000000',
             },
         ],
@@ -176,8 +174,7 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
             {
                 key: 'backgroundColor',
                 label: '배경 색상',
-                type: 'text',
-                placeholder: '#FFFFFF',
+                type: 'color',
                 default: '#FFFFFF',
             },
         ],

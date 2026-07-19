@@ -212,6 +212,12 @@
               >
                 <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
               </select>
+              <input
+                  v-else-if="p.type === 'color'"
+                  v-model="heavyFormValues[p.key]"
+                  class="h-8 w-16 rounded-md border border-input bg-background p-0.5"
+                  type="color"
+              />
             </div>
           </div>
 
@@ -437,6 +443,12 @@
               >
                 <option v-for="opt in p.options" :key="opt" :value="opt">{{ opt }}</option>
               </select>
+              <input
+                  v-else-if="p.type === 'color'"
+                  v-model="formValues[p.key]"
+                  class="h-8 w-16 rounded-md border border-input bg-background p-0.5"
+                  type="color"
+              />
             </div>
           </div>
 

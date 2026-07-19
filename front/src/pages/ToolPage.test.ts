@@ -167,6 +167,17 @@ describe('ToolPage 파라미터 필드 (024)', () => {
 
         expect(delay?.value).toBe('500')
     })
+
+    it('color 타입 파라미터는 텍스트 입력이 아니라 네이티브 색상 선택기로 렌더링되고 기본값이 채워진다', async () => {
+        const wrapper = await mountAt('gif-create', [
+            {id: 'gif-create', name: 'GIF 생성', category: '이미지', isHeavy: true, zones: ['files']},
+        ])
+
+        const captionColor = inputForLabel(wrapper, '자막 글자 색상')
+
+        expect(captionColor?.type).toBe('color')
+        expect(captionColor?.value).toBe('#ffffff')
+    })
 })
 
 describe('ToolPage 이미지 리사이즈 크기 입력 UI', () => {
