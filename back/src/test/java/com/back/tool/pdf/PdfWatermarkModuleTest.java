@@ -72,15 +72,20 @@ class PdfWatermarkModuleTest {
 
     /** textElements JSON 파라미터의 원소 하나. page가 null이면 "모든 페이지"를 뜻하는 JSON null을 만든다. */
     private String element(String text, double xPercent, double yPercent, String color, int fontSize, Integer page) {
-        return element(text, xPercent, yPercent, color, fontSize, page, null);
+        return element(text, xPercent, yPercent, color, fontSize, page, null, false);
     }
 
     private String element(String text, double xPercent, double yPercent, String color, int fontSize, Integer page,
                             String fontWeight) {
+        return element(text, xPercent, yPercent, color, fontSize, page, fontWeight, false);
+    }
+
+    private String element(String text, double xPercent, double yPercent, String color, int fontSize, Integer page,
+                            String fontWeight, boolean tiled) {
         return String.format(
-                "{\"text\":\"%s\",\"xPercent\":%s,\"yPercent\":%s,\"color\":\"%s\",\"fontSize\":%d,\"page\":%s,\"fontWeight\":%s}",
+                "{\"text\":\"%s\",\"xPercent\":%s,\"yPercent\":%s,\"color\":\"%s\",\"fontSize\":%d,\"page\":%s,\"fontWeight\":%s,\"tiled\":%s}",
                 text, xPercent, yPercent, color, fontSize, page == null ? "null" : page,
-                fontWeight == null ? "null" : "\"" + fontWeight + "\"");
+                fontWeight == null ? "null" : "\"" + fontWeight + "\"", tiled);
     }
 
     private String elementsJson(String... elements) {
@@ -274,6 +279,77 @@ class PdfWatermarkModuleTest {
                 Map.of("textElements", elementsJson(element("X", 5, 5, "#000000", 24, null, "ITALIC"))))))
                 .isInstanceOf(ToolProcessingException.class)
                 .hasMessageContaining("굵기");
+    }
+
+    @Test
+    void 타일링을_켜면_페이지_전체에_반복해서_렌더링된다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+        Color blue = new Color(0x00, 0x00, 0xFF);
+        String elements = elementsJson(element("X", 50, 50, "#0000FF", 20, null, "REGULAR", true));
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elements, "opacity", "100")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.0, 0.25, 0.0, 0.25))
+                    .as("좌상단 구석까지 반복 패턴이 덮어야 한다").isTrue();
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.4, 0.6, 0.4, 0.6))
+                    .as("중앙에도 패턴이 있어야 한다").isTrue();
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.75, 1.0, 0.75, 1.0))
+                    .as("우하단 구석까지 반복 패턴이 덮어야 한다").isTrue();
+        }
+    }
+
+    @Test
+    void 타일링이_꺼져있으면_지정한_위치에만_렌더링되고_구석은_비어있다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+        Color blue = new Color(0x00, 0x00, 0xFF);
+        String elements = elementsJson(element("X", 50, 50, "#0000FF", 20, null, "REGULAR", false));
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elements, "opacity", "100")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.4, 0.6, 0.4, 0.6))
+                    .as("지정한 중앙 위치엔 있어야 한다").isTrue();
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.0, 0.15, 0.0, 0.15))
+                    .as("타일링이 꺼져 있으면 구석은 비어 있어야 한다").isFalse();
+        }
+    }
+
+    @Test
+    void tiled_필드를_생략하면_기본값은_타일링_꺼짐이다() throws Exception {
+        Path pdf = createPdf("doc.pdf", "P1");
+        // tiled 키 자체를 빼고 수동으로 JSON을 만든다(생략 시 기본 동작 확인).
+        String elements = "[{\"text\":\"X\",\"xPercent\":50,\"yPercent\":50,\"color\":\"#0000FF\",\"fontSize\":20,\"page\":null}]";
+        Color blue = new Color(0x00, 0x00, 0xFF);
+
+        ToolResult result = module.process(new ToolInput(List.of(pdf),
+                Map.of("textElements", elements, "opacity", "100")));
+
+        try (PDDocument doc = PDDocument.load(result.outputFile().toFile())) {
+            BufferedImage rendered = new PDFRenderer(doc).renderImage(0);
+            assertThat(containsColorInRegion(rendered, blue, 10, 0.0, 0.15, 0.0, 0.15))
+                    .as("tiled 생략 시 기본값은 false — 구석엔 없어야 한다").isFalse();
+        }
+    }
+
+    @Test
+    void 이미지_대상에서도_타일링이_페이지_전체에_적용된다() throws Exception {
+        Path image = createSolidImage("base.png", 400, 400, Color.WHITE);
+        Color blue = new Color(0x00, 0x00, 0xFF);
+        String elements = elementsJson(element("X", 50, 50, "#0000FF", 20, null, "REGULAR", true));
+
+        ToolResult result = module.process(new ToolInput(List.of(image),
+                Map.of("textElements", elements, "opacity", "100")));
+
+        BufferedImage output = ImageIO.read(result.outputFile().toFile());
+        assertThat(containsColorInRegion(output, blue, 10, 0.0, 0.25, 0.0, 0.25))
+                .as("좌상단 구석까지 반복 패턴이 덮어야 한다").isTrue();
+        assertThat(containsColorInRegion(output, blue, 10, 0.75, 1.0, 0.75, 1.0))
+                .as("우하단 구석까지 반복 패턴이 덮어야 한다").isTrue();
     }
 
     @Test

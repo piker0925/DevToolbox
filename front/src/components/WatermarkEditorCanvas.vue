@@ -18,7 +18,7 @@
           <canvas ref="canvasEl" class="block" :class="{'opacity-0': status === 'loading'}"/>
 
           <div
-              v-for="el in visibleElements" :key="el.id"
+              v-for="el in draggableElements" :key="el.id"
               class="absolute -translate-y-0 cursor-move touch-none select-none whitespace-nowrap rounded-sm px-0.5 leading-none"
               :class="selectedId === el.id ? 'outline outline-1 outline-dashed outline-primary' : 'outline outline-1 outline-dashed outline-transparent hover:outline-primary/40'"
               :style="{
@@ -102,6 +102,16 @@
             />
             이 텍스트는 {{ currentPage }}페이지에만 적용 (해제 시 모든 페이지)
           </label>
+          <label class="flex items-center gap-2 text-[11px] text-muted-foreground">
+            <input
+                :checked="selectedElement.tiled" data-testid="wm-tiled-toggle" type="checkbox"
+                @change="patchSelected({tiled: ($event.target as HTMLInputElement).checked})"
+            />
+            배경 전체 채우기 (대각선으로 반복 인쇄, 위치 드래그 대신 자동 배치)
+          </label>
+          <p v-if="selectedElement.tiled" class="text-[11px] text-muted-foreground/70">
+            — 미리보기에는 반복 패턴이 표시되지 않습니다. 실제 결과는 생성 후 확인하세요.
+          </p>
         </div>
       </div>
     </template>
@@ -123,6 +133,7 @@ export interface WatermarkTextElement {
   fontSize: number
   page: number | null
   fontWeight: FontWeight
+  tiled: boolean
 }
 </script>
 
@@ -155,6 +166,8 @@ let nextId = 0
 
 const isPdf = computed(() => props.file?.name.toLowerCase().endsWith('.pdf') ?? false)
 const visibleElements = computed(() => props.elements.filter(e => e.page === null || e.page === currentPage.value))
+// 배경 전체 채우기(tiled) 요소는 드래그로 잡을 단일 위치가 없으므로 캔버스에 박스를 그리지 않는다.
+const draggableElements = computed(() => visibleElements.value.filter(e => !e.tiled))
 const selectedElement = computed(() => props.elements.find(e => e.id === selectedId.value) ?? null)
 
 async function renderPdf(file: File) {
@@ -245,6 +258,7 @@ function addElement() {
     fontSize: 24,
     page: null,
     fontWeight: 'REGULAR',
+    tiled: false,
   }
   emit('update:elements', [...props.elements, el])
   selectedId.value = el.id

@@ -208,7 +208,7 @@ const currentParams = computed<Record<string, string>>(() => {
       ...EMPTY_PARAMS,
       textElements: JSON.stringify(watermarkElements.value.map(e => ({
         text: e.text, xPercent: e.xPercent, yPercent: e.yPercent, color: e.color, fontSize: e.fontSize, page: e.page,
-        fontWeight: e.fontWeight,
+        fontWeight: e.fontWeight, tiled: e.tiled,
       }))),
       position: watermarkPosition.value, opacity: watermarkOpacity.value,
     }

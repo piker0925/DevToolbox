@@ -15,6 +15,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.apache.pdfbox.pdmodel.graphics.state.PDExtendedGraphicsState;
+import org.apache.pdfbox.util.Matrix;
 import org.springframework.stereotype.Component;
 
 import javax.imageio.ImageIO;
@@ -23,6 +24,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -49,6 +51,7 @@ public class PdfWatermarkModule implements ToolModule {
 
     private static final Set<String> IMAGE_EXTENSIONS = Set.of("jpg", "jpeg", "png");
     private static final float MARGIN = 20f;
+    private static final double TILE_ANGLE_DEGREES = 45.0;
     private static final ObjectMapper JSON = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -134,6 +137,42 @@ public class PdfWatermarkModule implements ToolModule {
         return new Color(Integer.parseInt(h, 16));
     }
 
+    private boolean isTiled(TextElement element) {
+        return Boolean.TRUE.equals(element.tiled());
+    }
+
+    /**
+     * 텍스트를 {@link #TILE_ANGLE_DEGREES}도 회전시켜 페이지(또는 이미지) 전체를 촘촘히 반복해서 채운다
+     * (공공기관 서류·유출 방지용 배경 워터마크 패턴). 페이지 대각선 길이만큼 격자를 사방으로 넉넉히 확장해
+     * 그리므로 모서리까지 빈틈없이 덮이고, 페이지 경계 밖으로 나가는 타일은 PDF 뷰어가 알아서 잘라낸다.
+     */
+    private void drawTiledText(PDPageContentStream cs, PDFont font, String text, float fontSize, PDRectangle box)
+            throws IOException {
+        float textWidth = font.getStringWidth(text) / 1000f * fontSize;
+        float stepX = textWidth + fontSize * 2f;
+        float stepY = fontSize * 3f;
+        float centerX = box.getWidth() / 2f;
+        float centerY = box.getHeight() / 2f;
+        double angleRad = Math.toRadians(TILE_ANGLE_DEGREES);
+        double diagonal = Math.hypot(box.getWidth(), box.getHeight());
+        int cols = (int) Math.ceil(diagonal / stepX) + 1;
+        int rows = (int) Math.ceil(diagonal / stepY) + 1;
+
+        for (int row = -rows; row <= rows; row++) {
+            for (int col = -cols; col <= cols; col++) {
+                float localX = col * stepX;
+                float localY = row * stepY;
+                float rotatedX = (float) (localX * Math.cos(angleRad) - localY * Math.sin(angleRad)) + centerX;
+                float rotatedY = (float) (localX * Math.sin(angleRad) + localY * Math.cos(angleRad)) + centerY;
+                cs.beginText();
+                cs.setFont(font, fontSize);
+                cs.setTextMatrix(Matrix.getRotateInstance(angleRad, rotatedX, rotatedY));
+                cs.showText(text);
+                cs.endText();
+            }
+        }
+    }
+
     private ToolResult watermarkPdf(Path target, List<TextElement> elements, Path watermarkImagePath,
                                      WatermarkPosition position, float opacity) {
         try (PDDocument doc = PDDocument.load(target.toFile())) {
@@ -156,17 +195,21 @@ public class PdfWatermarkModule implements ToolModule {
                     for (TextElement element : elements) {
                         if (element.page() != null && element.page() != pageNumber) continue;
                         float fontSize = element.fontSize();
-                        float x = (float) (element.xPercent() / 100.0 * box.getWidth());
-                        float topY = (float) (element.yPercent() / 100.0 * box.getHeight());
-                        float pdfY = box.getHeight() - topY - fontSize;
                         KoreanFontSupport.FontWeight weight = parseWeight(element.fontWeight());
                         PDFont font = fontCache.computeIfAbsent(weight, w -> KoreanFontSupport.pdType0Font(doc, w));
-                        cs.beginText();
                         cs.setNonStrokingColor(parseColor(element.color()));
-                        cs.setFont(font, fontSize);
-                        cs.newLineAtOffset(x, pdfY);
-                        cs.showText(element.text());
-                        cs.endText();
+                        if (isTiled(element)) {
+                            drawTiledText(cs, font, element.text(), fontSize, box);
+                        } else {
+                            float x = (float) (element.xPercent() / 100.0 * box.getWidth());
+                            float topY = (float) (element.yPercent() / 100.0 * box.getHeight());
+                            float pdfY = box.getHeight() - topY - fontSize;
+                            cs.beginText();
+                            cs.setFont(font, fontSize);
+                            cs.newLineAtOffset(x, pdfY);
+                            cs.showText(element.text());
+                            cs.endText();
+                        }
                     }
                     if (wmImage != null) {
                         Point2D.Double offset = position.offset(
@@ -212,10 +255,14 @@ public class PdfWatermarkModule implements ToolModule {
                     Font font = KoreanFontSupport.awtFont(element.fontSize(), parseWeight(element.fontWeight()));
                     g.setFont(font);
                     g.setColor(parseColor(element.color()));
-                    FontMetrics fm = g.getFontMetrics();
-                    float x = (float) (element.xPercent() / 100.0 * base.getWidth());
-                    float topY = (float) (element.yPercent() / 100.0 * base.getHeight());
-                    g.drawString(element.text(), x, topY + fm.getAscent());
+                    if (isTiled(element)) {
+                        drawTiledText(g, font, element.text(), base.getWidth(), base.getHeight());
+                    } else {
+                        FontMetrics fm = g.getFontMetrics();
+                        float x = (float) (element.xPercent() / 100.0 * base.getWidth());
+                        float topY = (float) (element.yPercent() / 100.0 * base.getHeight());
+                        g.drawString(element.text(), x, topY + fm.getAscent());
+                    }
                 }
             }
             g.dispose();
@@ -228,6 +275,27 @@ public class PdfWatermarkModule implements ToolModule {
         } catch (IOException e) {
             throw new ToolProcessingException("이미지 워터마크 삽입 실패: " + e.getMessage(), e);
         }
+    }
+
+    /** {@link #drawTiledText(PDPageContentStream, PDFont, String, float, PDRectangle)}의 이미지 대상 버전. */
+    private void drawTiledText(Graphics2D g, Font font, String text, int width, int height) {
+        FontMetrics fm = g.getFontMetrics(font);
+        float textWidth = fm.stringWidth(text);
+        float stepX = textWidth + font.getSize2D() * 2f;
+        float stepY = font.getSize2D() * 3f;
+        double diagonal = Math.hypot(width, height);
+        int cols = (int) Math.ceil(diagonal / stepX) + 1;
+        int rows = (int) Math.ceil(diagonal / stepY) + 1;
+
+        AffineTransform original = g.getTransform();
+        g.translate(width / 2.0, height / 2.0);
+        g.rotate(Math.toRadians(TILE_ANGLE_DEGREES));
+        for (int row = -rows; row <= rows; row++) {
+            for (int col = -cols; col <= cols; col++) {
+                g.drawString(text, col * stepX, row * stepY);
+            }
+        }
+        g.setTransform(original);
     }
 
     /** JPEG은 알파 채널을 지원하지 않으므로 투명 영역을 흰 배경으로 합성한다. */
@@ -252,8 +320,10 @@ public class PdfWatermarkModule implements ToolModule {
      * 실제 페이지 크기와 무관하게 프론트 드래그 편집기의 화면 좌표를 그대로 변환해 담을 수 있다.
      * page가 null이면 모든 페이지, 정수(1-base)면 그 페이지에만 적용한다(이미지 대상에는 의미 없음).
      * fontWeight는 REGULAR/MEDIUM/BOLD/BLACK(대소문자 무관, 생략 시 REGULAR) — 번들된 Pretendard 굵기.
+     * tiled가 true면 xPercent/yPercent는 무시하고 45도 회전한 텍스트를 페이지(또는 이미지) 전체에
+     * 반복해서 채운다(생략 시 false).
      */
     record TextElement(String text, double xPercent, double yPercent, String color, int fontSize, Integer page,
-                        String fontWeight) {
+                        String fontWeight, Boolean tiled) {
     }
 }

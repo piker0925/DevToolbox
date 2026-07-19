@@ -90,14 +90,14 @@ describe('PdfEditorPage', () => {
     it('워터마크 편집기가 요소를 갱신하면 FileUploader에 textElements JSON으로 전달된다', async () => {
         const wrapper = await mountWithQuery('')
         const elements = [
-            {id: 'el-0', text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null, fontWeight: 'REGULAR'},
+            {id: 'el-0', text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null, fontWeight: 'REGULAR', tiled: false},
         ]
         await wrapper.findComponent(WatermarkEditorCanvas).vm.$emit('update:elements', elements)
 
         const params = uploaderProps(wrapper).params
         // id는 프론트 전용 key라 백엔드로 보내는 JSON에서는 빠진다.
         expect(JSON.parse(params!.textElements)).toEqual([
-            {text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null, fontWeight: 'REGULAR'},
+            {text: 'SECRET', xPercent: 40, yPercent: 40, color: '#ff0000', fontSize: 30, page: null, fontWeight: 'REGULAR', tiled: false},
         ])
     })
 
@@ -111,7 +111,7 @@ describe('PdfEditorPage', () => {
 
     it('스테이징 파일이 바뀌면(교체) 이전에 잡아둔 워터마크 요소가 초기화된다', async () => {
         const wrapper = await mountWithQuery('')
-        const elements = [{id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR'}]
+        const elements = [{id: 'el-0', text: 'X', xPercent: 10, yPercent: 10, color: '#000000', fontSize: 24, page: null, fontWeight: 'REGULAR', tiled: false}]
         await wrapper.findComponent(WatermarkEditorCanvas).vm.$emit('update:elements', elements)
         expect(JSON.parse(uploaderProps(wrapper).params!.textElements)).toHaveLength(1)
 
