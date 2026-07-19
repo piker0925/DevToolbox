@@ -153,7 +153,7 @@ export const IMAGE_HEAVY_CONFIGS: Record<string, ModuleConfig> = {
     'exif-remove': {
         params: [],
         fileAccept: '.jpg,.jpeg',
-        fileMultiple: false,
+        fileMultiple: true,
     },
     'image-collage': {
         params: [
