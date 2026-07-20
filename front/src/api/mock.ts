@@ -45,6 +45,12 @@ export const MOCK_MODULES: Module[] = [
     // 포맷터
     {id: 'sql-formatter', name: 'SQL 포맷터', category: '포맷터', isHeavy: false, description: 'SQL 쿼리 정렬 및 포맷', zones: ['dev']},
     {id: 'xml-formatter', name: 'XML 포맷터', category: '포맷터', isHeavy: false, description: 'XML 문서 들여쓰기 정렬', zones: ['dev']},
+    {
+        id: 'svg-optimizer', name: 'SVG 최적화기', category: '포맷터', isHeavy: false, isFrontendOnly: true,
+        description: '불필요한 메타데이터·주석·과도한 좌표 정밀도를 제거해 SVG 용량 절감',
+        keywords: ['svg', 'svgo', '최적화'],
+        zones: ['dev'],
+    },
 
     // 텍스트
     {
@@ -66,6 +72,18 @@ export const MOCK_MODULES: Module[] = [
     // DevOps
     {id: 'cron', name: 'Cron 표현식', category: 'DevOps', isHeavy: false, isFrontendOnly: true, description: 'Cron 표현식 파싱 및 다음 실행 시각', zones: ['dev']},
     {id: 'docker-compose', name: 'Docker Compose 변환', category: 'DevOps', isHeavy: false, description: 'docker run 명령어 → docker-compose.yml 변환', zones: ['dev']},
+    {
+        id: 'curl-to-code', name: 'curl → 코드', category: 'DevOps', isHeavy: false, isFrontendOnly: true,
+        description: 'curl 명령을 JavaScript fetch·Python requests 코드로 변환',
+        keywords: ['curl', 'fetch', 'requests'],
+        zones: ['dev'],
+    },
+    {
+        id: 'gitignore-generator', name: '.gitignore 생성기', category: 'DevOps', isHeavy: false, isFrontendOnly: true,
+        description: '언어·프레임워크 템플릿을 선택해 .gitignore 생성',
+        keywords: ['gitignore', 'git ignore'],
+        zones: ['dev'],
+    },
 
     // 프론트엔드 전용 도구 (브라우저에서 직접 처리)
     {id: 'json-formatter', name: 'JSON 포맷터', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'JSON 정렬 및 미니파이', zones: ['dev']},
@@ -73,6 +91,18 @@ export const MOCK_MODULES: Module[] = [
     {id: 'timestamp', name: '타임스탬프', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'Unix timestamp ↔ 날짜/시간 변환', zones: ['dev']},
     {id: 'color-code', name: '색상 코드', category: '포맷터', isHeavy: false, isFrontendOnly: true, description: 'HEX ↔ RGB ↔ HSL 변환', zones: ['dev']},
     {id: 'uuid', name: 'UUID 생성기', category: '생성기', isHeavy: false, isFrontendOnly: true, description: 'UUID v4 무작위 생성', zones: ['dev']},
+    {
+        id: 'json-to-ts', name: 'JSON → TS 인터페이스', category: '생성기', isHeavy: false, isFrontendOnly: true,
+        description: 'JSON 값으로 TypeScript interface 생성',
+        keywords: ['typescript', 'interface', 'ts'],
+        zones: ['dev'],
+    },
+    {
+        id: 'faker-ko', name: '한국어 더미 데이터 생성기', category: '생성기', isHeavy: false, isFrontendOnly: true,
+        description: '이름·전화번호·주소·이메일·회사명 등 한국형 테스트 더미 데이터 대량 생성',
+        keywords: ['faker', '더미', 'dummy', '테스트 데이터'],
+        zones: ['dev'],
+    },
 
     // 통합 도구 (여러 도구를 하나의 화면으로 흡수)
     {
