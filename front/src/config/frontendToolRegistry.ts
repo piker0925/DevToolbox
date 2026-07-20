@@ -15,7 +15,6 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'uuid': {load: () => import('../components/tools/UuidTool.vue'), layout: 'narrow'},
     'timestamp': {load: () => import('../components/tools/TimestampTool.vue'), layout: 'narrow'},
     'color-code': {load: () => import('../components/tools/ColorCodeTool.vue'), layout: 'narrow'},
-    'json-formatter': {load: () => import('../components/tools/JsonFormatterTool.vue'), layout: 'narrow'},
     'jwt-decoder': {load: () => import('../components/tools/JwtDecoderTool.vue'), layout: 'narrow'},
     'text-diff': {load: () => import('../components/tools/TextDiffTool.vue'), layout: 'narrow'},
     'regex-tester': {load: () => import('../components/tools/RegexTesterTool.vue'), layout: 'narrow'},
@@ -28,10 +27,13 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'salary-calculator': {load: () => import('../components/SalaryCalculatorPage.vue'), layout: 'narrow'},
     'finance-calculator': {load: () => import('../components/FinanceCalculatorPage.vue'), layout: 'narrow'},
 
+    'json-formatter': {load: () => import('../components/UnifiedJsonPage.vue'), layout: 'wide'},
     'data-convert': {load: () => import('../components/UnifiedConvertPage.vue'), layout: 'wide'},
     'encoder': {load: () => import('../components/UnifiedEncoderPage.vue'), layout: 'wide'},
     'text-utils': {load: () => import('../components/UnifiedTextUtilsPage.vue'), layout: 'wide'},
     'code-gen': {load: () => import('../components/UnifiedCodeGenPage.vue'), layout: 'wide'},
+    'markdown-tools': {load: () => import('../components/UnifiedMarkdownPage.vue'), layout: 'wide'},
+    'css-tools': {load: () => import('../components/UnifiedCssPage.vue'), layout: 'wide'},
     'pdf-editor': {load: () => import('../components/PdfEditorPage.vue'), layout: 'wide'},
     'document-generator': {load: () => import('../components/DocumentGeneratorPage.vue'), layout: 'wide'},
 }
