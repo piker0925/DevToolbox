@@ -4,6 +4,7 @@ import {createMemoryHistory, createRouter} from 'vue-router'
 import {ref} from 'vue'
 import ZoneHomePage from './ZoneHomePage.vue'
 import {apiClient} from '../api/client'
+import type {Module} from '../types'
 
 vi.mock('../api/client', () => ({
     apiClient: {get: vi.fn()},
@@ -13,6 +14,21 @@ const favoriteIds = ref<string[]>([])
 vi.mock('../composables/useFavorites', () => ({
     useFavorites: () => ({favoriteIds, isFavorite: (id: string) => favoriteIds.value.includes(id), toggle: vi.fn()}),
 }))
+
+// 실제 카탈로그(MOCK_MODULES)가 커질수록 "이 구역은 프론트 전용 도구가 하나도 없다"는 실제 데이터로는
+// 재현이 불가능해진다 — 빈 구역 안내 문구 테스트만 이 override로 카탈로그를 비운다.
+// var 사용: vi.mock 팩토리는 호이스팅되어 ZoneHomePage.vue → api/modules.ts의 import 그래프
+// 평가 시점(이 파일의 다른 최상단 코드가 실행되기 전)에 이미 getter가 호출된다.
+// let/const면 그 시점에 TDZ ReferenceError가 난다 — var는 undefined로 초기화되어 안전하다.
+var mockModulesOverride: Module[] | null = null
+vi.mock('../api/mock', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../api/mock')>()
+    return {
+        get MOCK_MODULES() {
+            return mockModulesOverride ?? actual.MOCK_MODULES
+        },
+    }
+})
 
 const mockGet = apiClient.get as ReturnType<typeof vi.fn>
 
@@ -24,6 +40,7 @@ const router = createRouter({
 beforeEach(() => {
     vi.clearAllMocks()
     favoriteIds.value = []
+    mockModulesOverride = null
 })
 
 describe('ZoneHomePage', () => {
@@ -65,7 +82,8 @@ describe('ZoneHomePage', () => {
     })
 
     it('해당 구역에 도구가 없으면 준비 중 안내 문구를 보여준다', async () => {
-        // fun 구역은 3차(§10-7) 착수 전까지 프론트 전용 도구가 없음 — life는 061(급여 계산기)부터 채워지므로 더 이상 빈 구역 예시로 못 씀
+        // 실카탈로그는 이제 네 구역 모두 프론트 전용 도구를 갖고 있어 빈 구역을 재현할 수 없다 — 카탈로그를 override로 비운다
+        mockModulesOverride = []
         mockGet.mockResolvedValueOnce({
             data: [
                 {id: 'pdf-merge', name: 'PDF 병합', category: 'PDF', isHeavy: true, zones: ['files']},

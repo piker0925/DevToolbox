@@ -25,6 +25,11 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'cron': {load: () => import('../components/tools/CronTool.vue'), layout: 'narrow'},
     'hmac': {load: () => import('../components/tools/HmacTool.vue'), layout: 'narrow'},
     'aes': {load: () => import('../components/tools/AesTool.vue'), layout: 'narrow'},
+    'image-crop-social': {load: () => import('../components/tools/ImageCropSocialTool.vue'), layout: 'narrow'},
+    'image-diff': {load: () => import('../components/tools/ImageDiffTool.vue'), layout: 'narrow'},
+    'colorblind-simulator': {load: () => import('../components/tools/ColorblindSimulatorTool.vue'), layout: 'narrow'},
+    'favicon-generator': {load: () => import('../components/tools/FaviconGeneratorTool.vue'), layout: 'narrow'},
+    'image-to-ascii': {load: () => import('../components/tools/ImageToAsciiTool.vue'), layout: 'narrow'},
     'salary-calculator': {load: () => import('../components/SalaryCalculatorPage.vue'), layout: 'narrow'},
     'finance-calculator': {load: () => import('../components/FinanceCalculatorPage.vue'), layout: 'narrow'},
 

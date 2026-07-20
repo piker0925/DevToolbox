@@ -181,4 +181,36 @@ export const MOCK_MODULES: Module[] = [
         keywords: ['인보이스', 'invoice', '청구서'],
         zones: ['files'],
     },
+
+    // 이미지 유틸 (프론트 로컬, 캔버스 기반)
+    {
+        id: 'image-crop-social', name: '소셜 이미지 크롭', category: '이미지', isHeavy: false, isFrontendOnly: true,
+        description: '플랫폼별 비율 프리셋으로 이미지 크롭',
+        keywords: ['crop', '크롭', '인스타그램', 'instagram', '유튜브 썸네일'],
+        zones: ['files'],
+    },
+    {
+        id: 'image-diff', name: '이미지 Diff 비교', category: '이미지', isHeavy: false, isFrontendOnly: true,
+        description: '두 이미지의 픽셀 단위 차이를 히트맵으로 시각화',
+        keywords: ['diff', '비교', 'compare', '이미지 비교'],
+        zones: ['files', 'dev'],
+    },
+    {
+        id: 'colorblind-simulator', name: '색약 시뮬레이터', category: '이미지', isHeavy: false, isFrontendOnly: true,
+        description: '적색맹·녹색맹·청색맹 시야로 이미지 미리보기',
+        keywords: ['색약', 'colorblind', '색맹', 'protanopia', 'deuteranopia'],
+        zones: ['files', 'dev'],
+    },
+    {
+        id: 'favicon-generator', name: 'Favicon 생성기', category: '이미지', isHeavy: false, isFrontendOnly: true,
+        description: '이미지 하나로 다중 사이즈 favicon.ico + PNG 세트 생성',
+        keywords: ['favicon', '파비콘', 'ico'],
+        zones: ['files'],
+    },
+    {
+        id: 'image-to-ascii', name: '이미지 → 아스키 아트', category: '이미지', isHeavy: false, isFrontendOnly: true,
+        description: '이미지를 그레이스케일 문자 아트로 변환',
+        keywords: ['ascii', '아스키', 'ascii art'],
+        zones: ['files', 'fun'],
+    },
 ]
