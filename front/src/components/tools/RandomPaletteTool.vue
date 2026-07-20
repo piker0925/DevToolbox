@@ -10,6 +10,18 @@
         </button>
       </div>
     </div>
+    <div class="flex items-center gap-2 flex-wrap">
+      <label class="flex items-center gap-1.5 cursor-pointer">
+        <input v-model="useBaseColor" class="rounded accent-primary" type="checkbox" @change="generate"/>
+        <span class="text-[12px] text-foreground">기준 색 지정</span>
+      </label>
+      <div v-if="useBaseColor" class="relative size-7 shrink-0 overflow-hidden rounded-lg border border-border">
+        <div :style="{ backgroundColor: baseColor }" class="absolute inset-0"/>
+        <input v-model="baseColor" class="absolute inset-0 size-full cursor-pointer opacity-0" type="color"
+               @input="generate"/>
+      </div>
+      <span v-if="useBaseColor" class="font-mono text-[12px] text-muted-foreground">{{ baseColor }}</span>
+    </div>
     <div class="flex flex-col gap-2">
       <div v-for="(hex, i) in palette" :key="i"
            class="flex items-center gap-3 rounded-xl border border-border bg-card px-3 py-2.5">
@@ -47,10 +59,12 @@ const ruleOptions: { value: PaletteRule; label: string }[] = [
 const rule = ref<PaletteRule>('complementary')
 const palette = ref<string[]>([])
 const copiedIndex = ref<number | null>(null)
+const useBaseColor = ref(false)
+const baseColor = ref('#3366cc')
 let copyTimer: ReturnType<typeof setTimeout> | undefined
 
 function generate() {
-  palette.value = generatePalette(rule.value)
+  palette.value = generatePalette(rule.value, useBaseColor.value ? baseColor.value : undefined)
   copiedIndex.value = null
 }
 

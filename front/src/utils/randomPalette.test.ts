@@ -63,4 +63,41 @@ describe('generatePalette', () => {
             expect(new Set(palette).size).toBe(palette.length)
         }
     })
+
+    describe('기준 색(baseHex) 지정', () => {
+        it('보색: 첫 번째 색은 지정한 색 그대로이고, 두 번째 색은 그 색과 약 180도 떨어져 있다', () => {
+            const palette = generatePalette('complementary', '#ff0000')
+            expect(palette[0]).toBe('#ff0000')
+            expect(hueDiff(hueOf(palette[0]), hueOf(palette[1]))).toBeGreaterThanOrEqual(170)
+            expect(hueDiff(hueOf(palette[0]), hueOf(palette[1]))).toBeLessThanOrEqual(190)
+        })
+
+        it('유사색: 가운데 색이 지정한 색 그대로다', () => {
+            const palette = generatePalette('analogous', '#3366cc')
+            expect(palette[1]).toBe('#3366cc')
+        })
+
+        it('삼색조: 첫 번째 색이 지정한 색 그대로이고 나머지 두 색과 120도씩 떨어져 있다', () => {
+            const palette = generatePalette('triadic', '#00cc66')
+            expect(palette[0]).toBe('#00cc66')
+            const hues = palette.map(hueOf)
+            for (let i = 0; i < 3; i++) {
+                const diff = hueDiff(hues[i], hues[(i + 1) % 3])
+                expect(diff).toBeGreaterThanOrEqual(110)
+                expect(diff).toBeLessThanOrEqual(130)
+            }
+        })
+
+        it('같은 기준 색을 넣으면 매번 같은 팔레트가 나온다 (더 이상 랜덤이 아님)', () => {
+            const first = generatePalette('complementary', '#ff0000')
+            const second = generatePalette('complementary', '#ff0000')
+            expect(first).toEqual(second)
+        })
+
+        it('모노톤: 가운데(3번째) 색이 지정한 색 그대로다', () => {
+            const palette = generatePalette('monochromatic', '#9933cc')
+            expect(palette).toHaveLength(5)
+            expect(palette[2]).toBe('#9933cc')
+        })
+    })
 })
