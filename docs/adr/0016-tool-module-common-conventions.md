@@ -42,5 +42,5 @@
 
 ## 결과
 
-- 이번 라운드에서 신규/수정된 모듈은 대부분 `ToolParams`/`ToolResult.ofJson`을 채택했지만, 전체 모듈에 일관되게 적용되지는 않았다 — 리뷰에서 `MarkdownToPdfModule`/`ImageToPdfModule`/`PdfSplitModule`/`ImageFormatModule`/`ImageResizeModule`의 enum형 파라미터가 여전히 수동 파싱임을 확인했다(백로그로 이관, `.scratch/backlog-tool-ux.md` 참조).
+- 이번 라운드에서 신규/수정된 모듈은 대부분 `ToolParams`/`ToolResult.ofJson`을 채택했지만, 전체 모듈에 일관되게 적용되지는 않았다 — 리뷰에서 `MarkdownToPdfModule`/`ImageToPdfModule`/`PdfSplitModule`/`ImageFormatModule`/`ImageResizeModule`의 enum형 파라미터가 여전히 수동 파싱임을 확인했다(백로그로 이관, `.scratch/archive/backlog-tool-ux.md` 참조).
 - 좋아요 동시성 정합성은 20개 스레드 동시 증가 테스트(`ToolStatsServiceTest.incrementUseCount_concurrentRequests_noLostUpdate`)로 검증했다.

@@ -35,5 +35,5 @@
 ## 결과
 
 - 도구 표시 개수는 44 → 34로 줄었다(코드 생성기 통합으로 추가 2개 흡수, 유틸 카테고리 통합 등 누적).
-- 백엔드는 `RegexModule`/`DiffModule`이 죽은 코드로 남아 있다 — 향후 완전 제거 여부는 백로그(`.scratch/backlog-tool-ux.md`)에 기록.
+- 백엔드는 `RegexModule`/`DiffModule`이 죽은 코드로 남아 있다 — 향후 완전 제거 여부는 백로그(`.scratch/archive/backlog-tool-ux.md`)에 기록.
 - `ToolStats`/`Comment`의 `moduleId` 무결성은 DB 레벨 FK가 아니라 여전히 애플리케이션 책임이다 — 향후 실제 모듈 삭제/개명 시 반드시 참조 정합성을 수동 확인해야 한다.

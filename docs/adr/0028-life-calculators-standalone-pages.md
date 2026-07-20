@@ -2,11 +2,11 @@
 
 ## 상태
 
-확정 (2026-07-20) — `.scratch/v2-feature-list.md` §3 "통합 페이지 묶음안(급여/금융/날짜/BMI) 확정"을 뒤집는다. 061(급여)·062(금융)·063(날짜)·064(BMI/칼로리) 결과물에 적용.
+확정 (2026-07-20) — `.scratch/archive/v2-feature-list.md` §3 "통합 페이지 묶음안(급여/금융/날짜/BMI) 확정"을 뒤집는다. 061(급여)·062(금융)·063(날짜)·064(BMI/칼로리) 결과물에 적용.
 
 ## 배경
 
-`.scratch/v2-feature-list.md` §3은 급여·금융·날짜·BMI/칼로리 4개 생활 계산기 묶음을 각각 탭 통합 페이지(`layout: 'narrow'` + `?tab=`)로 짓기로 확정했었다("탭이라 페이지 비용 0으로 유지"). ADR-0023이 우려한 "60여 개 도구가 평면 사이드바를 못 견딘다" 문제를 피하려는 선택이었다.
+`.scratch/archive/v2-feature-list.md` §3은 급여·금융·날짜·BMI/칼로리 4개 생활 계산기 묶음을 각각 탭 통합 페이지(`layout: 'narrow'` + `?tab=`)로 짓기로 확정했었다("탭이라 페이지 비용 0으로 유지"). ADR-0023이 우려한 "60여 개 도구가 평면 사이드바를 못 견딘다" 문제를 피하려는 선택이었다.
 
 실제로 061·062·063·064를 구현하고 브라우저로 확인한 뒤, `/life` 구역 사이드바가 "생활 1~2개" 수준으로 빈약해 보인다는 피드백이 나왔다. 이 프로젝트는 실트래픽보다 포트폴리오(채용 평가) 목적이 우선이므로([[project_devtoolbox_portfolio_over_traffic]] 성격의 결정), 사이드바가 풍성해 보이는 효과가 탭 통합의 "페이지 비용 절감"보다 더 큰 가치를 가진다고 재평가했다.
 
@@ -32,5 +32,5 @@
 - `front/src/config/frontendToolRegistry.ts`·`front/src/api/mock.ts`에서 `salary-calculator`·`finance-calculator`·`date-calculator`·`bmi-calculator` 4개 엔트리 제거, 18개 개별 엔트리로 교체.
 - `SalaryCalculatorPage.vue`·`FinanceCalculatorPage.vue`·`DateCalculatorPage.vue`·`BmiCalculatorPage.vue`(+각 `.test.ts`) 삭제, `front/src/components/tools/`에 18개 신규 컴포넌트 추가.
 - `/life` 구역 사이드바·구역 홈 카테고리 표시에 위 5개 하위 카테고리 반영.
-- `.scratch/v2-feature-list.md` §3 "통합 페이지 묶음안 확정" 줄에 본 ADR로 대체됐음을 표기.
+- `.scratch/archive/v2-feature-list.md` §3 "통합 페이지 묶음안 확정" 줄에 본 ADR로 대체됐음을 표기.
 - 향후 3차 백로그의 다른 통합 페이지(JSON·마크다운·CSS 도구)는 이 ADR의 적용 대상이 아니다 — 그것들은 `/dev` 구역(포트폴리오 상 "밀도 높은 전문가 도구" 톤이 오히려 유리, ADR-0027)이고 실사용 이력 유무·구역 성격이 다르므로 필요 시 별도로 재검토한다.

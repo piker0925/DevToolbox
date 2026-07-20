@@ -6,7 +6,7 @@
 
 ## 배경
 
-`.scratch/v2-feature-list.md` §10에서 HWP 뷰어는 "무조건 편입" 확정, 단 렌더링 방식은 `/research`(hwp.js vs hwplib 품질 비교) 선행 후 결정하기로 유보돼 있었다.
+`.scratch/archive/v2-feature-list.md` §10에서 HWP 뷰어는 "무조건 편입" 확정, 단 렌더링 방식은 `/research`(hwp.js vs hwplib 품질 비교) 선행 후 결정하기로 유보돼 있었다.
 
 조사 결과:
 - **hwp.js**(github.com/hahnlee/hwp.js) — 클라이언트 렌더 라이브러리. npm 마지막 배포 2020-10, 마지막 커밋 2024-04로 사실상 방치. **HWPX(신규 XML 기반 포맷)를 아예 못 읽음**, 레거시 바이너리 HWP만 대상. 이미지 포함 문서에서 파싱 실패하는 오픈 이슈(#88, 2025-12) 존재.

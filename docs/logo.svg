@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none">
+  <!-- 배경 글로우 -->
+  <circle cx="24" cy="24" r="20" fill="#005cc7" opacity="0.15" />
+  <!-- 위쪽 면 -->
+  <path d="M24 8L40 16L24 24L8 16L24 8Z" fill="#6facff" />
+  <path d="M24 10.5L37 17L24 23.5L11 17L24 10.5Z" fill="#a4d0ff" opacity="0.8"/>
+  <!-- 왼쪽 면 -->
+  <path d="M8 16V32L24 40V24L8 16Z" fill="#005cc7" />
+  <!-- 오른쪽 면 -->
+  <path d="M40 16V32L24 40V24L40 16Z" fill="#003486" />
+  <path d="M26 26.5L37 21V30L26 35.5V26.5Z" fill="#004eb6" />
+  <!-- 하이라이트 엣지 -->
+  <path d="M8 16L24 24M40 16L24 24M24 24V40" stroke="#e6effc" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" opacity="0.6"/>
+</svg>
