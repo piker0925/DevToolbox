@@ -18,7 +18,8 @@
 
 <script lang="ts" setup>
 import {computed, ref} from 'vue'
-import {daysBetween, formatDday, todayDateString} from '../../utils/dateCalc'
+import {daysBetween, formatDday} from '../../utils/dateCalc'
+import {todayDateString} from '../../utils/todayDateString'
 
 const baseDate = ref(todayDateString())
 const targetDate = ref(todayDateString())

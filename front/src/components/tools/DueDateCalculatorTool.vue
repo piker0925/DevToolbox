@@ -16,7 +16,8 @@
 
 <script lang="ts" setup>
 import {computed, ref} from 'vue'
-import {calcDueDate, calcGestationalWeeks, todayDateString} from '../../utils/dateCalc'
+import {calcDueDate, calcGestationalWeeks} from '../../utils/dateCalc'
+import {todayDateString} from '../../utils/todayDateString'
 
 const today = todayDateString()
 const lmpDate = ref(today)

@@ -18,7 +18,8 @@
 
 <script lang="ts" setup>
 import {computed, ref} from 'vue'
-import {calcInternationalAge, todayDateString} from '../../utils/dateCalc'
+import {calcInternationalAge} from '../../utils/dateCalc'
+import {todayDateString} from '../../utils/todayDateString'
 
 const birthDate = ref(todayDateString())
 const baseDate = ref(todayDateString())

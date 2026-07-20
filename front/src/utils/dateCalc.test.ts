@@ -1,11 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {calcBabyAge, calcDueDate, calcGestationalWeeks, calcInternationalAge, daysBetween, formatDday, todayDateString} from './dateCalc'
-
-describe('todayDateString', () => {
-    it('YYYY-MM-DD 형식의 로컬 날짜 문자열을 반환', () => {
-        expect(todayDateString()).toMatch(/^\d{4}-\d{2}-\d{2}$/)
-    })
-})
+import {calcBabyAge, calcDueDate, calcGestationalWeeks, calcInternationalAge, daysBetween, formatDday} from './dateCalc'
 
 describe('daysBetween', () => {
     it('윤년(2024) 2월을 포함하는 구간은 29일(2월 29일 포함)', () => {

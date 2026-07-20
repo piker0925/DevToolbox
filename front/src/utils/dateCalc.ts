@@ -9,12 +9,6 @@ export function daysBetween(fromDateStr: string, toDateStr: string): number {
     return Math.round((toUtcMidnight(toDateStr) - toUtcMidnight(fromDateStr)) / MS_PER_DAY)
 }
 
-export function todayDateString(): string {
-    const d = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
 export function formatDday(daysUntilTarget: number): string {
     if (daysUntilTarget === 0) return 'D-DAY'
     return daysUntilTarget > 0 ? `D-${daysUntilTarget}` : `D+${-daysUntilTarget}`

@@ -53,16 +53,13 @@ import {computed, ref} from 'vue'
 import {calcAverageDailyWage, calcSeverancePay, daysBetweenInclusive, threeMonthPeriodDays} from '../../utils/salaryCalc'
 import {useCommaNumberInput} from '../../utils/commaNumberInput'
 import {MANWON} from '../../utils/money'
+import {todayDateString} from '../../utils/todayDateString'
 
-function formatDate(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
 const todayForDefault = new Date()
-const leaveDate = ref(formatDate(todayForDefault))
+const leaveDate = ref(todayDateString(todayForDefault))
 const hireDateDefault = new Date(todayForDefault)
 hireDateDefault.setFullYear(hireDateDefault.getFullYear() - 1)
-const hireDate = ref(formatDate(hireDateDefault))
+const hireDate = ref(todayDateString(hireDateDefault))
 
 const dateRangeInvalid = computed(() => !!hireDate.value && !!leaveDate.value && new Date(leaveDate.value) < new Date(hireDate.value))
 const tenureDays = computed(() => {
