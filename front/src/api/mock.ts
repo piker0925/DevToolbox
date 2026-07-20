@@ -213,4 +213,12 @@ export const MOCK_MODULES: Module[] = [
         keywords: ['ascii', '아스키', 'ascii art'],
         zones: ['files', 'fun'],
     },
+
+    // 문서 뷰어 (프론트 로컬, 서버 전송 없이 브라우저에서 렌더)
+    {
+        id: 'document-viewer', name: '문서 뷰어', category: '문서', isHeavy: false, isFrontendOnly: true,
+        description: 'DOCX·XLSX 파일을 업로드 없이 브라우저에서 바로 미리보기',
+        keywords: ['docx', 'xlsx', '워드', '엑셀', '문서 미리보기', 'viewer'],
+        zones: ['files'],
+    },
 ]

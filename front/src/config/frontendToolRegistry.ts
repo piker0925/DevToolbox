@@ -39,4 +39,5 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'code-gen': {load: () => import('../components/UnifiedCodeGenPage.vue'), layout: 'wide'},
     'pdf-editor': {load: () => import('../components/PdfEditorPage.vue'), layout: 'wide'},
     'document-generator': {load: () => import('../components/DocumentGeneratorPage.vue'), layout: 'wide'},
+    'document-viewer': {load: () => import('../components/tools/DocumentViewerTool.vue'), layout: 'wide'},
 }
