@@ -14,6 +14,14 @@
         <span class="w-10 text-right font-mono text-[12px] text-foreground">{{ columns }}</span>
       </div>
 
+      <div class="flex gap-0.5 rounded-lg bg-muted p-0.5">
+        <button v-for="preset in ASCII_CHARSET_PRESETS" :key="preset.id"
+                :class="selectedCharset.id === preset.id ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'"
+                class="flex-1 rounded-md px-3 py-1 text-[12px] font-medium transition-colors"
+                @click="selectedCharset = preset">{{ preset.label }}
+        </button>
+      </div>
+
       <pre v-if="ascii" class="overflow-x-auto rounded-xl border border-border bg-card p-3 font-mono text-[6px] leading-[6px] text-foreground whitespace-pre">{{ ascii }}</pre>
 
       <div class="flex gap-2">
@@ -32,28 +40,13 @@
 
 <script lang="ts" setup>
 import {ref, watch} from 'vue'
-import {imageToAscii} from '../../utils/imageToAscii'
+import {ASCII_CHARSET_PRESETS, type AsciiCharsetPreset, imageToAscii} from '../../utils/imageToAscii'
+import {useImageFileInput} from '../../composables/useImageFileInput'
 
-const fileInput = ref<HTMLInputElement | null>(null)
-const imageEl = ref<HTMLImageElement | null>(null)
+const {fileInput, imageEl, error, onFileChange} = useImageFileInput()
 const columns = ref(80)
+const selectedCharset = ref<AsciiCharsetPreset>(ASCII_CHARSET_PRESETS[0])
 const ascii = ref('')
-const error = ref('')
-
-function onFileChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-
-  const img = new Image()
-  img.onload = () => {
-    imageEl.value = img
-    error.value = ''
-  }
-  img.onerror = () => {
-    error.value = '이미지를 불러오지 못했습니다'
-  }
-  img.src = URL.createObjectURL(file)
-}
 
 function render() {
   const img = imageEl.value
@@ -67,10 +60,10 @@ function render() {
 
   ctx.drawImage(img, 0, 0)
   const source = ctx.getImageData(0, 0, canvas.width, canvas.height)
-  ascii.value = imageToAscii({width: canvas.width, height: canvas.height, data: source.data}, columns.value)
+  ascii.value = imageToAscii({width: canvas.width, height: canvas.height, data: source.data}, columns.value, selectedCharset.value.charset)
 }
 
-watch([imageEl, columns], render)
+watch([imageEl, columns, selectedCharset], render)
 
 async function copyAscii() {
   await navigator.clipboard.writeText(ascii.value)

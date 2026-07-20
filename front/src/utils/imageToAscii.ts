@@ -6,6 +6,18 @@ export interface PixelBuffer {
 
 export const DEFAULT_CHARSET = ' .:-=+*#%@'
 
+export interface AsciiCharsetPreset {
+    id: string
+    label: string
+    charset: string
+}
+
+export const ASCII_CHARSET_PRESETS: AsciiCharsetPreset[] = [
+    {id: 'standard', label: '표준', charset: DEFAULT_CHARSET},
+    {id: 'blocks', label: '블록', charset: ' ░▒▓█'},
+    {id: 'binary', label: '이진', charset: ' #'},
+]
+
 const CHAR_ASPECT_RATIO = 0.55 // 문자 셀이 픽셀보다 세로로 길어서 보정
 
 /** 이미지를 그레이스케일로 변환한 뒤 밝기별 문자로 매핑해 아스키 아트 문자열을 만든다. */

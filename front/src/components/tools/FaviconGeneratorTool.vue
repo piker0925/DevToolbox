@@ -9,7 +9,7 @@
 
     <template v-else>
       <div class="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-card p-4">
-        <img v-for="s in SIZES" :key="s" :height="Math.min(s, 48)" :src="previewSrc" :width="Math.min(s, 48)" alt="" class="rounded border border-border"/>
+        <img v-for="s in SIZES" :key="s" :height="Math.min(s, 48)" :src="imageEl?.src" :width="Math.min(s, 48)" alt="" class="rounded border border-border"/>
       </div>
 
       <button :disabled="generating" class="rounded-xl bg-primary px-4 py-2.5 text-[13px] font-medium text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
@@ -25,30 +25,12 @@
 import {ref} from 'vue'
 import JSZip from 'jszip'
 import {encodeIco, type FaviconImage} from '../../utils/faviconGen'
+import {useImageFileInput} from '../../composables/useImageFileInput'
 
 const SIZES = [16, 32, 48, 180]
 
-const fileInput = ref<HTMLInputElement | null>(null)
-const imageEl = ref<HTMLImageElement | null>(null)
-const previewSrc = ref('')
+const {fileInput, imageEl, error, onFileChange} = useImageFileInput()
 const generating = ref(false)
-const error = ref('')
-
-function onFileChange(e: Event) {
-  const file = (e.target as HTMLInputElement).files?.[0]
-  if (!file) return
-
-  const img = new Image()
-  img.onload = () => {
-    imageEl.value = img
-    previewSrc.value = img.src
-    error.value = ''
-  }
-  img.onerror = () => {
-    error.value = '이미지를 불러오지 못했습니다'
-  }
-  img.src = URL.createObjectURL(file)
-}
 
 function renderPng(img: HTMLImageElement, size: number): Promise<Uint8Array> {
   const canvas = document.createElement('canvas')

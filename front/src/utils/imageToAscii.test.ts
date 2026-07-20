@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {DEFAULT_CHARSET, imageToAscii, type PixelBuffer} from './imageToAscii'
+import {ASCII_CHARSET_PRESETS, DEFAULT_CHARSET, imageToAscii, type PixelBuffer} from './imageToAscii'
 
 function solidColor(width: number, height: number, r: number, g: number, b: number): PixelBuffer {
     const data = new Uint8ClampedArray(width * height * 4)
@@ -33,5 +33,27 @@ describe('imageToAscii', () => {
         expect(blackAscii.trim()).not.toBe('')
         expect(blackAscii[0]).toBe(DEFAULT_CHARSET[DEFAULT_CHARSET.length - 1])
         expect(whiteAscii[0]).toBe(DEFAULT_CHARSET[0])
+    })
+
+    it('문자셋을 바꾸면 같은 이미지도 다른 문자로 렌더된다', () => {
+        const gray = solidColor(2, 2, 128, 128, 128)
+
+        const withDefault = imageToAscii(gray, 2, ASCII_CHARSET_PRESETS[0].charset)
+        const withAlt = imageToAscii(gray, 2, ASCII_CHARSET_PRESETS[1].charset)
+
+        expect(withDefault).not.toBe(withAlt)
+    })
+})
+
+describe('ASCII_CHARSET_PRESETS', () => {
+    it('모든 프리셋이 고유 id와 2자 이상의 문자셋을 가진다', () => {
+        expect(ASCII_CHARSET_PRESETS.length).toBeGreaterThan(1)
+
+        const ids = ASCII_CHARSET_PRESETS.map(p => p.id)
+        expect(new Set(ids).size).toBe(ids.length)
+
+        for (const preset of ASCII_CHARSET_PRESETS) {
+            expect(preset.charset.length).toBeGreaterThan(1)
+        }
     })
 })
