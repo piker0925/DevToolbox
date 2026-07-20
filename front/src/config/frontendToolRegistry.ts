@@ -48,6 +48,11 @@ export const FRONTEND_TOOL_COMPONENTS: Record<string, FrontendToolEntry> = {
     'random-team-ladder': {load: () => import('../components/tools/RandomTeamLadderTool.vue'), layout: 'narrow'},
     'random-nickname': {load: () => import('../components/tools/RandomNicknameTool.vue'), layout: 'narrow'},
     'random-palette': {load: () => import('../components/tools/RandomPaletteTool.vue'), layout: 'narrow'},
+    'curl-to-code': {load: () => import('../components/tools/CurlToCodeTool.vue'), layout: 'narrow'},
+    'json-to-ts': {load: () => import('../components/tools/JsonToTsTool.vue'), layout: 'narrow'},
+    'gitignore-generator': {load: () => import('../components/tools/GitignoreGeneratorTool.vue'), layout: 'narrow'},
+    'faker-ko': {load: () => import('../components/tools/FakerKoTool.vue'), layout: 'narrow'},
+    'svg-optimizer': {load: () => import('../components/tools/SvgOptimizerTool.vue'), layout: 'narrow'},
 
     'data-convert': {load: () => import('../components/UnifiedConvertPage.vue'), layout: 'wide'},
     'encoder': {load: () => import('../components/UnifiedEncoderPage.vue'), layout: 'wide'},
