@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@breezystack/lamejs": "^1.2.7",
+    "@e965/xlsx": "^0.20.3",
     "@fontsource-variable/jetbrains-mono": "^5.2.8",
     "@lucide/vue": "^1.24.0",
     "@tailwindcss/vite": "^4.3.2",
@@ -44,8 +45,7 @@
     "vue": "^3.5.39",
     "vue-router": "^4.6.4",
     "vue-sonner": "^2.0.9",
-    "wavesurfer.js": "^7.12.11",
-    "xlsx": "^0.18.5"
+    "wavesurfer.js": "^7.12.11"
   },
   "devDependencies": {
     "@types/he": "^1.2.3",
