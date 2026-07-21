@@ -181,7 +181,7 @@ isHeavy() = false → 즉시 처리 → 바로 응답
 어느 화면에서든 ⌘K로 전역 검색. 정확한 이름을 몰라도 찾도록 **부분열(subsequence) 퍼지 매칭 + 동의어·별칭 사전**을 자체 구현했다 — "이리사" → 이미지 리사이즈, "html entity" → 인코더의 HTML Entity 모드로 딥링크. 도구명·설명·별칭을 검색하고 매치 점수(연속 매치·단어 경계·이른 위치)로 정렬한다.
 
 **관리자 페이지**
-`/admin/stats`(전체 통계) · `/admin/suggestions`(건의사항) · 댓글 삭제. HTTP Basic Auth 보호.
+`/admin/stats`(전체 통계) · `/admin/suggestions`(건의사항) · 댓글 삭제 · 유저 목록(refresh token 재사용 감지 발동 횟수 컬럼 포함, 탈취 확정 아닌 참고용 빈도 지표). HTTP Basic Auth 보호.
 
 ---
 
