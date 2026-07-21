@@ -7,14 +7,16 @@ import com.back.job.service.JobService;
 import com.back.stats.service.ToolStatsService;
 import com.back.suggestion.entity.Suggestion;
 import com.back.suggestion.service.SuggestionService;
-import com.back.user.dto.UserResponse;
+import com.back.user.entity.User;
 import com.back.user.service.RefreshTokenService;
 import com.back.user.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @RestController
@@ -59,12 +61,17 @@ public class AdminController {
     }
 
     @GetMapping("/users")
-    public ResponseEntity<PageResponse<UserResponse>> getUsers(
+    public ResponseEntity<PageResponse<AdminUserResponse>> getUsers(
             @RequestParam(required = false) String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size) {
-        var users = userService.search(search, page, size).map(UserResponse::from);
-        return ResponseEntity.ok(PageResponse.of(users));
+        Page<User> users = userService.search(search, page, size);
+        List<Long> userIds = users.getContent().stream().map(User::getId).toList();
+        // 유저마다 발동 횟수를 따로 조회하면 N+1이 되므로, 현재 페이지의 id들만 모아 한 번에 배치 조회한다.
+        Map<Long, Long> theftEventCounts = refreshTokenService.countTheftEventsByUserIds(userIds);
+        Page<AdminUserResponse> responses = users.map(user ->
+                AdminUserResponse.from(user, theftEventCounts.getOrDefault(user.getId(), 0L)));
+        return ResponseEntity.ok(PageResponse.of(responses));
     }
 
     @PostMapping("/users/{id}/force-logout")

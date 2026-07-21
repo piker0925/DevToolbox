@@ -163,6 +163,6 @@ class UserControllerTest extends AbstractMySQLIntegrationTest {
                 .andExpect(status().isNoContent());
 
         assertThat(userRepository.findById(user.getId())).isEmpty();
-        assertThat(refreshTokenService.rotate(tokens.refreshToken())).isEmpty();
+        assertThat(refreshTokenService.rotate(tokens.refreshToken(), "127.0.0.1")).isEmpty();
     }
 }

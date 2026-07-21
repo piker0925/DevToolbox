@@ -13,8 +13,10 @@ import com.back.suggestion.entity.Suggestion;
 import com.back.suggestion.repository.SuggestionRepository;
 import com.back.user.dto.TokenPair;
 import com.back.user.entity.AuthProvider;
+import com.back.user.entity.RefreshTokenTheftEvent;
 import com.back.user.entity.User;
 import com.back.user.repository.RefreshTokenRepository;
+import com.back.user.repository.RefreshTokenTheftEventRepository;
 import com.back.user.repository.UserRepository;
 import com.back.user.service.RefreshTokenService;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,6 +64,8 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
     @Autowired
     RefreshTokenRepository refreshTokenRepository;
     @Autowired
+    RefreshTokenTheftEventRepository refreshTokenTheftEventRepository;
+    @Autowired
     RefreshTokenService refreshTokenService;
     @Autowired
     JobRepository jobRepository;
@@ -71,6 +75,7 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
     @BeforeEach
     void setup() {
         refreshTokenRepository.deleteAll();
+        refreshTokenTheftEventRepository.deleteAll();
         userRepository.deleteAll();
         mockMvc = MockMvcBuilders.webAppContextSetup(wac)
                 .apply(springSecurity())
@@ -199,6 +204,22 @@ class AdminControllerTest extends AbstractMySQLIntegrationTest {
                 .andExpect(jsonPath("$.content.length()").value(1))
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.content[0].nickname").value("페이지유저1"));
+    }
+
+    @Test
+    void getUsers_탈취_감지_발동_이력이_있는_유저와_없는_유저의_theftEventCount가_다르게_나온다() throws Exception {
+        User userWithTheft = userRepository.save(new User(AuthProvider.GOOGLE, "theft-1", null, "탈취기록유저"));
+        User userWithoutTheft = userRepository.save(new User(AuthProvider.KAKAO, "theft-2", null, "무기록유저"));
+        refreshTokenTheftEventRepository.save(
+                new RefreshTokenTheftEvent(userWithTheft.getId(), java.time.LocalDateTime.now(), "203.0.113.9"));
+        refreshTokenTheftEventRepository.save(
+                new RefreshTokenTheftEvent(userWithTheft.getId(), java.time.LocalDateTime.now(), "198.51.100.1"));
+
+        mockMvc.perform(get("/admin/users")
+                        .with(httpBasic("admin", "1234")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content[?(@.nickname == '탈취기록유저')].theftEventCount").value(2))
+                .andExpect(jsonPath("$.content[?(@.nickname == '무기록유저')].theftEventCount").value(0));
     }
 
     @Test

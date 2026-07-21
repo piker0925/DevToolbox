@@ -87,9 +87,14 @@
         <div v-if="currentTab === 'users'">
           <section class="rounded-xl border border-border bg-card shadow-sm">
             <div class="flex flex-col gap-4 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-              <div class="flex items-center gap-4">
-                <h2 class="text-sm font-medium text-foreground">유저 목록</h2>
-                <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{{ totalUsers }}명</span>
+              <div class="flex flex-col gap-1">
+                <div class="flex items-center gap-4">
+                  <h2 class="text-sm font-medium text-foreground">유저 목록</h2>
+                  <span class="rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">{{ totalUsers }}명</span>
+                </div>
+                <p class="text-xs text-muted-foreground">
+                  '재사용 감지 발동' 횟수는 참고용 빈도 지표입니다 — 멀티탭 동시 재발급 등 오탐이 섞일 수 있어 이 수치만으로 계정 탈취를 단정할 수 없습니다.
+                </p>
               </div>
               <form class="flex w-full max-w-xs items-center gap-2 sm:w-auto" @submit.prevent="onSearch">
                 <input
@@ -113,12 +118,15 @@
                   <th class="px-5 py-3 font-medium">닉네임</th>
                   <th class="px-5 py-3 font-medium">이메일</th>
                   <th class="px-5 py-3 font-medium">가입일</th>
+                  <th class="px-5 py-3 font-medium text-right" title="참고용 빈도 지표 — 오탐(멀티탭 동시 재발급)이 섞일 수 있어 탈취 확정으로 단정할 수 없습니다.">
+                    재사용 감지 발동
+                  </th>
                   <th class="px-5 py-3 font-medium text-right">액션</th>
                 </tr>
                 </thead>
                 <tbody>
                 <tr v-if="users.length === 0">
-                  <td class="px-5 py-8 text-center text-muted-foreground" colspan="6">조회된 유저가 없습니다.</td>
+                  <td class="px-5 py-8 text-center text-muted-foreground" colspan="7">조회된 유저가 없습니다.</td>
                 </tr>
                 <tr v-for="u in users" :key="u.id" class="border-b border-border last:border-0 hover:bg-muted/20">
                   <td class="px-5 py-3 text-xs text-muted-foreground">{{ u.id }}</td>
@@ -128,6 +136,15 @@
                   <td class="px-5 py-3 text-foreground">{{ u.nickname }}</td>
                   <td class="px-5 py-3 text-muted-foreground">{{ u.email || '-' }}</td>
                   <td class="px-5 py-3 text-muted-foreground">{{ formatDate(u.createdAt) }}</td>
+                  <td class="px-5 py-3 text-right">
+                    <span
+                      :class="u.theftEventCount > 0 ? 'bg-amber-500/10 text-amber-600' : 'bg-secondary/50 text-secondary-foreground'"
+                      class="rounded-md px-2 py-1 text-xs font-medium"
+                      title="참고용 빈도 지표 — 오탐(멀티탭 동시 재발급)이 섞일 수 있어 탈취 확정으로 단정할 수 없습니다."
+                    >
+                      {{ u.theftEventCount }}
+                    </span>
+                  </td>
                   <td class="px-5 py-3 text-right">
                     <button
                       @click="forceLogoutUser(u.id, u.nickname)"
@@ -282,6 +299,7 @@ interface UserItem {
   nickname: string
   email: string
   createdAt: string
+  theftEventCount: number
 }
 
 interface JobItem {
