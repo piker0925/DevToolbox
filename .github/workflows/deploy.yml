@@ -100,6 +100,8 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      # Dockerfile의 apt-get 레이어(ffmpeg/libreoffice/H2Orestart)는 코드 변경과 무관하게 안 바뀐다.
+      # GHA 캐시 백엔드에 레이어를 저장해두면 app.jar만 바뀐 빌드에서 그 레이어들을 재사용한다.
       - name: Build and push backend image
         uses: docker/build-push-action@v6
         with:
@@ -107,6 +109,8 @@ jobs:
           platforms: linux/arm64
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/devtoolbox-backend:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     name: Deploy to OCI
