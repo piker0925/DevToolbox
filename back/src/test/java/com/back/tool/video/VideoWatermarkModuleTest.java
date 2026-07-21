@@ -1,5 +1,6 @@
 package com.back.tool.video;
 
+import com.back.support.RequiresFfmpegDrawtext;
 import com.back.tool.model.Lane;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolProcessingException;
@@ -85,6 +86,7 @@ class VideoWatermarkModuleTest {
     }
 
     @Test
+    @RequiresFfmpegDrawtext
     void 텍스트_워터마크가_실제로_합성된다() throws Exception {
         Path video = generateTestVideo("black.mp4", 2.0, 320, 240);
 
@@ -123,6 +125,7 @@ class VideoWatermarkModuleTest {
     }
 
     @Test
+    @RequiresFfmpegDrawtext
     void 특수문자가_포함된_텍스트도_필터_에러_없이_처리한다() throws Exception {
         Path video = generateTestVideo("black.mp4", 2.0, 320, 240);
 

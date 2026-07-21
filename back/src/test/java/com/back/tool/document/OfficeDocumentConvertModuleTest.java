@@ -1,5 +1,6 @@
 package com.back.tool.document;
 
+import com.back.support.RequiresH2Orestart;
 import com.back.tool.model.ToolInput;
 import com.back.tool.model.ToolProcessingException;
 import com.back.tool.model.ToolResult;
@@ -40,6 +41,7 @@ class OfficeDocumentConvertModuleTest {
     }
 
     @Test
+    @RequiresH2Orestart
     void HWP_파일을_PDF로_변환하면_원본_텍스트가_보존된다() throws Exception {
         ToolResult result = module.process(new ToolInput(List.of(sample("test.hwp")), Map.of()));
 
@@ -53,6 +55,7 @@ class OfficeDocumentConvertModuleTest {
     }
 
     @Test
+    @RequiresH2Orestart
     void HWPX_파일을_PDF로_변환하면_원본_텍스트가_보존된다() throws Exception {
         ToolResult result = module.process(new ToolInput(List.of(sample("test.hwpx")), Map.of()));
 
@@ -116,6 +119,7 @@ class OfficeDocumentConvertModuleTest {
     }
 
     @Test
+    @RequiresH2Orestart
     void 동시_변환_요청_두_건이_프로필_충돌_없이_각각_성공한다() throws Exception {
         ExecutorService pool = Executors.newFixedThreadPool(2);
         try {
