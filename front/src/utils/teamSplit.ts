@@ -94,3 +94,10 @@ export function resolveOutcomeLabels(outcomes: string[], count: number): string[
     if (trimmed.length === count) return trimmed
     return Array.from({length: count}, (_, i) => `${i + 1}번`)
 }
+
+/** 사다리 도착 슬롯(컬럼) 중 당첨 인원 수만큼 무작위로 컬럼 인덱스를 고른다. winnerCount가 count를 넘으면 count로 제한한다. */
+export function pickWinnerColumns(count: number, winnerCount: number): Set<number> {
+    const clamped = Math.max(0, Math.min(winnerCount, count))
+    const indices = Array.from({length: count}, (_, i) => i)
+    return new Set(shuffle(indices).slice(0, clamped))
+}

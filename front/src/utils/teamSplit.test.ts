@@ -1,5 +1,5 @@
 import {describe, expect, it} from 'vitest'
-import {generateLadderRungs, resolveOutcomeLabels, splitIntoTeams, traceLadderPaths} from './teamSplit'
+import {generateLadderRungs, pickWinnerColumns, resolveOutcomeLabels, splitIntoTeams, traceLadderPaths} from './teamSplit'
 
 describe('splitIntoTeams', () => {
     it('참가자 10명을 3팀으로 나누면 팀 인원 차이가 최대 1명 이내다', () => {
@@ -67,5 +67,30 @@ describe('resolveOutcomeLabels', () => {
     it('당첨 항목을 아예 입력하지 않으면 번호로 대체한다', () => {
         const labels = resolveOutcomeLabels([], 4)
         expect(labels).toEqual(['1번', '2번', '3번', '4번'])
+    })
+})
+
+describe('pickWinnerColumns', () => {
+    it('요청한 당첨 인원 수만큼 서로 다른 컬럼 인덱스를 고른다', () => {
+        const winners = pickWinnerColumns(6, 2)
+        expect(winners.size).toBe(2)
+        for (const i of winners) {
+            expect(i).toBeGreaterThanOrEqual(0)
+            expect(i).toBeLessThan(6)
+        }
+    })
+
+    it('당첨 인원 수가 참가자 수를 넘으면 참가자 수로 제한한다', () => {
+        const winners = pickWinnerColumns(3, 10)
+        expect(winners.size).toBe(3)
+        expect(winners).toEqual(new Set([0, 1, 2]))
+    })
+
+    it('여러 번 뽑아도 매번 유효한 범위 안의 서로 다른 인덱스만 나온다', () => {
+        for (let trial = 0; trial < 30; trial++) {
+            const winners = pickWinnerColumns(8, 3)
+            expect(winners.size).toBe(3)
+            expect([...winners].every(i => i >= 0 && i < 8)).toBe(true)
+        }
     })
 })
