@@ -47,3 +47,11 @@
 - **H2Orestart 필요성 실증**: 컨테이너에서 확장을 제거한 뒤 동일 `test.hwpx`로 변환 시도 → `Error: source file could not be loaded`로 완전히 실패(PDF 생성 자체가 안 됨). 확장 재설치 후 정상 변환 확인. 즉 HWPX는 H2Orestart 없이는 LibreOffice가 아예 열지 못한다.
 - **손상 파일 에러 시나리오 조정**: 당초 "손상된 파일 업로드 시 에러"를 상정했으나, 실제로는 LibreOffice가 순수 랜덤 바이트까지도 텍스트로 강제 해석해 "성공"으로 변환해버리는 것을 확인(레거시 포맷의 관대한 임포트 동작 — 베타 라벨의 근거가 되는 사실이기도 함). 진짜 실패 경계는 입력 파일 자체를 읽을 수 없는 경우였다 — 테스트를 이 경계에 맞춰 작성.
 - **non-root 컨테이너 이슈**: `spring` 유저의 기본 홈이 `/nonexistent`라 H2Orestart 내부 로거·dconf·fontconfig 캐시가 권한 에러를 냈다(변환 자체는 성공하지만 로그가 지저분함). `adduser --home /app`으로 해결.
+
+## macOS 로컬 개발 환경 주의사항 (2026-07-21)
+
+- **로컬 macOS(Homebrew Cask LibreOffice)에서 `unopkg add --shared`가 실패한다.** 에러: `You need write permissions to install a shared extension!`. `sudo`, `sudo -f`(force), quarantine 속성 제거(`xattr -dr com.apple.quarantine`)까지 시도했지만 전부 동일 에러 — root 권한으로도 실패하므로 실제 파일시스템 권한 문제가 아니다(대상 디렉터리 전부 `touch` 테스트로 쓰기 가능함을 직접 확인). 정확한 원인은 못 밝혔다(Homebrew Cask 빌드 특유의 내부 로직 문제로 추정).
+- GUI(`Tools → Extension Manager → Add`)로 설치하면 성공하지만 **user 스코프**로 깔린다. `LibreOfficeConvertSupport`가 변환마다 `-env:UserInstallation`으로 임시 프로필을 격리하는데(위 Lane 결정 참조), 이 임시 프로필은 **shared/bundled 확장만 보고 user 확장은 못 본다** — 그래서 GUI로 설치해도 로컬 테스트는 여전히 실패한다. 즉 "필요한 설치 방식(shared)은 실패하고, 성공하는 설치 방식(user)은 코드가 안 본다"는 막다른 구조.
+- **실배포/CI는 이 문제와 무관하다** — Dockerfile은 Debian/Ubuntu apt 기반이라 `unopkg add --shared`가 정상 동작하며, `back/Dockerfile.test`로 배포와 동일한 환경을 재현해 HWP/HWPX 변환·영상 워터마크 테스트가 전부 통과함을 실측 확인했다(2026-07-21).
+- **로컬 macOS에서 이 두 기능(HWP/HWPX 변환, ffmpeg drawtext 텍스트 워터마크)을 검증하려면** 네이티브로는 안 되고 `docker compose --profile test run --rm backend-native-test` 로 확인한다. 수동으로 서버까지 띄워 눈으로 보고 싶으면 같은 서비스에 커맨드만 오버라이드: `docker compose --profile test run --rm --service-ports backend-native-test ./gradlew bootRun`.
+- 이 macOS 이슈를 다시 붙잡고 파고들 가치는 낮다고 판단했다 — 실배포에 영향 없고, 이미 검증된 우회 수단(Docker)이 있다.
