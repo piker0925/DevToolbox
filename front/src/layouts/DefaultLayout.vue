@@ -87,10 +87,10 @@
           </div>
         </div>
 
-        <!-- Explore Section -->
-        <div class="flex flex-col gap-0.5">
+        <!-- Explore Section (특정 구역에 속한 페이지에서만 노출 — 구역이 없으면 카테고리 스코프 자체가 무의미함) -->
+        <div v-if="currentZoneId" class="flex flex-col gap-0.5">
           <div class="px-2 pb-1.5 text-[10px] font-bold text-muted-foreground/60 tracking-wider">Explore</div>
-          
+
           <!-- 전체 (현재 구역 스코프) -->
           <router-link
               :class="isAllActive
