@@ -65,7 +65,7 @@ export const MOCK_MODULES: Module[] = [
     {
         id: 'text-diff', name: 'Diff 비교', category: '텍스트', isHeavy: false, isFrontendOnly: true,
         description: '두 텍스트 차이 시각화', keywords: ['diff', 'compare', '비교'],
-        zones: ['dev'],
+        zones: ['life'],
     },
     {
         id: 'regex-tester', name: 'Regex 테스터', category: '텍스트', isHeavy: false, isFrontendOnly: true,
@@ -311,13 +311,13 @@ export const MOCK_MODULES: Module[] = [
         id: 'pet-age-converter', name: '반려동물 나이 변환기', category: '날짜·나이', isHeavy: false, isFrontendOnly: true,
         description: '강아지·고양이 나이를 사람 나이로 환산',
         keywords: ['반려동물', '강아지 나이', '고양이 나이', '펫 나이'],
-        zones: ['life', 'fun'],
+        zones: ['life'],
     },
     {
         id: 'timezone-converter', name: '타임존 변환기', category: '단위·변환', isHeavy: false, isFrontendOnly: true,
         description: '시간대 간 날짜·시각 변환(원격/해외 협업용)',
         keywords: ['타임존', 'timezone', '시간대 변환', 'utc', 'kst'],
-        zones: ['dev', 'life'],
+        zones: ['life'],
     },
     {
         id: 'd-day-calculator', name: 'D-Day/날짜 차이 계산기', category: '날짜·나이', isHeavy: false, isFrontendOnly: true,
@@ -373,7 +373,7 @@ export const MOCK_MODULES: Module[] = [
         id: 'random-palette', name: '색상 팔레트 생성기', category: '재미', isHeavy: false, isFrontendOnly: true,
         description: '보색·유사색 등 규칙 기반 무작위 색상 팔레트 생성',
         keywords: ['팔레트', 'palette', '색상 조합'],
-        zones: ['dev', 'fun'],
+        zones: ['fun'],
     },
     {
         id: 'wordcloud', name: '워드클라우드', category: '재미', isHeavy: false, isFrontendOnly: true,
@@ -385,7 +385,7 @@ export const MOCK_MODULES: Module[] = [
             {keyword: '단어 빈도', query: 'tab=table'},
             {keyword: '빈도 분석', query: 'tab=table'},
         ],
-        zones: ['fun', 'dev'],
+        zones: ['fun'],
     },
 
     // 미니게임 (프론트 전용, 상태는 컴포넌트 내부 — 서버 저장 없음, v3 이전 범위. ADR-0026)
@@ -452,13 +452,13 @@ export const MOCK_MODULES: Module[] = [
         id: 'image-diff', name: '이미지 Diff 비교', category: '이미지', isHeavy: false, isFrontendOnly: true,
         description: '두 이미지의 픽셀 단위 차이를 히트맵으로 시각화',
         keywords: ['diff', '비교', 'compare', '이미지 비교'],
-        zones: ['files', 'dev'],
+        zones: ['files'],
     },
     {
         id: 'colorblind-simulator', name: '색약 시뮬레이터', category: '이미지', isHeavy: false, isFrontendOnly: true,
         description: '적색맹·녹색맹·청색맹 시야로 이미지 미리보기',
         keywords: ['색약', 'colorblind', '색맹', 'protanopia', 'deuteranopia'],
-        zones: ['files', 'dev'],
+        zones: ['files'],
     },
     {
         id: 'favicon-generator', name: 'Favicon 생성기', category: '이미지', isHeavy: false, isFrontendOnly: true,
@@ -470,7 +470,7 @@ export const MOCK_MODULES: Module[] = [
         id: 'image-to-ascii', name: '이미지 → 아스키 아트', category: '이미지', isHeavy: false, isFrontendOnly: true,
         description: '이미지를 그레이스케일 문자 아트로 변환',
         keywords: ['ascii', '아스키', 'ascii art'],
-        zones: ['files', 'fun'],
+        zones: ['files'],
     },
 
     // 문서 뷰어 (프론트 로컬, 서버 전송 없이 브라우저에서 렌더)

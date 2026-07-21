@@ -28,8 +28,10 @@ describe('MOCK_MODULES', () => {
         }
     })
 
-    it('포맷터·보안·암호화·텍스트·네트워크·DevOps·생성기 카테고리 모듈은 dev 구역을 포함한다', () => {
-        const devCategories = ['포맷터', '보안·암호화', '텍스트', '네트워크', 'DevOps', '생성기']
+    it('포맷터·보안·암호화·네트워크·DevOps·생성기 카테고리 모듈은 dev 구역을 포함한다', () => {
+        // '텍스트' 카테고리는 ADR-0030(단일 구역 원칙)에 따라 제외됨 — text-diff가 dev에서 life로
+        // 완전히 이동해, 카테고리 하나가 여러 구역에 걸치게 됐다(regex-tester는 dev 유지).
+        const devCategories = ['포맷터', '보안·암호화', '네트워크', 'DevOps', '생성기']
         const devCategoryModules = MOCK_MODULES.filter(m => devCategories.includes(m.category))
         for (const m of devCategoryModules) {
             expect(m.zones).toContain('dev')
