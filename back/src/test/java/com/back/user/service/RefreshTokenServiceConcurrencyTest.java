@@ -46,7 +46,7 @@ class RefreshTokenServiceConcurrencyTest extends AbstractMySQLIntegrationTest {
         AtomicReference<Optional<TokenPair>> thread2Result = new AtomicReference<>();
 
         Thread thread1 = new Thread(() -> new TransactionTemplate(txManager).execute(status -> {
-            thread1Result.set(refreshTokenService.rotate(rawToken));
+            thread1Result.set(refreshTokenService.rotate(rawToken, "127.0.0.1"));
             acquired.countDown();
             try {
                 release.await();
@@ -58,7 +58,7 @@ class RefreshTokenServiceConcurrencyTest extends AbstractMySQLIntegrationTest {
         thread1.start();
         acquired.await();
 
-        Thread thread2 = new Thread(() -> thread2Result.set(refreshTokenService.rotate(rawToken)));
+        Thread thread2 = new Thread(() -> thread2Result.set(refreshTokenService.rotate(rawToken, "127.0.0.1")));
         thread2.start();
         Thread.sleep(300); // thread2가 락 대기 상태로 들어갈 시간을 준다
 
