@@ -1,0 +1,19 @@
+FROM eclipse-temurin:25-jdk-noble
+WORKDIR /app/back
+
+# 오피스 문서 변환기(094)·영상 워터마크(037) 테스트는 실제 soffice/ffmpeg를 셸아웃한다.
+# 배포용 Dockerfile과 동일한 설치 절차를 그대로 따라, 로컬 OS(macOS)와 무관하게
+# 프로덕션과 동일한 조건에서 네이티브 의존 테스트를 검증하기 위한 전용 이미지다.
+# 프로덕션 Dockerfile과 분리된 이유: 여기는 JDK+Gradle이 필요하고 app.jar를 다루지 않는다.
+RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libreoffice-writer libreoffice-calc libreoffice-impress libreoffice-java-common \
+    fonts-noto-cjk curl \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN curl -fsSL -o /tmp/H2Orestart.oxt \
+    https://github.com/ebandal/H2Orestart/releases/download/v0.7.13/H2Orestart.oxt \
+    && unopkg add --shared /tmp/H2Orestart.oxt \
+    && rm -f /tmp/H2Orestart.oxt

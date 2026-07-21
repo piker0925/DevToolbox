@@ -17,5 +17,20 @@ services:
       timeout: 5s
       retries: 5
 
+  # 로컬 macOS의 LibreOffice/ffmpeg가 배포 환경과 달라 오피스 변환·영상 워터마크 테스트가
+  # 실패할 수 있다. 배포용 Dockerfile과 동일한 네이티브 의존성을 갖춘 컨테이너에서 검증하려면:
+  #   docker compose --profile test run --rm backend-native-test
+  # 기본 `docker compose up`에는 포함되지 않는다(profiles로 격리).
+  backend-native-test:
+    build:
+      context: ./back
+      dockerfile: Dockerfile.test
+    profiles: ["test"]
+    volumes:
+      - ./back:/app/back
+      - gradle_cache:/root/.gradle
+    command: ["./gradlew", "test", "--tests", "com.back.tool.document.OfficeDocumentConvertModuleTest", "--tests", "com.back.tool.video.VideoWatermarkModuleTest"]
+
 volumes:
   mysql_data:
+  gradle_cache:
