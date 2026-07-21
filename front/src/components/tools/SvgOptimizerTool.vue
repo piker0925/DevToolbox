@@ -50,6 +50,8 @@
       <div class="grid grid-cols-2 gap-3">
         <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
           <div class="flex h-8 items-center px-3 text-[11px] font-medium text-muted-foreground">최적화 전</div>
+          <!-- sandbox=""(토큰 없음)는 보안 통제: allow-scripts/allow-same-origin을 주지 않아 사용자가 입력한
+               SVG에 <script>나 onload= 가 있어도 실행되지 않는다. 이 iframe에 sandbox 속성을 완화하지 말 것. -->
           <iframe :srcdoc="previewHtml(input)" class="h-48 w-full bg-white" sandbox=""></iframe>
         </div>
         <div class="flex flex-col rounded-xl border border-border bg-card overflow-hidden">
